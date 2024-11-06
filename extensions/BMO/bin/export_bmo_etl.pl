@@ -41,8 +41,7 @@ if (!$test && !Bugzilla->params->{bmo_etl_base_url}) {
   die "BMO ETL base url not defined.\n";
 }
 
-# Use replica if available
-my $dbh = Bugzilla->switch_to_shadow_db();
+my $dbh = Bugzilla->dbh;
 
 my $ua = LWP::UserAgent::Determined->new(
   agent                 => 'Bugzilla',
