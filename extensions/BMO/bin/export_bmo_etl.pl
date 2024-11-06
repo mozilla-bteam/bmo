@@ -16,15 +16,15 @@ use Bugzilla::Bug;
 use Bugzilla::Constants;
 use Bugzilla::Flag;
 use Bugzilla::User;
-use Bugzilla::Util qw(mojo_user_agent);
 
 use HTTP::Headers;
 use HTTP::Request;
 use IO::Compress::Gzip     qw(gzip $GzipError);
 use IO::Uncompress::Gunzip qw(gunzip $GunzipError);
-use Mojo::File             qw(path);
-use Mojo::JSON             qw(decode_json encode_json false true);
-use Mojo::Util             qw(getopt);
+use LWP::UserAgent::Determined;
+use Mojo::File qw(path);
+use Mojo::JSON qw(decode_json encode_json false true);
+use Mojo::Util qw(getopt);
 
 # BigQuery API cannot handle payloads larger than 10MB so
 # we will send data in blocks.
@@ -44,7 +44,16 @@ if (!$test && !Bugzilla->params->{bmo_etl_base_url}) {
 # Use replica if available
 my $dbh = Bugzilla->switch_to_shadow_db();
 
-my $ua = mojo_user_agent();
+my $ua = LWP::UserAgent::Determined->new(
+  agent                 => 'Bugzilla',
+  keep_alive            => 10,
+  requests_redirectable => [qw(GET HEAD DELETE PUT)],
+);
+$ua->timing('1,2,4,8,16,32');
+$ua->timeout(30);
+if (my $proxy = Bugzilla->params->{proxy_url}) {
+  $ua->proxy(['https', 'http'], $proxy);
+}
 
 # This date will be added to each object as it is being sent
 my $snapshot_date = $dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
@@ -110,13 +119,14 @@ foreach my $row (@{$rows}) {
 
   push @results, $data;
 
-  # Send the row to the server if we have the right number of rows
-  if (scalar @results == API_BLOCK_COUNT) {
+  $count++;
+
+  # Send the rows to the server if we have a specific sized block'
+  # or we are at the last row
+  if (scalar @results == API_BLOCK_COUNT || $total == $count) {
     send_data($table_name, \@results, $count);
     @results = ();
   }
-
-  $count++;
 }
 
 ### Attachments
@@ -165,13 +175,14 @@ foreach my $row (@{$rows}) {
 
   push @results, $data;
 
-  # Send the row to the server if we have the right number of rows
-  if (scalar @results == API_BLOCK_COUNT) {
+  $count++;
+
+  # Send the rows to the server if we have a specific sized block'
+  # or we are at the last row
+  if (scalar @results == API_BLOCK_COUNT || $total == $count) {
     send_data($table_name, \@results, $count);
     @results = ();
   }
-
-  $count++;
 }
 
 ### Flags
@@ -214,13 +225,14 @@ foreach my $row (@{$rows}) {
 
   push @results, $data;
 
-  # Send the row to the server if we have the right number of rows
-  if (scalar @results == API_BLOCK_COUNT) {
+  $count++;
+
+  # Send the rows to the server if we have a specific sized block'
+  # or we are at the last row
+  if (scalar @results == API_BLOCK_COUNT || $total == $count) {
     send_data($table_name, \@results, $count);
     @results = ();
   }
-
-  $count++;
 }
 
 ### Tracking Flags
@@ -246,13 +258,14 @@ foreach my $row (@{$rows}) {
 
   push @results, $data;
 
-  # Send the row to the server if we have the right number of rows
-  if (scalar @results == API_BLOCK_COUNT) {
+  $count++;
+
+  # Send the rows to the server if we have a specific sized block'
+  # or we are at the last row
+  if (scalar @results == API_BLOCK_COUNT || $total == $count) {
     send_data($table_name, \@results, $count);
     @results = ();
   }
-
-  $count++;
 }
 
 ### Keywords
@@ -277,13 +290,14 @@ foreach my $row (@{$rows}) {
 
   push @results, $data;
 
-  # Send the row to the server if we have the right number of rows
-  if (scalar @results == API_BLOCK_COUNT) {
+  $count++;
+
+  # Send the rows to the server if we have a specific sized block'
+  # or we are at the last row
+  if (scalar @results == API_BLOCK_COUNT || $total == $count) {
     send_data($table_name, \@results, $count);
     @results = ();
   }
-
-  $count++;
 }
 
 ### See Also
@@ -312,18 +326,19 @@ foreach my $row (@{$rows}) {
 
   push @results, $data;
 
-  # Send the row to the server if we have the right number of rows
-  if (scalar @results == API_BLOCK_COUNT) {
+  $count++;
+
+  # Send the rows to the server if we have a specific sized block'
+  # or we are at the last row
+  if (scalar @results == API_BLOCK_COUNT || $total == $count) {
     send_data($table_name, \@results, $count);
     @results = ();
   }
-
-  $count++;
 }
 
 ### Mentors
 
-$table_name = 'mentors';
+$table_name = 'bug_mentors';
 $rows
   = $dbh->selectall_arrayref(
   'SELECT bug_id, user_id FROM bug_mentors ORDER BY bug_id',
@@ -332,7 +347,7 @@ $rows
 $total = scalar @{$rows};
 $count = 0;
 
-print "Processing $total mentors.\n" if $verbose;
+print "Processing $total bug mentors.\n" if $verbose;
 
 @results = ();
 foreach my $row (@{$rows}) {
@@ -340,13 +355,14 @@ foreach my $row (@{$rows}) {
 
   push @results, $data;
 
-  # Send the row to the server if we have the right number of rows
-  if (scalar @results == API_BLOCK_COUNT) {
+  $count++;
+
+  # Send the rows to the server if we have a specific sized block'
+  # or we are at the last row
+  if (scalar @results == API_BLOCK_COUNT || $total == $count) {
     send_data($table_name, \@results, $count);
     @results = ();
   }
-
-  $count++;
 }
 
 ### Dependencies
@@ -368,13 +384,14 @@ foreach my $row (@{$rows}) {
 
   push @results, $data;
 
-  # Send the row to the server if we have the right number of rows
-  if (scalar @results == API_BLOCK_COUNT) {
+  $count++;
+
+  # Send the rows to the server if we have a specific sized block'
+  # or we are at the last row
+  if (scalar @results == API_BLOCK_COUNT || $total == $count) {
     send_data($table_name, \@results, $count);
     @results = ();
   }
-
-  $count++;
 }
 
 ### Regressions
@@ -395,13 +412,14 @@ foreach my $row (@{$rows}) {
 
   push @results, $data;
 
-  # Send the row to the server if we have the right number of rows
-  if (scalar @results == API_BLOCK_COUNT) {
+  $count++;
+
+  # Send the rows to the server if we have a specific sized block'
+  # or we are at the last row
+  if (scalar @results == API_BLOCK_COUNT || $total == $count) {
     send_data($table_name, \@results, $count);
     @results = ();
   }
-
-  $count++;
 }
 
 ### Duplicates
@@ -421,13 +439,14 @@ foreach my $row (@{$rows}) {
 
   push @results, $data;
 
-  # Send the row to the server if we have the right number of rows
-  if (scalar @results == API_BLOCK_COUNT) {
+  $count++;
+
+  # Send the rows to the server if we have a specific sized block'
+  # or we are at the last row
+  if (scalar @results == API_BLOCK_COUNT || $total == $count) {
     send_data($table_name, \@results, $count);
     @results = ();
   }
-
-  $count++;
 }
 
 ### Users
@@ -505,13 +524,14 @@ foreach my $row (@{$rows}) {
 
   push @results, $data;
 
-  # Send the row to the server if we have the right number of rows
-  if (scalar @results == API_BLOCK_COUNT) {
+  $count++;
+
+  # Send the rows to the server if we have a specific sized block'
+  # or we are at the last row
+  if (scalar @results == API_BLOCK_COUNT || $total == $count) {
     send_data($table_name, \@results, $count);
     @results = ();
   }
-
-  $count++;
 }
 
 # Functions
@@ -558,15 +578,15 @@ sub store_cache {
 }
 
 sub send_data {
-  my ($table, $rows, $current_count) = @_;
+  my ($table, $all_rows, $current_count) = @_;
 
   print 'Sending '
-    . scalar @{$rows}
+    . scalar @{$all_rows}
     . " rows to table $table using BigQuery API\n"
     if $verbose;
 
   # Add the same snapshot date to every row sent
-  foreach my $row (@{$rows}) {
+  foreach my $row (@{$all_rows}) {
     $row->{snapshot_date} = $snapshot_date;
   }
 
@@ -577,7 +597,7 @@ sub send_data {
   $dataset_id || die "Invalid BigQuery dataset ID.\n";
 
   my @json_rows = ();
-  foreach my $row (@{$rows}) {
+  foreach my $row (@{$all_rows}) {
     push @json_rows, {json => $row};
   }
 
@@ -606,16 +626,23 @@ sub send_data {
     return;
   }
 
-  my $access_token = _get_access_token($ua);
+  my $base_url = Bugzilla->params->{bmo_etl_base_url};
+  $base_url || die "Invalid BigQuery base URL.\n";
 
-  my $http_headers
-    = HTTP::Headers->new->header(Authorization => 'Bearer ' . $access_token);
+  my $http_headers = HTTP::Headers->new;
+
+  # Do not attempt to get access token if running in test environment
+  if ($base_url !~ /bigquery/) {
+    my $access_token = _get_access_token();
+    $http_headers->header(Authorization => 'Bearer ' . $access_token);
+  }
 
   my $full_path = sprintf 'projects/%s/datasets/%s/tables/%s/insertAll',
     $project_id, $dataset_id, $table;
-  my $full_url = Bugzilla->params->{bmo_etl_base_url} . "/$full_path";
 
-  my $request = HTTP::Request->new('POST', $full_url, $http_headers);
+  print "Sending to $base_url/$full_path\n" if $verbose;
+
+  my $request = HTTP::Request->new('POST', "$base_url/$full_path", $http_headers);
   $request->header('Content-Type' => 'application/json');
   $request->content(encode_json($big_query));
 

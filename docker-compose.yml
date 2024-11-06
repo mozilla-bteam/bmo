@@ -42,6 +42,7 @@ services:
       - memcached
       - s3
       - gcs
+      - bigquery
       - externalapi.test
     ports:
       - 8000:8000
@@ -107,6 +108,7 @@ services:
     volumes:
       - bmo-mysql-db:/var/lib/mysql
       - ./docker/mysql:/etc/mysql/conf.d
+      #- /var/home/dkl/Downloads/bugs-05-08-24.sql:/docker-entrypoint-initdb.d/bugs.sql
     tmpfs:
       - /tmp
     logging:
@@ -136,6 +138,18 @@ services:
       - bmo-gcs-sitemapindex:/data/sitemapindex
       - bmo-gcs-mining:/data/mining
 
+  bigquery:
+    platform: linux/x86_64
+    image: ghcr.io/goccy/bigquery-emulator:latest
+    ports:
+      - 9050:9050
+    volumes:
+      - bmo-bigquery-data:/work
+      - ./docker/bigquery/data.yaml:/work/data.yaml
+    working_dir: /work
+    command: |
+      --project=test --data-from-yaml=/work/data.yaml --log-level=debug
+
   externalapi.test:
     platform: linux/x86_64
     build: *bmo_build
@@ -150,3 +164,4 @@ volumes:
   bmo-gcs-attachments:
   bmo-gcs-sitemapindex:
   bmo-gcs-mining:
+  bmo-bigquery-data:
