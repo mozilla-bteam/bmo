@@ -203,7 +203,8 @@ $(function() {
         let value = JSON.parse(localStorage.getItem(bugCommentCacheKey));
         if (value){
             let commentBox = document.querySelector("textarea#comment");
-            commentBox.value = value['text'];
+            if (commentBox.value === '')
+              commentBox.value = value['text'];
             // Resize the textarea and enable the Preview button
             commentBox.dispatchEvent(new InputEvent('input'));
         }
