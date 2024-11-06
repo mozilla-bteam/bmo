@@ -566,12 +566,15 @@ sub store_cache {
   my $gzipped_data;
   gzip \$data => \$gzipped_data or die "gzip failed: $GzipError\n";
 
+  # We need to use the main DB for write operations
+  my $main_dbh = Bugzilla->dbh;
+
   # Clean out outdated JSON
-  $dbh->do('DELETE FROM bmo_etl_cache WHERE id = ? AND table_name = ?',
+  $main_dbh->do('DELETE FROM bmo_etl_cache WHERE id = ? AND table_name = ?',
     undef, $id, $table);
 
   # Enter new cached JSON
-  $dbh->do(
+  $main_dbh->do(
     'INSERT INTO bmo_etl_cache (id, table_name, snapshot_date, data) VALUES (?, ?, ?, ?)',
     undef, $id, $table, $timestamp, $gzipped_data
   );
