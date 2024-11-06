@@ -41,7 +41,8 @@ if (!$test && !Bugzilla->params->{bmo_etl_base_url}) {
   die "BMO ETL base url not defined.\n";
 }
 
-my $dbh = Bugzilla->dbh;
+# Use replica if available
+my $dbh = Bugzilla->switch_to_shadow_db();
 
 my $ua = LWP::UserAgent::Determined->new(
   agent                 => 'Bugzilla',
@@ -565,12 +566,15 @@ sub store_cache {
   my $gzipped_data;
   gzip \$data => \$gzipped_data or die "gzip failed: $GzipError\n";
 
+  # We need to use the main DB for write operations
+  my $main_dbh = Bugzilla->dbh;
+
   # Clean out outdated JSON
-  $dbh->do('DELETE FROM bmo_etl_cache WHERE id = ? AND table_name = ?',
+  $main_dbh->do('DELETE FROM bmo_etl_cache WHERE id = ? AND table_name = ?',
     undef, $id, $table);
 
   # Enter new cached JSON
-  $dbh->do(
+  $main_dbh->do(
     'INSERT INTO bmo_etl_cache (id, table_name, snapshot_date, data) VALUES (?, ?, ?, ?)',
     undef, $id, $table, $timestamp, $gzipped_data
   );
@@ -631,10 +635,10 @@ sub send_data {
   my $http_headers = HTTP::Headers->new;
 
   # Do not attempt to get access token if running in test environment
-  if ($base_url !~ /bigquery/) {
+  #if ($base_url !~ |http://bigquery|) {
     my $access_token = _get_access_token();
     $http_headers->header(Authorization => 'Bearer ' . $access_token);
-  }
+  #}
 
   my $full_path = sprintf 'projects/%s/datasets/%s/tables/%s/insertAll',
     $project_id, $dataset_id, $table;
