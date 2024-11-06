@@ -60,6 +60,12 @@ $answer{'sitemapindex_google_host'}            = 'gcs';
 $answer{'sitemapindex_google_bucket'}          = 'sitemapindex';
 $answer{'sitemapindex_google_service_account'} = 'test';
 
+$answer{'bmo_etl_enabled'}         = 1;
+$answer{'bmo_etl_base_url'}        = 'http://bigquery:9050';
+$answer{'bmo_etl_service_account'} = 'test';
+$answer{'bmo_etl_project_id'}      = 'test';
+$answer{'bmo_etl_dataset_id'}      = 'bugzilla';
+
 $answer{'duo_uri'} = 'http://localhost:8001';
 $answer{'duo_client_id'} = '6rZ3KnrL04uyGjLd8foO';
 $answer{'duo_client_secret'} = '3vg6cm0Gj0DpC6ZJACXdZ1NrVRi1AhkwjfXnlFaJ';
