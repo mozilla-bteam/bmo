@@ -296,11 +296,20 @@ $(function() {
             $(this).hide();
         });
 
+    const $tooltipParent = document.querySelector('#bugzilla-body');
+
     // use non-native tooltips for relative/absolute times and bug summaries
     const tooltip_sources = $('.rel-time, .rel-time-title, .abs-time-title, .bz_bug_link, .tt').tooltip({
         position: { my: "left top+8", at: "left bottom", collision: "flipfit" },
         show: { effect: 'none' },
-        hide: { effect: 'none' }
+        hide: { effect: 'none' },
+        open: (event, ui) => {
+          const $tooltip = /** @type {HTMLElement} */ (ui.tooltip[0]);
+          const currentTop = Number.parseInt($tooltip.style.top, 10);
+
+          $tooltip.style.top = `${currentTop - $tooltipParent.offsetTop + $tooltipParent.scrollTop}px`;
+          $tooltipParent.appendChild($tooltip);
+        }
     });
 
     // Don't show the tooltip when the window gets focus
