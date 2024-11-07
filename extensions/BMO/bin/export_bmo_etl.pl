@@ -630,10 +630,10 @@ sub send_data {
   my $http_headers = HTTP::Headers->new;
 
   # Do not attempt to get access token if running in test environment
-  #if ($base_url !~ |http://bigquery|) {
+  if ($base_url !~ /^http:\/\/bigquery:/) {
     my $access_token = _get_access_token();
     $http_headers->header(Authorization => 'Bearer ' . $access_token);
-  #}
+  }
 
   my $full_path = sprintf 'projects/%s/datasets/%s/tables/%s/insertAll',
     $project_id, $dataset_id, $table;
@@ -652,8 +652,12 @@ sub send_data {
 
 sub _get_access_token {
   state $access_token;    # We should only need to get this once
+  state $token_expiry;
 
-  return $access_token if defined $access_token;
+  # If we already have a token and it has not expired yet, just return it
+  if ($access_token && time < $token_expiry) {
+    return $access_token;
+  }
 
 # Google Kubernetes allows for the use of Workload Identity. This allows
 # us to link two serice accounts together and give special access for applications
@@ -677,6 +681,7 @@ sub _get_access_token {
 
   my $result = decode_json($res->decoded_content);
   $access_token = $result->{access_token};
+  $token_expiry = time + $result->{expires_in};
 
   return $access_token;
 }
