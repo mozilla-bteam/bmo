@@ -604,13 +604,17 @@ sub send_data {
     push @json_rows, {json => $row};
   }
 
+  # my $big_query = {
+  #   resource   => 'tabledata',
+  #   method     => 'insertAll',
+  #   project_id => $project_id,
+  #   dataset_id => $dataset_id,
+  #   table_id   => $table,
+  #   content    => {rows => \@json_rows}
+  # };
+
   my $big_query = {
-    resource   => 'tabledata',
-    method     => 'insertAll',
-    project_id => $project_id,
-    dataset_id => $dataset_id,
-    table_id   => $table,
-    content    => {rows => \@json_rows}
+    rows => \@json_rows
   };
 
   if ($test) {
