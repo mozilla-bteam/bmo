@@ -567,7 +567,7 @@ sub store_cache {
   gzip \$data => \$gzipped_data or die "gzip failed: $GzipError\n";
 
   # We need to use the main DB for write operations
-  my $main_dbh = Bugzilla->dbh;
+  my $main_dbh = Bugzilla->dbh_main;
 
   # Clean out outdated JSON
   $main_dbh->do('DELETE FROM bmo_etl_cache WHERE id = ? AND table_name = ?',
@@ -603,15 +603,6 @@ sub send_data {
   foreach my $row (@{$all_rows}) {
     push @json_rows, {json => $row};
   }
-
-  # my $big_query = {
-  #   resource   => 'tabledata',
-  #   method     => 'insertAll',
-  #   project_id => $project_id,
-  #   dataset_id => $dataset_id,
-  #   table_id   => $table,
-  #   content    => {rows => \@json_rows}
-  # };
 
   my $big_query = {
     rows => \@json_rows
