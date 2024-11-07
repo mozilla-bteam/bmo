@@ -567,7 +567,7 @@ sub store_cache {
   gzip \$data => \$gzipped_data or die "gzip failed: $GzipError\n";
 
   # We need to use the main DB for write operations
-  my $main_dbh = Bugzilla->dbh;
+  my $main_dbh = Bugzilla->dbh_main;
 
   # Clean out outdated JSON
   $main_dbh->do('DELETE FROM bmo_etl_cache WHERE id = ? AND table_name = ?',
@@ -605,12 +605,7 @@ sub send_data {
   }
 
   my $big_query = {
-    resource   => 'tabledata',
-    method     => 'insertAll',
-    project_id => $project_id,
-    dataset_id => $dataset_id,
-    table_id   => $table,
-    content    => {rows => \@json_rows}
+    rows => \@json_rows
   };
 
   if ($test) {
@@ -635,7 +630,7 @@ sub send_data {
   my $http_headers = HTTP::Headers->new;
 
   # Do not attempt to get access token if running in test environment
-  if ($base_url !~ /bigquery/) {
+  if ($base_url !~ /^http:\/\/bigquery:/) {
     my $access_token = _get_access_token();
     $http_headers->header(Authorization => 'Bearer ' . $access_token);
   }
