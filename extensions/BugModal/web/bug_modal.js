@@ -303,6 +303,8 @@ $(function() {
         position: { my: "left top+8", at: "left bottom", collision: "flipfit" },
         show: { effect: 'none' },
         hide: { effect: 'none' },
+        // Change the parent element from `<body>` to the main scrolling area and recalculate the
+        // position when a tooltip is displayed, so that it won’t be affected by the fixed header
         open: (event, ui) => {
           const $tooltip = /** @type {HTMLElement} */ (ui.tooltip[0]);
           const currentTop = Number.parseInt($tooltip.style.top, 10);
