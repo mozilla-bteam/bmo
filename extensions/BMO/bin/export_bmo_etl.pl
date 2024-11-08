@@ -108,7 +108,7 @@ foreach my $row (@{$rows}) {
       classification  => $obj->classification,
       comment_count   => $obj->comment_count,
       vote_count      => $obj->votes,
-      group           => (join ',', map { $_->name } @{$obj->groups}),
+      group           => (join ',', map { $_->name } @{$obj->groups_in}),
       is_public       => (scalar @{$obj->groups_in} ? true : false),
       cc_count        => scalar @{$obj->cc || []},
     };
@@ -652,8 +652,12 @@ sub send_data {
 
 sub _get_access_token {
   state $access_token;    # We should only need to get this once
+  state $token_expiry;
 
-  return $access_token if defined $access_token;
+  # If we already have a token and it has not expired yet, just return it
+  if ($access_token && time < $token_expiry) {
+    return $access_token;
+  }
 
 # Google Kubernetes allows for the use of Workload Identity. This allows
 # us to link two serice accounts together and give special access for applications
@@ -677,6 +681,7 @@ sub _get_access_token {
 
   my $result = decode_json($res->decoded_content);
   $access_token = $result->{access_token};
+  $token_expiry = time + $result->{expires_in};
 
   return $access_token;
 }
