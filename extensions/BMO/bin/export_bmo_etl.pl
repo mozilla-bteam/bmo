@@ -108,7 +108,7 @@ foreach my $row (@{$rows}) {
       classification  => $obj->classification,
       comment_count   => $obj->comment_count,
       vote_count      => $obj->votes,
-      group           => (join ',', map { $_->name } @{$obj->groups}),
+      group           => (join ',', map { $_->name } @{$obj->groups_in}),
       is_public       => (scalar @{$obj->groups_in} ? true : false),
       cc_count        => scalar @{$obj->cc || []},
     };
