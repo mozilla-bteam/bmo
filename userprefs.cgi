@@ -72,6 +72,10 @@ sub DoAccount {
       }
     }
   }
+
+  $vars->{cookie_consent_changed}
+    = Bugzilla->request_cache->{cookie_consent_changed}
+    if Bugzilla->request_cache->{cookie_consent_changed};
 }
 
 sub SaveAccount {
@@ -174,6 +178,20 @@ sub SaveAccount {
 
     # display 2fa verification
     $user->mfa_provider->verify_prompt($mfa_event);
+  }
+
+  # Reset cookie consent preferences if needed
+  if (Bugzilla->params->{cookie_consent_enabled}) {
+    my $old_cookie_consent = $cgi->cookie_consented;
+    my $new_cookie_consent = $cgi->param('cookie_consent');
+    if (!$old_cookie_consent && $new_cookie_consent) {
+      Bugzilla->request_cache->{cookie_consent_changed} = 'yes';
+      $cgi->send_cookie(-name => 'moz-consent-pref', -value => 'yes');
+    }
+    elsif ($old_cookie_consent && !$new_cookie_consent) {
+      Bugzilla->request_cache->{cookie_consent_changed} = 'no';
+      $cgi->send_cookie(-name => 'moz-consent-pref', -value => 'no');
+    }
   }
 }
 

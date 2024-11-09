@@ -688,7 +688,7 @@ use constant CONSENT_COOKIE => 'moz-consent-pref';
 # List of essential cookies that cannot be opted out
 use constant ESSENTIAL_COOKIES =>
   qw(bugzilla Bugzilla_login Bugzilla_logincookie Bugzilla_login_request_cookie
-     bugzilla github_state github_token sudo);
+     bugzilla github_state github_token sudo moz-consent-pref);
 
 # List of countries the require cookie consent
 use constant COOKIE_CONSENT_COUNTRIES => qw(

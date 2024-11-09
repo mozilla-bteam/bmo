@@ -208,15 +208,4 @@ $(function() {
                 $('#new_description').focus();
             }
         });
-
-    // Toggle cookie consent preference
-    $('#cookie_consent_setting')
-        .change(function() {
-            if ($(this).is(':checked')) {
-                MozConsentBanner.setConsentCookie(true);
-            }
-            else {
-                MozConsentBanner.setConsentCookie(false);
-            }
-        });
 });

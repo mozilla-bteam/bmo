@@ -58,9 +58,14 @@
         <tr>
           <th align="right">Cookies:</th>
           <td>
-            <input type="checkbox" id="cookie_consent_setting" name="cookie_consent_setting" value="1"
-            [% " checked" IF Bugzilla.cgi.cookie_consented %]>
-            <label for="cookie_consent_setting">Allow non-essential cookies and local-storage values to be set that can improve site experience.</label>
+            <input type="checkbox" id="cookie_consent" name="cookie_consent" value="1"
+            [% IF cookie_consent_changed.defined %]
+              [% " checked" IF cookie_consent_changed == 'yes' %]
+            [% ELSE %]
+              [% " checked" IF Bugzilla.cgi.cookie_consented %]
+            [% END %]
+            >
+            <label for="cookie_consent">Allow non-essential cookies and local-storage values to be set that can improve site experience.</label>
           </td>
         </tr>
       [% END %]
