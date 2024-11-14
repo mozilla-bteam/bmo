@@ -4,7 +4,7 @@
 
 services:
   bmo.test:
-    image: bmo
+    platform: linux/x86_64
     build: &bmo_build
       context: .
       dockerfile: Dockerfile
@@ -38,15 +38,21 @@ services:
       - memcached
       - s3
       - gcs
+      - bigquery
 
   externalapi.test:
+    platform: linux/x86_64
     build: *bmo_build
     entrypoint: perl /app/external_test_api.pl daemon -l http://*:8001
     ports:
       - 8001:8001
 
   bmo.db:
+    platform: linux/x86_64
     image: mysql:8
+    volumes:
+      - bmo-mysql-data:/var/lib/mysql
+      - ./docker/mysql:/etc/mysql/conf.d
     tmpfs:
       - /tmp
     logging:
@@ -58,15 +64,41 @@ services:
       - MYSQL_ALLOW_EMPTY_PASSWORD=1
 
   memcached:
+    platform: linux/x86_64
+
     image:  ghcr.io/ghcr-library/memcached:latest
 
   s3:
+    platform: linux/x86_64
     image: scireum/s3-ninja
+    volumes:
+      - "bmo-s3-data:/home/sirius/data"
 
   gcs:
+    platform: linux/x86_64
     image: fsouza/fake-gcs-server
     command: "-scheme http"
     volumes:
-      - ./docker/gcs/attachments:/data/attachments
-      - ./docker/gcs/sitemapindex:/data/sitemapindex
-      - ./docker/gcs/mining:/data/mining
+      - bmo-gcs-attachments:/data/attachments
+      - bmo-gcs-sitemapindex:/data/sitemapindex
+      - bmo-gcs-mining:/data/mining
+
+  bigquery:
+    platform: linux/x86_64
+    image: ghcr.io/goccy/bigquery-emulator:latest
+    ports:
+      - 9050:9050
+    volumes:
+      - bmo-bigquery-data:/work
+      - ./docker/bigquery/data.yaml:/work/data.yaml
+    working_dir: /work
+    command: |
+      --project=test --data-from-yaml=/work/data.yaml --log-level=debug
+
+volumes:
+  bmo-mysql-data:
+  bmo-s3-data:
+  bmo-gcs-attachments:
+  bmo-gcs-sitemapindex:
+  bmo-gcs-mining:
+  bmo-bigquery-data:
