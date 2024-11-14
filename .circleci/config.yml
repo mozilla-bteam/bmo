@@ -42,11 +42,12 @@ jobs:
       - run:
           name: build version.json
           command: |
-            docker-compose -f docker-compose.test.yml run --build --no-deps bmo.test version | sed '1d' > build_info/version.json
+            docker-compose -f docker-compose.test.yml build bmo.test
+            docker-compose -f docker-compose.test.yml run --no-deps bmo.test version | sed '1d' > build_info/version.json
       - run:
           name: build push data
           command: |
-            docker-compose -f docker-compose.test.yml run --build --no-deps --name push_data bmo.test push_data
+            docker-compose -f docker-compose.test.yml run --no-deps --name push_data bmo.test push_data
             docker cp push_data:/app/build_info/blog.push.txt build_info/blog.push.txt
             docker cp push_data:/app/build_info/markdown.push.txt build_info/markdown.push.txt
             docker cp push_data:/app/build_info/bug.push.txt build_info/bug.push.txt
@@ -135,8 +136,8 @@ jobs:
           name: run sanity tests
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
-            docker-compose -f docker-compose.test.yml run --build --no-deps bmo.test \
-              test_sanity t/*.t extensions/*/t/*.t
+            docker-compose -f docker-compose.test.yml build bmo.test
+            docker-compose -f docker-compose.test.yml run --no-deps bmo.test test_sanity t/*.t extensions/*/t/*.t
       - store_artifacts:
           path: artifacts
       - *store_log
@@ -156,6 +157,7 @@ jobs:
           name: run webservice tests
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
+            docker-compose -f docker-compose.test.yml build
             docker-compose -f docker-compose.test.yml run --build bmo.test test_webservices
       - store_artifacts:
           path: artifacts
@@ -176,7 +178,8 @@ jobs:
           name: run selenium tests
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
-            docker-compose -f docker-compose.test.yml run --build -e SELENIUM_GROUP=1 bmo.test test_selenium
+            docker-compose -f docker-compose.test.yml build
+            docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=1 bmo.test test_selenium
       - store_artifacts:
           path: artifacts
       - *store_log
@@ -196,7 +199,8 @@ jobs:
           name: run selenium tests
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
-            docker-compose -f docker-compose.test.yml run --build -e SELENIUM_GROUP=2 bmo.test test_selenium 2
+            docker-compose -f docker-compose.test.yml build
+            docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=2 bmo.test test_selenium 2
       - store_artifacts:
           path: artifacts
       - *store_log
@@ -216,7 +220,8 @@ jobs:
           name: run selenium tests
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
-            docker-compose -f docker-compose.test.yml run --build -e SELENIUM_GROUP=3 bmo.test test_selenium 3
+            docker-compose -f docker-compose.test.yml build
+            docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=3 bmo.test test_selenium 3
       - store_artifacts:
           path: artifacts
       - *store_log
@@ -236,7 +241,8 @@ jobs:
           name: run selenium tests
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
-            docker-compose -f docker-compose.test.yml run --build -e SELENIUM_GROUP=4 bmo.test test_selenium 4
+            docker-compose -f docker-compose.test.yml build
+            docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=4 bmo.test test_selenium 4
       - store_artifacts:
           path: artifacts
       - *store_log
@@ -256,7 +262,8 @@ jobs:
           name: run bmo specific tests
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
-            docker-compose -f docker-compose.test.yml run --build bmo.test test_bmo -q -f t/bmo/*.t extensions/*/t/bmo/*.t
+            docker-compose -f docker-compose.test.yml build
+            docker-compose -f docker-compose.test.yml run bmo.test test_bmo -q -f t/bmo/*.t extensions/*/t/bmo/*.t
       - *store_log
 
 workflows:
