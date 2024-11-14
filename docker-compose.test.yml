@@ -5,6 +5,7 @@
 services:
   bmo.test:
     platform: linux/x86_64
+    image: bmo
     build: &bmo_build
       context: .
       dockerfile: Dockerfile
