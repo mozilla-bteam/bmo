@@ -5,6 +5,7 @@
 services:
   bmo.test:
     platform: linux/x86_64
+    image: bmo
     build: &bmo_build
       context: .
       dockerfile: Dockerfile
@@ -51,7 +52,6 @@ services:
     platform: linux/x86_64
     image: mysql:8
     volumes:
-      - bmo-mysql-data:/var/lib/mysql
       - ./docker/mysql:/etc/mysql/conf.d
     tmpfs:
       - /tmp
@@ -65,23 +65,20 @@ services:
 
   memcached:
     platform: linux/x86_64
-
-    image:  ghcr.io/ghcr-library/memcached:latest
+    image: ghcr.io/ghcr-library/memcached:latest
 
   s3:
     platform: linux/x86_64
     image: scireum/s3-ninja
-    volumes:
-      - "bmo-s3-data:/home/sirius/data"
 
   gcs:
     platform: linux/x86_64
     image: fsouza/fake-gcs-server
     command: "-scheme http"
     volumes:
-      - bmo-gcs-attachments:/data/attachments
-      - bmo-gcs-sitemapindex:/data/sitemapindex
-      - bmo-gcs-mining:/data/mining
+      - ./docker/gcs/attachments:/data/attachments
+      - ./docker/gcs/sitemapindex:/data/sitemapindex
+      - ./docker/gcs/mining:/data/mining
 
   bigquery:
     platform: linux/x86_64
@@ -89,16 +86,7 @@ services:
     ports:
       - 9050:9050
     volumes:
-      - bmo-bigquery-data:/work
       - ./docker/bigquery/data.yaml:/work/data.yaml
     working_dir: /work
     command: |
       --project=test --data-from-yaml=/work/data.yaml --log-level=debug
-
-volumes:
-  bmo-mysql-data:
-  bmo-s3-data:
-  bmo-gcs-attachments:
-  bmo-gcs-sitemapindex:
-  bmo-gcs-mining:
-  bmo-bigquery-data:

@@ -17,10 +17,32 @@ defaults:
         fi
 
   docker_image: &docker_image
-    image: cimg/base:2024.11
+    image: cimg/base:2023.10
     auth:
       username: $DOCKER_USER
       password: $DOCKER_PASS
+
+  build_image: &build_image
+    run:
+      name: Build Docker BMO Image
+      command: |
+        docker build \
+          --build-arg CI="$CI" \
+          --build-arg CIRCLE_SHA1="$CIRCLE_SHA1" \
+          --build-arg CIRCLE_BUILD_URL="$CIRCLE_BUILD_URL" \
+          --target base \
+          -t bmo .
+
+  build_selenium_image: &build_selenium_image
+    run:
+      name: Build Selenium Image
+      command: |
+        docker build \
+          --build-arg CI="$CI" \
+          --build-arg CIRCLE_SHA1="$CIRCLE_SHA1" \
+          --build-arg CIRCLE_BUILD_URL="$CIRCLE_BUILD_URL" \
+          --target test \
+          -t bmo .
 
   store_log: &store_log
     store_artifacts:
@@ -35,6 +57,7 @@ jobs:
       - setup_remote_docker
       - checkout
       - *docker_login
+      - *build_image
       - run: |
           [[ -d build_info ]] || mkdir build_info
       - attach_workspace:
@@ -42,12 +65,11 @@ jobs:
       - run:
           name: build version.json
           command: |
-            docker-compose -f docker-compose.test.yml build bmo.test
-            docker-compose -f docker-compose.test.yml run --no-deps bmo.test version | sed '1d' > build_info/version.json
+            docker-compose -f docker-compose.test.yml run bmo.test version | sed '1d' > build_info/version.json
       - run:
           name: build push data
           command: |
-            docker-compose -f docker-compose.test.yml run --no-deps --name push_data bmo.test push_data
+            docker-compose -f docker-compose.test.yml run --name push_data bmo.test push_data
             docker cp push_data:/app/build_info/blog.push.txt build_info/blog.push.txt
             docker cp push_data:/app/build_info/markdown.push.txt build_info/markdown.push.txt
             docker cp push_data:/app/build_info/bug.push.txt build_info/bug.push.txt
@@ -96,11 +118,11 @@ jobs:
       - setup_remote_docker
       - checkout
       - *docker_login
+      - *build_image
       - attach_workspace:
           at: build_info
       - deploy:
           command: |
-            docker build -t bmo .
             [[ -n "$DOCKERHUB_REPO" && -n "$DOCKER_USER" && -n "$DOCKER_PASS" ]] || exit 0
             if [[ "$CIRCLE_BRANCH" == "master" ]]; then
               TAG="$(cat build_info/tag.txt)"
@@ -128,6 +150,7 @@ jobs:
       - setup_remote_docker
       - checkout
       - *docker_login
+      - *build_image
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
@@ -136,8 +159,8 @@ jobs:
           name: run sanity tests
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
-            docker-compose -f docker-compose.test.yml build bmo.test
-            docker-compose -f docker-compose.test.yml run --no-deps bmo.test test_sanity t/*.t extensions/*/t/*.t
+            docker-compose -f docker-compose.test.yml run --no-deps bmo.test \
+              test_sanity t/*.t extensions/*/t/*.t
       - store_artifacts:
           path: artifacts
       - *store_log
@@ -149,6 +172,7 @@ jobs:
       - setup_remote_docker
       - checkout
       - *docker_login
+      - *build_image
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
@@ -157,8 +181,7 @@ jobs:
           name: run webservice tests
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
-            docker-compose -f docker-compose.test.yml build
-            docker-compose -f docker-compose.test.yml run --build bmo.test test_webservices
+            docker-compose -f docker-compose.test.yml run bmo.test test_webservices
       - store_artifacts:
           path: artifacts
       - *store_log
@@ -170,6 +193,7 @@ jobs:
       - setup_remote_docker
       - checkout
       - *docker_login
+      - *build_selenium_image
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
@@ -178,7 +202,6 @@ jobs:
           name: run selenium tests
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
-            docker-compose -f docker-compose.test.yml build
             docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=1 bmo.test test_selenium
       - store_artifacts:
           path: artifacts
@@ -191,6 +214,7 @@ jobs:
       - setup_remote_docker
       - checkout
       - *docker_login
+      - *build_selenium_image
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
@@ -199,7 +223,6 @@ jobs:
           name: run selenium tests
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
-            docker-compose -f docker-compose.test.yml build
             docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=2 bmo.test test_selenium 2
       - store_artifacts:
           path: artifacts
@@ -212,6 +235,7 @@ jobs:
       - setup_remote_docker
       - checkout
       - *docker_login
+      - *build_selenium_image
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
@@ -220,7 +244,6 @@ jobs:
           name: run selenium tests
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
-            docker-compose -f docker-compose.test.yml build
             docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=3 bmo.test test_selenium 3
       - store_artifacts:
           path: artifacts
@@ -233,6 +256,7 @@ jobs:
       - setup_remote_docker
       - checkout
       - *docker_login
+      - *build_selenium_image
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
@@ -241,7 +265,6 @@ jobs:
           name: run selenium tests
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
-            docker-compose -f docker-compose.test.yml build
             docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=4 bmo.test test_selenium 4
       - store_artifacts:
           path: artifacts
@@ -254,6 +277,7 @@ jobs:
       - setup_remote_docker
       - checkout
       - *docker_login
+      - *build_selenium_image
       - run: |
           [[ -d artifacts ]] || mkdir artifacts
       - attach_workspace:
@@ -262,7 +286,6 @@ jobs:
           name: run bmo specific tests
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
-            docker-compose -f docker-compose.test.yml build
             docker-compose -f docker-compose.test.yml run bmo.test test_bmo -q -f t/bmo/*.t extensions/*/t/bmo/*.t
       - *store_log
 
