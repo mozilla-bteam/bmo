@@ -100,10 +100,10 @@ my @cmd
 
 my ($output, $error, $rv) = capture { system @cmd; };
 ok(!$rv, 'Data exported to test files');
-if ($rv != 0) {
+#if ($rv != 0) {
   say "$output\n$error";
-  exit $rv;
-}
+  #  exit $rv;
+#}
 
 ### Section 5: Export data to BigQuery test instance
 
@@ -111,10 +111,10 @@ if ($rv != 0) {
 
 ($output, $error, $rv) = capture { system @cmd; };
 ok(!$rv, 'Data exported to BigQuery test instance');
-if ($rv != 0) {
+#if ($rv != 0) {
   say "$output\n$error";
-  exit $rv;
-}
+  #  exit $rv;
+#}
 
 ### Section 6: Retrieve data from BigQuery instance and verify
 
