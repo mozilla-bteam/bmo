@@ -108,7 +108,6 @@ services:
     volumes:
       - bmo-mysql-db:/var/lib/mysql
       - ./docker/mysql:/etc/mysql/conf.d
-      #- /var/home/dkl/Downloads/bugs-05-08-24.sql:/docker-entrypoint-initdb.d/bugs.sql
     tmpfs:
       - /tmp
     logging:
