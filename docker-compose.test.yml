@@ -82,6 +82,7 @@ services:
 
   bigquery:
     platform: linux/x86_64
+    container_name: bigquery
     image: ghcr.io/goccy/bigquery-emulator:latest
     ports:
       - 9050:9050
