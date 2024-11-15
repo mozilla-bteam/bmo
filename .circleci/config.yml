@@ -17,7 +17,7 @@ defaults:
         fi
 
   docker_image: &docker_image
-    image: cimg/base:2023.10
+    image: cimg/base:2024.11
     auth:
       username: $DOCKER_USER
       password: $DOCKER_PASS
