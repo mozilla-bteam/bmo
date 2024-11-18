@@ -17,7 +17,7 @@ defaults:
         fi
 
   docker_image: &docker_image
-    image: cimg/base:2023.10
+    image: cimg/base:2024.11
     auth:
       username: $DOCKER_USER
       password: $DOCKER_PASS
@@ -49,12 +49,23 @@ defaults:
       path: bugzilla.log
       destination: bugzilla.log
 
+commands:
+  # Only used for local jobs docker execution
+  setup_local_docker:
+    steps:
+      - run:
+          name: Use sudo docker in local builds
+          command: |
+            if [[ $CIRCLE_SHELL_ENV == *"localbuild"* ]]; then
+              sudo chmod u+s $(which docker)
+            fi
 jobs:
   build:
     docker:
       - *docker_image
     steps:
       - setup_remote_docker
+      - setup_local_docker
       - checkout
       - *docker_login
       - *build_image
@@ -116,6 +127,7 @@ jobs:
       - *docker_image
     steps:
       - setup_remote_docker
+      - setup_local_docker
       - checkout
       - *docker_login
       - *build_image
@@ -148,6 +160,7 @@ jobs:
       - *docker_image
     steps:
       - setup_remote_docker
+      - setup_local_docker
       - checkout
       - *docker_login
       - *build_image
@@ -170,6 +183,7 @@ jobs:
       - *docker_image
     steps:
       - setup_remote_docker
+      - setup_local_docker
       - checkout
       - *docker_login
       - *build_image
@@ -191,6 +205,7 @@ jobs:
       - *docker_image
     steps:
       - setup_remote_docker
+      - setup_local_docker
       - checkout
       - *docker_login
       - *build_selenium_image
@@ -212,6 +227,7 @@ jobs:
       - *docker_image
     steps:
       - setup_remote_docker
+      - setup_local_docker
       - checkout
       - *docker_login
       - *build_selenium_image
@@ -233,6 +249,7 @@ jobs:
       - *docker_image
     steps:
       - setup_remote_docker
+      - setup_local_docker
       - checkout
       - *docker_login
       - *build_selenium_image
@@ -254,6 +271,7 @@ jobs:
       - *docker_image
     steps:
       - setup_remote_docker
+      - setup_local_docker
       - checkout
       - *docker_login
       - *build_selenium_image
@@ -275,6 +293,7 @@ jobs:
       - *docker_image
     steps:
       - setup_remote_docker
+      - setup_local_docker
       - checkout
       - *docker_login
       - *build_selenium_image
