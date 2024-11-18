@@ -185,7 +185,7 @@ sub cmd_test_qa {
   my $httpd_exit_f = run_cereal_and_httpd('-DHTTPD_IN_SUBDIR', '-DACCESS_LOGS');
   my $prove_exit_f = run_prove(
     prove_cmd => [
-      'prove', '-qf', '-I/app', '-I/app/local/lib/perl5',
+      'prove', '-vf', '-I/app', '-I/app/local/lib/perl5',
       sub { glob $test_files },
     ],
     prove_dir => '/app/qa/t',

@@ -84,7 +84,7 @@ services:
     platform: linux/x86_64
     image: ghcr.io/goccy/bigquery-emulator:latest
     ports:
-      - 9050:9050
+      - 8002:9050
     volumes:
       - ./docker/bigquery/data.yaml:/work/data.yaml
     working_dir: /work
