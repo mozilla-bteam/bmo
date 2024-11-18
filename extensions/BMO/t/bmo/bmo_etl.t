@@ -120,17 +120,28 @@ ok(!$rv, 'Data exported to BigQuery test instance');
 
 my $query = {query => 'SELECT summary FROM test.bugzilla.bugs WHERE id = ' . $bug_id_1};
 $t->post_ok(
-  'http://127.0.0.1:8002/bigquery/v2/projects/test/queries' => json =>
+  'http://bigquery:9050/bigquery/v2/projects/test/queries' => json =>
     $query)->status_is(200)->json_is('/rows/0/f/0/v' => $new_bug_1->{summary});
+
+my $result = $t->tx->res->json;
+use Bugzilla::Logging;
+use Mojo::Util qw(dumper);
+DEBUG(dumper $result);
 
 $query = {query => 'SELECT description FROM test.bugzilla.attachments WHERE id = ' . $attach_id};
 $t->post_ok(
-  'http://127.0.0.1:8002/bigquery/v2/projects/test/queries' => json =>
+  'http://bigquery:9050/bigquery/v2/projects/test/queries' => json =>
     $query)->status_is(200)->json_is('/rows/0/f/0/v' => $new_attach_1->{summary});
+
+$result = $t->tx->res->json;
+DEBUG(dumper $result);
 
 $query = {query => 'SELECT depends_on_id FROM test.bugzilla.bug_dependencies WHERE bug_id = ' . $bug_id_2};
 $t->post_ok(
-  'http://127.0.0.1:8002/bigquery/v2/projects/test/queries' => json =>
+  'http://bigquery:9050/bigquery/v2/projects/test/queries' => json =>
     $query)->status_is(200)->json_is('/rows/0/f/0/v' => $bug_id_1);
+
+$result = $t->tx->res->json;
+DEBUG(dumper $result);
 
 done_testing;
