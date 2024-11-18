@@ -61,7 +61,7 @@ $answer{'sitemapindex_google_bucket'}          = 'sitemapindex';
 $answer{'sitemapindex_google_service_account'} = 'test';
 
 $answer{'bmo_etl_enabled'}         = 1;
-$answer{'bmo_etl_base_url'}        = 'http://bigquery:9050';
+$answer{'bmo_etl_base_url'}        = 'http://localhost:9050';
 $answer{'bmo_etl_service_account'} = 'test';
 $answer{'bmo_etl_project_id'}      = 'test';
 $answer{'bmo_etl_dataset_id'}      = 'bugzilla';

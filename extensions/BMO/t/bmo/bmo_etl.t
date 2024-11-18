@@ -120,17 +120,17 @@ ok(!$rv, 'Data exported to BigQuery test instance');
 
 my $query = {query => 'SELECT summary FROM test.bugzilla.bugs WHERE id = ' . $bug_id_1};
 $t->post_ok(
-  'http://bigquery:9050/bigquery/v2/projects/test/queries' => json =>
+  'http://localhost:9050/bigquery/v2/projects/test/queries' => json =>
     $query)->status_is(200)->json_is('/rows/0/f/0/v' => $new_bug_1->{summary});
 
 $query = {query => 'SELECT description FROM test.bugzilla.attachments WHERE id = ' . $attach_id};
 $t->post_ok(
-  'http://bigquery:9050/bigquery/v2/projects/test/queries' => json =>
+  'http://localhost:9050/bigquery/v2/projects/test/queries' => json =>
     $query)->status_is(200)->json_is('/rows/0/f/0/v' => $new_attach_1->{summary});
 
 $query = {query => 'SELECT depends_on_id FROM test.bugzilla.bug_dependencies WHERE bug_id = ' . $bug_id_2};
 $t->post_ok(
-  'http://bigquery:9050/bigquery/v2/projects/test/queries' => json =>
+  'http://localhost:9050/bigquery/v2/projects/test/queries' => json =>
     $query)->status_is(200)->json_is('/rows/0/f/0/v' => $bug_id_1);
 
 done_testing;

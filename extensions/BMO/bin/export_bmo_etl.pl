@@ -630,7 +630,7 @@ sub send_data {
   my $http_headers = HTTP::Headers->new;
 
   # Do not attempt to get access token if running in test environment
-  if ($base_url !~ /^http:\/\/bigquery:/) {
+  if ($base_url !~ /^http:\/\/(localhost|bigquery):/) {
     my $access_token = _get_access_token();
     $http_headers->header(Authorization => 'Bearer ' . $access_token);
   }
