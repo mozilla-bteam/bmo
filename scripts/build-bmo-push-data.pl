@@ -32,8 +32,8 @@ my $tag          = 'release-' . Bugzilla->VERSION;
 my $prod_tag     = "release-$version_info->{version}";
 my $tag_url      = "$github_repo/tree/$tag";
 
-runx('git', 'clone', '--single-branch', $github_repo, 'build_info');
-chdir '/app/build_info';
+runx('git', 'clone', '--single-branch', $github_repo, 'push_data');
+chdir '/app/push_data';
 my @log = capture(qw(git log --oneline), "$prod_tag..HEAD");
 chomp @log;
 
