@@ -8,75 +8,61 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Build the Docker image
-        run: docker build -t bmo --target base .
       - name: Install docker-compose
         run: sudo apt update && sudo apt install -y docker-compose
       - name: Run sanity tests
-        run: docker-compose -f docker-compose.test.yml run --no-deps bmo.test test_sanity t/*.t extensions/*/t/*.t
+        run: docker-compose -f docker-compose.test.yml run --build --no-deps bmo.test test_sanity t/*.t extensions/*/t/*.t
 
   test_webservices:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Build the Docker image
-        run: docker build -t bmo --target base .
       - name: Install docker-compose
         run: sudo apt update && sudo apt install -y docker-compose
       - name: Run webservice tests
-        run: docker-compose -f docker-compose.test.yml run bmo.test test_webservices
+        run: docker-compose -f docker-compose.test.yml run --build bmo.test test_webservices
 
   test_bmo:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Build the Docker image
-        run: docker build -t bmo --target test .
       - name: Install docker-compose
         run: sudo apt update && sudo apt install -y docker-compose
       - name: Run bmo specific tests
-        run: docker-compose -f docker-compose.test.yml run -e CI=1 bmo.test test_bmo -q -f t/bmo/*.t
+        run: docker-compose -f docker-compose.test.yml run --build -e CI=1 bmo.test test_bmo -q -f t/bmo/*.t
 
   test_selenium_1:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Build the Docker image
-        run: docker build -t bmo --target test .
       - name: Install docker-compose
         run: sudo apt update && sudo apt install -y docker-compose
       - name: Run Selenium tests (1)
-        run: docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=1 bmo.test test_selenium
+        run: docker-compose -f docker-compose.test.yml run --build -e SELENIUM_GROUP=1 bmo.test test_selenium
 
   test_selenium_2:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Build the Docker image
-        run: docker build -t bmo --target test .
       - name: Install docker-compose
         run: sudo apt update && sudo apt install -y docker-compose
       - name: Run Selenium tests (2)
-        run: docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=2 bmo.test test_selenium
+        run: docker-compose -f docker-compose.test.yml run --build -e SELENIUM_GROUP=2 bmo.test test_selenium
 
   test_selenium_3:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Build the Docker image
-        run: docker build -t bmo --target test .
       - name: Install docker-compose
         run: sudo apt update && sudo apt install -y docker-compose
       - name: Run Selenium tests (3)
-        run: docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=3 bmo.test test_selenium
+        run: docker-compose -f docker-compose.test.yml run --build -e SELENIUM_GROUP=3 bmo.test test_selenium
 
   test_selenium_4:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Build the Docker image
-        run: docker build -t bmo --target test .
       - name: Install docker-compose
         run: sudo apt update && sudo apt install -y docker-compose
       - name: Run Selenium tests (4)
-        run: docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=4 bmo.test test_selenium
+        run: docker-compose -f docker-compose.test.yml run --build -e SELENIUM_GROUP=4 bmo.test test_selenium
