@@ -410,7 +410,7 @@ sub parse_bounty_attachment_description {
     fixed_date     => $+{fixed_date} // '',
     awarded_date   => $+{awarded_date} // '',
     publish        => $map{$+{publish} // 'false'},
-    credit         => [grep {$_} split(/\s*,\s*/, $+{credits})]
+    credit         => [grep {$_} split(/\s*,\s*/, $+{credits} || '')]
   };
 }
 

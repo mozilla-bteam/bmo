@@ -27,6 +27,8 @@
 [% USE Bugzilla %]
 [% PROCESS global/variables.none.tmpl %]
 
+[% recipient_count = 0 IF !recipient_count.defined %]
+
 [% IF recipient_count > 1 %]
   Email sent to [% recipient_count FILTER none %] recipients.
 [% ELSIF recipient_count == 1 %]
