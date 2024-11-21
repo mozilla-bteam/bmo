@@ -4,8 +4,7 @@
 
 services:
   bmo.test:
-    image: bmo
-    build: &bmo_build
+    build: &build_bmo
       context: .
       dockerfile: Dockerfile
       target: test
@@ -40,7 +39,7 @@ services:
       - gcs
 
   externalapi.test:
-    build: *bmo_build
+    build: *build_bmo
     entrypoint: perl /app/external_test_api.pl daemon -l http://*:8001
     ports:
       - 8001:8001
@@ -58,7 +57,7 @@ services:
       - MYSQL_ALLOW_EMPTY_PASSWORD=1
 
   memcached:
-    image:  ghcr.io/ghcr-library/memcached:latest
+    image: ghcr.io/ghcr-library/memcached:latest
 
   s3:
     image: scireum/s3-ninja

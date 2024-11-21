@@ -6,28 +6,18 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-[% RETURN UNLESS product.name == 'Bugzilla' &&
-    (user.in_group('mozilla-corporation') || user.in_group('mozilla-foundation')) %]
+[% RETURN UNLESS product.name == 'Bugzilla' %]
 
 <div id="bug_create_warning">
   <div id="bug_create_warning_image">
     <img src="[% basepath FILTER none %]extensions/BMO/web/images/sign_warning.png" width="32" height="32" alt="">
   </div>
   <div id="bug_create_warning_text">
-    <b>Mozilla employees</b><br>
-    This is <i>not</i> the place to request configuration, permission, or
-    account changes to this installation of [% terms.Bugzilla %] (bugzilla.mozilla.org).<br>
-    This includes, but is not limited to:
-    <ul>
-      <li>New or updates to products and components</li>
-      <li>Changes to the values of existing fields (versions, milestones, etc)</li>
-    </ul>
-    Instead, please file such changes under
-    <a href="[% basepath FILTER none %]enter_bug.cgi?product=bugzilla.mozilla.org&amp;component=Administration">
-      <b>
-        the Administration component in the bugzilla.mozilla.org
-      </b>
-    </a>
-    product.
+    <p>This is not the place to file changes to this installation of [% terms.Bugzilla %] (bugzilla.mozilla.org).</p>
+    <p>If you need account changes, permissions, new or updates to products and components, or changes to the values of
+      existing fields (versions, milestones, etc) then instead file an Administation request 
+      <a href="[% basepath FILTER none %]enter_bug.cgi?product=bugzilla.mozilla.org&component=Administration">here</a>.</p>
+    <p>For reature requests or [% terms.bug %] fixes for this installation then file a [% terms.bug %] report
+    <a href="[% basepath FILTER none %]enter_bug.cgi?product=bugzilla.mozilla.org&component=General">here</a>.</p>
   </div>
 </div>

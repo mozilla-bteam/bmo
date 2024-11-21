@@ -13,7 +13,7 @@ use warnings;
 
 use Bugzilla::Logging;
 
-our $VERSION = '20241105.1';
+our $VERSION = '20241119.1';
 
 use Bugzilla::Auth;
 use Bugzilla::Auth::Persist::Cookie;
@@ -776,7 +776,7 @@ sub check_rate_limit {
     my $rules = decode_json($params->{rate_limit_rules});
     my $limit = $rules->{$name};
     unless ($limit) {
-      warn "no rules for $name!";
+      WARN("no rules for $name!");
       return 0;
     }
     if (Bugzilla->memcached->should_rate_limit("$name:$identifier", @$limit)) {
