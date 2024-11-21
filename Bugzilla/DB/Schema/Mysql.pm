@@ -155,7 +155,7 @@ sub _get_create_index_ddl {
 
   my $sql = "CREATE ";
   $sql .= "$index_type "
-    if ($index_type eq 'UNIQUE' || $index_type eq 'FULLTEXT');
+    if ($index_type && ($index_type eq 'UNIQUE' || $index_type eq 'FULLTEXT'));
   $sql
     .= "INDEX "
     . $dbh->quote_identifier($index_name) . " ON "

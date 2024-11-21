@@ -16,18 +16,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Build the Docker image
-        run: docker build -t bmo --target base .
       - name: Create directory for artifacts
         run: mkdir build_info
       - name: Install docker-compose
         run: sudo apt update && sudo apt install -y docker-compose
-      - name: Build version.json
-        run: |
-          docker-compose -f docker-compose.test.yml run --no-deps --name version_json --entrypoint true bmo.test
-          docker cp version_json:/app/version.json build_info/version.json
-          docker rm version_json
-      - name: Build push data
+      - name: Build Docker image
+        run: docker-compose -f docker-compose.test.yml build bmo.test
+      - name: Copy version.json and build push data
         run: |
           docker-compose -f docker-compose.test.yml run --no-deps --name push_data bmo.test push_data
           docker cp push_data:/app/build_info/blog.push.txt build_info/blog.push.txt
@@ -36,6 +31,7 @@ jobs:
           docker cp push_data:/app/build_info/email.push.txt build_info/email.push.txt
           docker cp push_data:/app/build_info/tag.txt build_info/tag.txt
           docker cp push_data:/app/build_info/wiki.push.txt build_info/wiki.push.txt
+          docker cp push_data:/app/version.json build_info/version.json
           docker rm push_data
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
