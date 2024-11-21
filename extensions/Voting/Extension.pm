@@ -667,6 +667,9 @@ sub _update_votes {
 
   $dbh->bz_commit_transaction();
 
+  use Bugzilla::Logging;
+  use Mojo::Util qw(dumper);
+
   print $cgi->header() if scalar @updated_bugs;
   $vars->{'type'}      = "votes";
   $vars->{'title_tag'} = 'change_votes';
@@ -674,6 +677,7 @@ sub _update_votes {
     $vars->{'id'} = $bug_id;
     $vars->{'sent_bugmail'}
       = Bugzilla::BugMail::Send($bug_id, {'changer' => $user});
+    $vars->{'recipient_count'} = scalar @{$vars->{'sent_bugmail'}->{'sent'}};
 
     $template->process("bug/process/results.html.tmpl", $vars)
       || ThrowTemplateError($template->error());
