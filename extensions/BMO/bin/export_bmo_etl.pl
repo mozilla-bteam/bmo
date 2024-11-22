@@ -74,7 +74,7 @@ my $sth
     . API_BLOCK_COUNT);
 
 while ($count < $total) {
-  my @results = ();
+  my @bugs = ();
 
   $sth->execute($last_id);
 
@@ -123,14 +123,14 @@ while ($count < $total) {
       store_cache($obj->id, $table_name, $obj->delta_ts, $data);
     }
 
-    push @results, $data;
+    push @bugs, $data;
 
     $count++;
     $last_id = $id;
   }
 
   # Send the rows to the server
-  send_data($table_name, \@results, $count);
+  send_data($table_name, \@bugs, $count);
 }
 
 ### Attachments
@@ -148,7 +148,7 @@ $sth
     . API_BLOCK_COUNT);
 
 while ($count < $total) {
-  my @results = ();
+  my @attachments = ();
 
   $sth->execute($last_id);
 
@@ -179,14 +179,14 @@ while ($count < $total) {
       store_cache($obj->id, $table_name, $obj->modification_time, $data);
     }
 
-    push @results, $data;
+    push @attachments, $data;
 
     $count++;
     $last_id = $id;
   }
 
   # Send the rows to the server
-  send_data($table_name, \@results, $count);
+  send_data($table_name, \@attachments, $count);
 }
 
 ### Flags
@@ -204,7 +204,7 @@ $sth
     . API_BLOCK_COUNT);
 
 while ($count < $total) {
-  my @results = ();
+  my @flags = ();
 
   $sth->execute($last_id);
 
@@ -234,14 +234,14 @@ while ($count < $total) {
       store_cache($obj->id, $table_name, $obj->modification_date, $data);
     }
 
-    push @results, $data;
+    push @flags, $data;
 
     $count++;
     $last_id = $id;
   }
 
   # Send the rows to the server
-  send_data($table_name, \@results, $count);
+  send_data($table_name, \@flags, $count);
 }
 
 ### Tracking Flags
@@ -473,7 +473,7 @@ $sth
     . API_BLOCK_COUNT);
 
 while ($count < $total) {
-  my @results = ();
+  my @users = ();
 
   $sth->execute($last_id);
 
@@ -504,14 +504,14 @@ while ($count < $total) {
       store_cache($obj->id, $table_name, $obj->modification_ts, $data);
     }
 
-    push @results, $data;
+    push @users, $data;
 
     $count++;
     $last_id = $id;
   }
 
   # Send the rows to the server
-  send_data($table_name, \@results, $count);
+  send_data($table_name, \@users, $count);
 }
 
 # Functions
