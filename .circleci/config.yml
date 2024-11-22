@@ -53,7 +53,9 @@ jobs:
       - run:
           name: build version.json and push data
           command: |
-            docker-compose -f docker-compose.test.yml run --build --name push_data bmo.test push_data
+            docker-compose -f docker-compose.test.yml run --build --name push_data \
+              -e CIRCLE_BUILD_URL=$CIRCLE_BUILD_URL -e CIRCLE_SHA1=$CIRCLE_SHA1 \
+              bmo.test push_data
             docker cp push_data:/app/push_data/blog.push.txt build_info/blog.push.txt
             docker cp push_data:/app/push_data/markdown.push.txt build_info/markdown.push.txt
             docker cp push_data:/app/push_data/bug.push.txt build_info/bug.push.txt
