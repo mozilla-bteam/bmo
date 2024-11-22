@@ -8,6 +8,9 @@ services:
       context: .
       dockerfile: Dockerfile
       target: test
+      args:
+        - CIRCLE_BUILD_URL=${CIRCLE_BUILD_URL}
+        - CIRCLE_SHA1=${CIRCLE_SHA1}
     command: dev_httpd
     tmpfs:
       - /tmp
