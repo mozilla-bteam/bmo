@@ -745,6 +745,8 @@ sub create {
     $data = $tmp;
   }
 
+  $attachment->{data} = $data;
+
   $attachment->current_storage->set_data($data)->set_class();
 
   # Return the new attachment object
