@@ -130,7 +130,7 @@ while ($count < $total) {
   }
 
   # Send the rows to the server
-  send_data($table_name, \@bugs, $count);
+  send_data($table_name, \@bugs, $count) if @bugs;
 }
 
 ### Attachments
@@ -186,7 +186,7 @@ while ($count < $total) {
   }
 
   # Send the rows to the server
-  send_data($table_name, \@attachments, $count);
+  send_data($table_name, \@attachments, $count) if @attachments;
 }
 
 ### Flags
@@ -241,7 +241,7 @@ while ($count < $total) {
   }
 
   # Send the rows to the server
-  send_data($table_name, \@flags, $count);
+  send_data($table_name, \@flags, $count) if @flags;
 }
 
 ### Tracking Flags
@@ -511,7 +511,7 @@ while ($count < $total) {
   }
 
   # Send the rows to the server
-  send_data($table_name, \@users, $count);
+  send_data($table_name, \@users, $count) if @users;
 }
 
 # Functions
