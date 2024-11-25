@@ -21,7 +21,10 @@ sub setup_routes {
 
 sub view {
   my ($self)     = @_;
-  my $user       = $self->bugzilla->login(LOGIN_REQUIRED);
+
+  Bugzilla->usage_mode(USAGE_MODE_MOJO);
+
+  my $user = $self->bugzilla->login(LOGIN_REQUIRED) || return undef;
   my $other_user = Bugzilla::User->check({id => $self->param('userid')});
 
   unless ($user->in_group('editusers')
@@ -29,7 +32,7 @@ sub view {
     || $user->id == $other_user->id)
   {
     ThrowUserError('auth_failure',
-      {reason => "not_visible", action => "modify", object => "user"});
+      {reason => 'not_visible', action => 'modify', object => 'user'});
   }
 
   if ( $self->param('enable_email')
