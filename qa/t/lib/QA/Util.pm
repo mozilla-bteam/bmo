@@ -329,6 +329,10 @@ sub go_to_bug {
   $sel->click_ok('mode-btn-readonly', 'Click Edit Bug') if !$no_edit;
   $sel->click_ok('action-menu-btn', 'Expand action menu');
   $sel->click_ok('action-expand-all', 'Expand all modal panels');
+
+  # Remove the blue New Changes link because the sticky banner causes a click interception issue in
+  # Selenium that cannot be reproduced in real browser environments
+  $sel->driver->execute_script('document.querySelector(\'.new-changes-link\')?.remove();');
 }
 
 # Go to admin.cgi.
