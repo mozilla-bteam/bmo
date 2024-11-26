@@ -74,14 +74,19 @@ button[type="submit"] {
   font-size: var(--font-size-h3);
 }
 
-#verify-totp-form div {
-  margin-bottom: 15px;
+#verify-totp-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#verify-totp-input input[type="submit"] {
+  width: auto;
 }
 
 #verify-totp-error {
-  padding: 5px;
+  margin-top: 8px;
   color: var(--error-message-foreground-color);
-  background-color: var(--error-message-background-color);
 }
 
 @media screen and (768px <= width) {
