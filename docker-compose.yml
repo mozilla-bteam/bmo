@@ -27,7 +27,7 @@ services:
       - BMO_ses_username=ses@mozilla.bugs
       - BMO_ses_password=password123456789!
       - BMO_size_limit=2000000
-      - BMO_urlbase=http://localhost:8080/
+      - BMO_urlbase=http://localhost:8000/
       - BUGZILLA_ALLOW_INSECURE_HTTP=1
       - BZ_ANSWERS_FILE=/app/conf/checksetup_answers.txt
       - BZ_DUO_BACKEND_HOST=externalapi.test:8001
@@ -40,67 +40,67 @@ services:
     depends_on:
       - bmo.db
       - memcached
-      # - s3
-      # - gcs
-      # - bigquery
-      # - externalapi.test
+      - s3
+      - gcs
+      - bq
+      - externalapi.test
     ports:
-      - 8080:8000
+      - 8000:8000
 
-  # bmo.jobqueue:
-  #   platform: linux/x86_64
-  #   build: *bmo_build
-  #   command: jobqueue
-  #   volumes:
-  #     - bmo-data-dir:/app/data
-  #   tmpfs:
-  #     - /tmp
-  #     - /run
-  #   environment: *bmo_env
-  #   restart: always
-  #   depends_on:
-  #     - bmo.db
-  #     - memcached
-  #
-  # bmo.feed:
-  #   platform: linux/x86_64
-  #   build: *bmo_build
-  #   command:
-  #     - perl
-  #     - extensions/PhabBugz/bin/phabbugz_feed.pl
-  #     - start
-  #     - "-d"
-  #     - "-f"
-  #   volumes:
-  #     - bmo-data-dir:/app/data
-  #   tmpfs:
-  #     - /tmp
-  #     - /run
-  #   environment: *bmo_env
-  #   restart: always
-  #   depends_on:
-  #     - bmo.db
-  #     - memcached
-  #
-  # bmo.pushd:
-  #   platform: linux/x86_64
-  #   build: *bmo_build
-  #   command:
-  #     - perl
-  #     - extensions/Push/bin/bugzilla-pushd.pl
-  #     - start
-  #     - "-d"
-  #     - "-f"
-  #   volumes:
-  #     - bmo-data-dir:/app/data
-  #   tmpfs:
-  #     - /tmp
-  #     - /run
-  #   environment: *bmo_env
-  #   restart: always
-  #   depends_on:
-  #     - bmo.db
-  #     - memcached
+  bmo.jobqueue:
+    platform: linux/x86_64
+    build: *bmo_build
+    command: jobqueue
+    volumes:
+      - bmo-data-dir:/app/data
+    tmpfs:
+      - /tmp
+      - /run
+    environment: *bmo_env
+    restart: always
+    depends_on:
+      - bmo.db
+      - memcached
+
+  bmo.feed:
+    platform: linux/x86_64
+    build: *bmo_build
+    command:
+      - perl
+      - extensions/PhabBugz/bin/phabbugz_feed.pl
+      - start
+      - "-d"
+      - "-f"
+    volumes:
+      - bmo-data-dir:/app/data
+    tmpfs:
+      - /tmp
+      - /run
+    environment: *bmo_env
+    restart: always
+    depends_on:
+      - bmo.db
+      - memcached
+
+  bmo.pushd:
+    platform: linux/x86_64
+    build: *bmo_build
+    command:
+      - perl
+      - extensions/Push/bin/bugzilla-pushd.pl
+      - start
+      - "-d"
+      - "-f"
+    volumes:
+      - bmo-data-dir:/app/data
+    tmpfs:
+      - /tmp
+      - /run
+    environment: *bmo_env
+    restart: always
+    depends_on:
+      - bmo.db
+      - memcached
 
   bmo.db:
     platform: linux/x86_64
@@ -123,39 +123,39 @@ services:
     platform: linux/x86_64
     image: memcached:latest
 
-  # s3:
-  #   platform: linux/x86_64
-  #   image: scireum/s3-ninja
-  #   volumes:
-  #     - "bmo-s3-data:/home/sirius/data"
-  #
-  # gcs:
-  #   platform: linux/x86_64
-  #   image: fsouza/fake-gcs-server
-  #   command: "-scheme http"
-  #   volumes:
-  #     - bmo-gcs-attachments:/data/attachments
-  #     - bmo-gcs-sitemapindex:/data/sitemapindex
-  #     - bmo-gcs-mining:/data/mining
-  #
-  # bigquery:
-  #   platform: linux/x86_64
-  #   image: ghcr.io/goccy/bigquery-emulator:latest
-  #   ports:
-  #     - 9050:9050
-  #   volumes:
-  #     - bmo-bigquery-data:/work
-  #     - ./docker/bigquery/data.yaml:/work/data.yaml
-  #   working_dir: /work
-  #   command: |
-  #     --project=test --data-from-yaml=/work/data.yaml --log-level=debug
-  #
-  # externalapi.test:
-  #   platform: linux/x86_64
-  #   build: *bmo_build
-  #   entrypoint: perl /app/external_test_api.pl daemon -l http://*:8001
-  #   ports:
-  #     - 8001:8001
+  s3:
+    platform: linux/x86_64
+    image: scireum/s3-ninja
+    volumes:
+      - "bmo-s3-data:/home/sirius/data"
+
+  gcs:
+    platform: linux/x86_64
+    image: fsouza/fake-gcs-server
+    command: "-scheme http"
+    volumes:
+      - bmo-gcs-attachments:/data/attachments
+      - bmo-gcs-sitemapindex:/data/sitemapindex
+      - bmo-gcs-mining:/data/mining
+
+  bq:
+    platform: linux/x86_64
+    image: ghcr.io/goccy/bigquery-emulator:latest
+    ports:
+      - 9050:9050
+    volumes:
+      - bmo-bigquery-data:/work
+      - ./docker/bigquery/data.yaml:/data.yaml
+    working_dir: /work
+    command: |
+      --project=test --data-from-yaml=/data.yaml --log-level=debug
+
+  externalapi.test:
+    platform: linux/x86_64
+    build: *bmo_build
+    entrypoint: perl /app/external_test_api.pl daemon -l http://*:8001
+    ports:
+      - 8001:8001
 
 volumes:
   bmo-mysql-db:

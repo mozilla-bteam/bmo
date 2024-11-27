@@ -243,6 +243,32 @@ const scroll_element_into_view = ($target, complete) => {
     $target.scrollIntoViewIfNeeded?.() ?? $target.scrollIntoView();
 }
 
+const openBanner = () => {
+  // Bind click event listeners for banner buttons
+  document
+    .getElementById("moz-consent-banner-button-accept")
+    .addEventListener("click", MozConsentBanner.onAcceptClick, false);
+  document
+    .getElementById("moz-consent-banner-button-reject")
+    .addEventListener("click", MozConsentBanner.onRejectClick, false);
+
+  // Show the banner
+  document.getElementById("moz-consent-banner").classList.add("is-visible");
+};
+
+const closeBanner = () => {
+  // Unbind click event listeners
+  document
+    .getElementById("moz-consent-banner-button-accept")
+    .removeEventListener("click", MozConsentBanner.onAcceptClick, false);
+  document
+    .getElementById("moz-consent-banner-button-reject")
+    .removeEventListener("click", MozConsentBanner.onRejectClick, false);
+
+  // Hide the banner
+  document.getElementById("moz-consent-banner").classList.remove("is-visible");
+};
+
 window.addEventListener('DOMContentLoaded', focus_main_content, { once: true });
 window.addEventListener('load', detect_blocked_gravatars, { once: true });
 
@@ -255,17 +281,37 @@ window.addEventListener('DOMContentLoaded', () => {
       fetch(url, { method: "POST" }).then(
         response => announcement.style.display = "none"
       );
-      localStorage.setItem("announcement_checksum", checksum);
+      Bugzilla.Storage.set("announcement_checksum", checksum);
     }
     announcement.addEventListener('click', hide_announcement);
     window.addEventListener('visibilitychange', () => {
       if (!window.hidden) {
-        const hidden_checksum = localStorage.getItem("announcement_checksum");
+        const hidden_checksum = Bugzilla.Storage.get("announcement_checksum");
         if (hidden_checksum && hidden_checksum == announcement.dataset.checksum) {
           announcement.style.display = "none";
         }
       }
     });
+  }
+
+  // Mozilla Consent Banner
+  // Bind open and close events before calling init().
+  if (BUGZILLA.config.cookie_consent_enabled) {
+    window.addEventListener('mozConsentOpen', openBanner, false);
+    window.addEventListener('mozConsentReset', openBanner, false);
+    window.addEventListener('mozConsentClose', closeBanner, false);
+    window.addEventListener('mozConsentStatus', (e) => {
+        console.log(e.detail); // eslint-disable-line no-console
+    });
+    MozConsentBanner.init({
+      helper: CookieHelper,
+    });
+
+    // Listen for click to reset cookie preference
+    let $reset_cookie_consent = document.getElementById('reset_cookie_consent');
+    if ($reset_cookie_consent) {
+      $reset_cookie_consent.addEventListener('click', MozConsentBanner.onClearClick);
+    }
   }
 }, { once: true });
 

@@ -52,7 +52,7 @@ ok($last_order_cookie, 'Last order cookie set properly');
 
 # Under user preferences, change cookie preferences to reject
 $sel->click_ok('header-account-menu-button');
-$sel->click_ok('link=Preferences');
+$sel->click_ok("//a[./span[contains(text(), 'Preferences')]]");
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is('User Preferences');
 $sel->click_ok('link=Account');

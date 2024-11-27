@@ -59,7 +59,7 @@ window.addEventListener('DOMContentLoaded', () => {
     $toggleAdvanced.textContent = $toggleAdvanced.dataset[advancedStateStr];
 
     if (cache) {
-      window.localStorage.setItem('create-form.advanced', advancedStateStr);
+      Bugzilla.Storage.set('create-form.advanced', advancedStateStr);
     }
   };
 
@@ -73,7 +73,7 @@ window.addEventListener('DOMContentLoaded', () => {
       // Check the local storage or the TUI cookie used on the legacy form to see if the user wants
       // to show advanced fields on the bug form.
       let showAdvanced =
-        window.localStorage.getItem('create-form.advanced') === 'show'
+        Bugzilla.Storage.get('create-form.advanced') === 'show'
           || /\bTUI=\S*?expert_fields=1\b/.test(document.cookie);
 
       if (showAdvanced) {
