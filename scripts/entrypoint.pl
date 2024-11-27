@@ -115,6 +115,12 @@ sub cmd_dev_httpd {
   exit $httpd_exit_f->get;
 }
 
+sub cmd_checksetup {
+  check_data_dir();
+  wait_for_db();
+  run_quiet('perl', 'checksetup.pl', '--no-template', '--no-permissions');
+}
+
 sub cmd_load_test_data {
   wait_for_db();
 

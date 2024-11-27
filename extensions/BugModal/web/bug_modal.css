@@ -917,7 +917,9 @@ td.flag-requestee {
 }
 
 .new-changes-link {
-  flex: none;
+  position: sticky;
+  top: calc(var(--global-header-height) + var(--private-bug-banner-height, 0px) + 8px);
+  z-index: calc(var(--global-header-z-index) - 1);
   overflow: hidden;
   box-sizing: border-box;
   margin: 8px auto 0;
