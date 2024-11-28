@@ -692,6 +692,7 @@ sub cookie_consented {
 # from within a required consent country
 sub cookie_consent_required {
   my ($self) = @_;
+  return 1 if $ENV{CI};
   my $client_region = $self->http('X-Client-Region') || '';
   return 1 if any { $client_region eq $_ } COOKIE_CONSENT_COUNTRIES;
   return 0;
