@@ -50,26 +50,6 @@
       [%# BMO - moved field hook from end of file to here to group with other account fields %]
       [% Hook.process('field') %]
 
-      [% IF Param('cookie_consent_enabled') %]
-        <tr>
-          <td></td>
-          <td><hr></td>
-        </tr>
-        <tr>
-          <th align="right">Cookies:</th>
-          <td>
-            <input type="checkbox" id="cookie_consent" name="cookie_consent" value="1"
-            [% IF cookie_consent_changed.defined %]
-              [% " checked" IF cookie_consent_changed == 'yes' %]
-            [% ELSE %]
-              [% " checked" IF Bugzilla.cgi.cookie_consented %]
-            [% END %]
-            >
-            <label for="cookie_consent">Allow non-essential cookies and local-storage values to be set that can improve site experience.</label>
-          </td>
-        </tr>
-      [% END %]
-
       [% SET can_change = [] %]
       [% IF user.authorizer.can_change_email && Param('allowemailchange') %]
         [% can_change.push('email address') %]

@@ -10,9 +10,8 @@
    template/en/default/pages/ directory. */
 
 #main-inner {
-  margin: 15px auto;
-  /* People have an easier time reading narrower columns of text. */
-  max-width: 50em;
+  margin: 8px auto;
+  max-width: 1024px;
 }
 
 #main-inner p,

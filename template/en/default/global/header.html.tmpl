@@ -113,7 +113,8 @@
             config => {
                 basepath => basepath,
                 urlbase => urlbase,
-                cookie_consent_enabled => Param("cookie_consent_enabled")
+                cookie_consent_enabled => Param("cookie_consent_enabled"),
+                cookie_consent_required => Bugzilla.cgi.cookie_consent_required,
                 essential_cookies => constants.ESSENTIAL_COOKIES,
             }
             user => {
@@ -373,6 +374,11 @@
           <li role="presentation">
             <a href="[% basepath FILTER none %]userprefs.cgi" role="menuitem" tabindex="-1">Preferences</a>
           </li>
+          [% IF Param('cookie_consent_enabled') && Bugzilla.cgi.cookie_consent_required %]
+          <li role="presentation">
+            <a href="[% basepath FILTER none %]page.cgi?id=cookies.html" role="menuitem" tabindex="-1">Cookies</a>
+          </li>
+          [% END %]
           <li role="separator"></li>
           <li role="presentation">
             <a href="[% basepath FILTER none %]index.cgi?logout=1" role="menuitem" tabindex="-1">Log out</a>
