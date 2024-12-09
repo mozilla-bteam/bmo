@@ -271,7 +271,7 @@ jobs:
           name: run bmo specific tests
           command: |
             [[ -f build_info/only_version_changed.txt ]] && exit 0
-            docker-compose -f docker-compose.test.yml run --build bmo.test test_bmo -q -f t/bmo/*.t
+            docker-compose -f docker-compose.test.yml run --build bmo.test test_bmo -q -f t/bmo/*.t extensions/*/t/bmo/*.t
       - *store_log
 
 workflows:
