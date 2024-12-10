@@ -42,7 +42,9 @@ services:
       - memcached
       - s3
       - gcs
+      - bigquery
       - externalapi.test
+      - bq
     ports:
       - 8000:8000
 
@@ -136,12 +138,37 @@ services:
       - bmo-gcs-sitemapindex:/data/sitemapindex
       - bmo-gcs-mining:/data/mining
 
+  bigquery:
+    platform: linux/x86_64
+    image: ghcr.io/goccy/bigquery-emulator:latest
+    ports:
+      - 9050:9050
+    volumes:
+      - bmo-bigquery-data:/work
+      - ./docker/bigquery/data.yaml:/work/data.yaml
+    working_dir: /work
+    command: |
+      --project=test --data-from-yaml=/work/data.yaml --log-level=debug
+
   externalapi.test:
     platform: linux/x86_64
     build: *bmo_build
     entrypoint: perl /app/external_test_api.pl daemon -l http://*:8001
     ports:
       - 8001:8001
+
+  bq:
+    platform: linux/x86_64
+    build:
+      context: ./docker/bigquery
+      dockerfile: Dockerfile
+    ports:
+      - 9050:9050
+    volumes:
+      - bmo-bq-data:/work
+    working_dir: /work
+    command: |
+      --project=test --data-from-yaml=/data.yaml --log-level=debug
 
 volumes:
   bmo-mysql-db:
@@ -150,3 +177,4 @@ volumes:
   bmo-gcs-attachments:
   bmo-gcs-sitemapindex:
   bmo-gcs-mining:
+  bmo-bq-data:
