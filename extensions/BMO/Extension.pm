@@ -1384,7 +1384,7 @@ sub db_schema_abstract_schema {
     ],
     INDEXES => [job_last_run_name_idx => {FIELDS => ['name'], TYPE => 'UNIQUE',},],
   };
-    $args->{schema}->{bmo_etl_cache} = {
+  $args->{schema}->{bmo_etl_cache} = {
     FIELDS => [
       id            => {TYPE => 'INT3',         NOTNULL => 1,},
       snapshot_date => {TYPE => 'DATETIME',     NOTNULL => 1,},
@@ -1393,6 +1393,11 @@ sub db_schema_abstract_schema {
     ],
     INDEXES =>
       [bmo_etl_cache_idx => {FIELDS => ['id', 'snapshot_date', 'table_name']}],
+  };
+  $args->{schema}->{bmo_etl_locked} = {
+    FIELDS => [
+      value => {TYPE => 'VARCHAR(20)', NOTNULL => 1,},
+    ],
   };
 }
 
