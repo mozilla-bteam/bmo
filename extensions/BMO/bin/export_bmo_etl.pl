@@ -24,22 +24,29 @@ use IO::Uncompress::Gunzip qw(gunzip $GunzipError);
 use LWP::UserAgent::Determined;
 use Mojo::File qw(path);
 use Mojo::JSON qw(decode_json encode_json false true);
-use Mojo::Util qw(dumper getopt);
+use Mojo::Util qw(getopt);
 
 # BigQuery API cannot handle payloads larger than 10MB so
 # we will send data in blocks.
 use constant API_BLOCK_COUNT => 1000;
 
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
-getopt 't|test' => \my $test, 'v|verbose' => \my $verbose;
+getopt 't|test' => \my $test, 'v|verbose' => \my $verbose, 's|snapshot-date=s' => \my $snapshot_date;
 
-if (!Bugzilla->params->{bmo_etl_enabled}) {
-  die "BMO ETL not enabled.\n";
-}
+# Sanity checks
+Bugzilla->params->{bmo_etl_enabled} || die "BMO ETL not enabled.\n";
 
-if (!$test && !Bugzilla->params->{bmo_etl_base_url}) {
-  die "BMO ETL base url not defined.\n";
-}
+my $base_url = Bugzilla->params->{bmo_etl_base_url};
+$base_url || die "Invalid BigQuery base URL.\n";
+
+my $project_id = Bugzilla->params->{bmo_etl_project_id};
+$project_id || die "Invalid BigQuery product ID.\n";
+
+my $dataset_id = Bugzilla->params->{bmo_etl_dataset_id};
+$dataset_id || die "Invalid BigQuery dataset ID.\n";
+
+# Check to make sure another instance is not currently running
+check_and_set_lock();
 
 # Use replica if available
 my $dbh = Bugzilla->switch_to_shadow_db();
@@ -56,8 +63,14 @@ if (my $proxy = Bugzilla->params->{proxy_url}) {
 }
 
 # This date will be added to each object as it is being sent
-my $snapshot_date = $dbh->selectrow_array(
-  'SELECT ' . $dbh->sql_date_format('LOCALTIMESTAMP(0)', '%Y-%m-%d'));
+if (!$snapshot_date) {
+  $snapshot_date = $dbh->selectrow_array(
+    'SELECT ' . $dbh->sql_date_format('LOCALTIMESTAMP(0)', '%Y-%m-%d'));
+}
+
+# In order to avoid entering duplicate data, we will first query BigQuery
+# to make sure other entries with this date are not already present.
+check_for_duplicates();
 
 ### Bugs
 
@@ -514,6 +527,9 @@ while ($count < $total) {
   send_data($table_name, \@users, $count) if @users;
 }
 
+# Delete lock from bmo_etl_locked
+Bugzilla->dbh_main->do('DELETE FROM bmo_etl_locked');
+
 # Functions
 
 sub get_cache {
@@ -573,12 +589,6 @@ sub send_data {
     $row->{snapshot_date} = $snapshot_date;
   }
 
-  my $project_id = Bugzilla->params->{bmo_etl_project_id};
-  $project_id || die "Invalid BigQuery product ID.\n";
-
-  my $dataset_id = Bugzilla->params->{bmo_etl_dataset_id};
-  $dataset_id || die "Invalid BigQuery dataset ID.\n";
-
   my @json_rows = ();
   foreach my $row (@{$all_rows}) {
     push @json_rows, {json => $row};
@@ -601,9 +611,6 @@ sub send_data {
 
     return;
   }
-
-  my $base_url = Bugzilla->params->{bmo_etl_base_url};
-  $base_url || die "Invalid BigQuery base URL.\n";
 
   my $http_headers = HTTP::Headers->new;
 
@@ -662,6 +669,59 @@ sub _get_access_token {
   $token_expiry = time + $result->{expires_in};
 
   return $access_token;
+}
+
+sub check_and_set_lock {
+  return if $test; # No need if just dumping test files
+
+  my $dbh_main = Bugzilla->dbh_main;
+  my $locked = $dbh_main->selectrow_array('SELECT COUNT(*) FROM bmo_etl_locked');
+  if ($locked) {
+    die "Another process has set a lock. Exiting\n";
+  }
+  $dbh_main->do('INSERT INTO bmo_etl_locked VALUES (?)', undef, 'locked');
+}
+
+sub check_for_duplicates {
+  return if $test; # no need if just dumping test files
+
+  print "Checking for duplicate data for snapshot date $snapshot_date\n"
+    if $verbose;
+
+  my $http_headers = HTTP::Headers->new;
+
+  # Do not attempt to get access token if running in test environment
+  if ($base_url !~ /^http:\/\/[^\/]+:9050/) {
+    my $access_token = _get_access_token();
+    $http_headers->header(Authorization => 'Bearer ' . $access_token);
+  }
+
+  my $full_path = "projects/$project_id/queries";
+
+  print "Querying $base_url/$full_path\n" if $verbose;
+
+  my $query
+    = {query =>
+      "SELECT count(*) FROM ${project_id}.${dataset_id}.bugs WHERE snapshot_date = '$snapshot_date'"
+    };
+
+  my $request = HTTP::Request->new('POST', "$base_url/$full_path", $http_headers);
+  $request->header('Content-Type' => 'application/json');
+  $request->content(encode_json($query));
+
+  my $res = $ua->request($request);
+  if (!$res->is_success) {
+    die 'Google Big Query query failure: ' . $res->content;
+  }
+
+  my $result = decode_json($res->content);
+
+  my $row_count = $result->{rows}->[0]->{f}->[0]->{v};
+
+  # Do not export if we have any rows with this snapshot date.
+  if ($row_count) {
+    die "Duplicate data found for snapshot date $snapshot_date\n";
+  }
 }
 
 1;
