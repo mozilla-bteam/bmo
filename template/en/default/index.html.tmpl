@@ -163,10 +163,10 @@
     </div>
   </div>
 
-  [% IF Param("cookie_consent_enabled") && Bugzilla.cgi.cookie(constants.CONSENT_COOKIE) %]
-    <div>
-      <a href="#" id="reset_cookie_consent">Reset Current Cookie Preferences</a>
-    </div>
+  [% IF Param('cookie_consent_enabled') && Bugzilla.cgi.cookie_consent_required %]
+  <div>
+    <a href="[% basepath FILTER none %]page.cgi?id=cookies.html">Manage Cookie Preferences</a>
+  </div>
   [% END %]
 </div>
 

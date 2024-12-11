@@ -695,18 +695,22 @@ sub cookie {
 # 3. Any other value we do not have consent
 sub cookie_consented {
   my ($self) = @_;
-  return 0 if !defined $self->cookie(CONSENT_COOKIE);
-  return 1 if $self->cookie(CONSENT_COOKIE) eq 'yes';
-  return 0; # Anything other than yes is a no
+  if (defined $self->cookie(CONSENT_COOKIE)
+    && $self->cookie(CONSENT_COOKIE) eq 'yes')
+  {
+    return 1;
+  }
+  return 0;
 }
 
 # Return true if client is accessing this site
 # from within a required consent country
 sub cookie_consent_required {
   my ($self) = @_;
+  return 1; # if $ENV{CI};
   my $client_region = $self->http('X-Client-Region') || '';
   return 1 if any { $client_region eq $_ } COOKIE_CONSENT_COUNTRIES;
-  return 1;
+  return 0;
 }
 
 ##########################

@@ -1,0 +1,74 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[% PROCESS global/variables.none.tmpl %]
+
+[% INCLUDE global/header.html.tmpl
+  title = "Cookie Settings"
+  style_urls = ['skins/standard/page.css']
+  javascript_urls = ['js/consent-settings.js']
+%]
+
+<div id="main-inner">
+
+<h1>Cookie settings</h1>
+
+<p>Cookies are small files containing pieces of information that are saved to your computer
+  or device when you visit a website. [% terms.BugzillaTitle %] uses Cookies to help make
+  our website work.</p>
+
+<p>This page describes the different types of Cookies, JavaScript, and local storage (hereafter, “Cookies”)
+  that [% terms.BugzillaTitle %] may use, and gives you control over which types of data we may collect.</p>
+
+<h2>How [% terms.BugzillaTitle %] uses Cookies</h2>
+
+<h3>Necessary</h3>
+
+<blockquote>
+  <h4>What are Necessary Cookies?</h4>
+  <p>These technologies are required to support essential website features, such as logging into a secure area of the website, and cannot be turned off.</p>
+
+  <h4>How does [% terms.BugzillaTitle %] use this data?</h4>
+  <p>[% terms.BugzillaTitle %] uses Necessary Cookies only to provide essential website features, such as logging in using your [% terms.BugzillaTitle %] account. Without these technologies, essential website features may not function.</p>
+</blockquote>
+
+<h3>Preference</h3>
+
+<blockquote>
+  <h4>What are Preference Cookies?</h4>
+  <p>These technologies are used to remember choices you have made during a previous visit to a website.
+    Examples might include which language you prefer reading in, or which color theme is your favorite.</p>
+
+  <h4>How does [% terms.BugzillaTitle %] use this data?</h4>
+  <p>[% terms.BugzillaTitle %] uses Preference Cookies to honor your preferences and improve your experience when visiting our website. They are not used for analytics purposes. Preference Cookies support features in a similar way to Necessary Cookies, however a website can still operate without them. As such, you can choose to opt out of their use.</p>
+
+  <form id="cookie-consent-form">
+  <p>
+    <label for="cookie-radio-preference-yes">
+      <input type="radio" name="cookie-radio-preference" id="cookie-radio-preference-yes" value="yes">I Agree
+    </label>
+    <label for="cookie-radio-preference-no">
+      <input type="radio" name="cookie-radio-preference" id="cookie-radio-preference-no" value="no">I Do Not Agree
+    </label>
+  </p>
+
+  <p>
+    <button type="submit">Save Changes</button>
+  </p>
+  </form>
+
+  <noscript>
+    <p><strong>Please turn on JavaScript to update your Cookie settings.</strong></p>
+  </noscript>
+
+  <p id="cookie-consent-form-submit-success" tabindex="-1" style="display:none;">Your Cookie settings have been updated.</p>
+</blockquote>
+
+</div>
+
+[% INCLUDE global/footer.html.tmpl %]
