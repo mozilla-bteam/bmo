@@ -705,6 +705,7 @@ sub cookie_consented {
 
 # Return true if client is accessing this site
 # from within a required consent country
+## no critic (ControlStructures::ProhibitUnreachableCode)
 sub cookie_consent_required {
   my ($self) = @_;
   return 1; # if $ENV{CI};
@@ -712,6 +713,7 @@ sub cookie_consent_required {
   return 1 if any { $client_region eq $_ } COOKIE_CONSENT_COUNTRIES;
   return 0;
 }
+## use critic
 
 ##########################
 # Vars TIEHASH Interface #
