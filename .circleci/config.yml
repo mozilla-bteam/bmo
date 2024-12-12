@@ -54,7 +54,7 @@ jobs:
           name: build version.json and push data
           command: |
             docker-compose -f docker-compose.test.yml run --build \
-              -e CIRCLE_SHA1="$CIRCLE_SHA1" -e CIRCLE_BUILD_URL="$CIRCLE_BUILD_URL" \
+              --build-arg CIRCLE_SHA1="$CIRCLE_SHA1" --build-arg CIRCLE_BUILD_URL="$CIRCLE_BUILD_URL" \
               --name push_data bmo.test push_data
             docker cp push_data:/app/push_data/blog.push.txt build_info/blog.push.txt
             docker cp push_data:/app/push_data/markdown.push.txt build_info/markdown.push.txt
@@ -111,8 +111,8 @@ jobs:
       - deploy:
           command: |
             [[ -n "$DOCKERHUB_REPO" && -n "$DOCKER_USER" && -n "$DOCKER_PASS" ]] || exit 0
-            docker build --tag bmo --target base \
-              --build-arg CIRCLE_SHA1="$CIRCLE_SHA1" --build-arg CIRCLE_BUILD_URL="$CIRCLE_BUILD_URL" .
+            docker build --build-arg CIRCLE_SHA1="$CIRCLE_SHA1" --build-arg CIRCLE_BUILD_URL="$CIRCLE_BUILD_URL" \
+              --tag bmo --target base .
             if [[ "$CIRCLE_BRANCH" == "master" ]]; then
               TAG="$(cat build_info/tag.txt)"
               if [[ -n "$TAG" && -f build_info/publish.txt ]]; then
