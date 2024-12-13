@@ -8,8 +8,6 @@ services:
       context: .
       dockerfile: Dockerfile
       target: test
-      args:
-        - CI=1
     command: dev_httpd
     tmpfs:
       - /tmp
