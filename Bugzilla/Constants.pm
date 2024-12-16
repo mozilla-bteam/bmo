@@ -686,9 +686,17 @@ use constant BOUNCE_COUNT_MAX => 5;
 use constant CONSENT_COOKIE => 'moz-consent-pref';
 
 # List of essential cookies that cannot be opted out
-use constant ESSENTIAL_COOKIES =>
-  qw(bugzilla Bugzilla_login Bugzilla_logincookie Bugzilla_login_request_cookie
-     bugzilla github_state github_token sudo moz-consent-pref);
+use constant ESSENTIAL_COOKIES => qw(
+  bugzilla
+  Bugzilla_login
+  Bugzilla_logincookie
+  Bugzilla_login_request_cookie
+  github_state
+  github_token
+  mfa_verification_token
+  moz-consent-pref
+  sudo
+);
 
 # List of countries that require cookie consent
 use constant COOKIE_CONSENT_COUNTRIES => qw(
