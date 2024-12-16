@@ -613,7 +613,7 @@ sub send_data {
 
     my $fh = path($filename)->open('>>');
     print $fh encode_json($big_query) . "\n";
-    unless(close $fh) {
+    unless (close $fh) {
       delete_lock();
       die "Could not close $filename: $!\n";
     }
@@ -672,7 +672,7 @@ sub _get_access_token {
 
   if (!$res->is_success) {
     delete_lock();
-     'Google access token failure: ' . $res->content;
+    die 'Google access token failure: ' . $res->content . "\n";
   }
 
   my $result = decode_json($res->decoded_content);
@@ -697,6 +697,7 @@ sub check_and_set_lock {
 
 # Delete lock from bmo_etl_locked
 sub delete_lock {
+  print "Deleting lock in database\n" if $verbose;
   Bugzilla->dbh_main->do('DELETE FROM bmo_etl_locked');
 }
 
@@ -726,6 +727,8 @@ sub check_for_duplicates {
   my $request = HTTP::Request->new('POST', "$base_url/$full_path", $http_headers);
   $request->header('Content-Type' => 'application/json');
   $request->content(encode_json($query));
+
+  print encode_json($query) . "\n" if $verbose;
 
   my $res = $ua->request($request);
   if (!$res->is_success) {
