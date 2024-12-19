@@ -30,10 +30,8 @@ set_parameters(
       'rate_limit_rules'     => {
         type  => 'text',
         value =>
-          '{"get_attachments":[5,100],"get_comments":[5,100],"get_bug":[5,100],"show_bug":[5,100],"github":[5,100],"webpage_errors":[5,100], "token":[5,100], "api_key":[5,100], "username_password":[3,100]}'
-      },
-      'iprepd_base_url'      => {type => 'text', value => 'http://externalapi.test:8001'},
-      'iprepd_client_secret' => {type => 'text', value => 'iprepd_client_secret'},
+          '{"get_attachments":[5,100],"get_comments":[5,100],"get_bug":[5,100],"show_bug":[5,100],"github":[5,100],"webpage_errors":[5,100]}'
+      }
     }
   }
 );
@@ -91,108 +89,6 @@ $t->get_ok($config->{browser_url} . "/rest/bug/$bug_id")->status_is(400)
   ->json_like('/message' => qr/You have exceeded the rate limit/);
 
 clear_memcache();    # So we can connect again
-
-# IPREPD REPORTING TESTS
-
-# Incorrect username and/or password sends report to iprepd
-
-# Enter incorrect username and password 4 times where the
-# 4th should be rate limited
-$sel->open_ok('/login', undef, 'Go to the home page');
-$sel->title_is('Log in to Bugzilla');
-$sel->type_ok(
-  'Bugzilla_login',
-  $config->{admin_user_login},
-  'Enter admin login name'
-);
-$sel->type_ok('Bugzilla_password', 'bad_password', 'Enter bad admin password');
-$sel->click_ok('log_in', undef, 'Submit credentials');
-$sel->title_is('Invalid Username Or Password',
-  'Username or password error page displayed');
-
-# Check that iprepd was properly notified
-$t->get_ok('http://externalapi.test:8001/violations/last')->status_is(200)
-  ->json_is('/violation' => 'bmo.username_password_mismatch')
-  ->json_has('/object')->json_is('/type', 'ip');
-
-# Invalid api keys via REST API should send report to iprepd
-
-# Use a bad api key gives the normal API key error.
-$t->post_ok($config->{browser_url}
-    . '/rest/bug' => {'X-Bugzilla-API-Key' => 'bad_key'} => json => {})
-  ->status_is(400)
-  ->json_like('/message', qr/The API key you specified is invalid/);
-
-# Check that iprepd was properly notified
-$t->get_ok('http://externalapi.test:8001/violations/last')->status_is(200)
-  ->json_is('/violation' => 'bmo.api_key_mismatch')->json_has('/object')
-  ->json_is('/type', 'ip');
-
-# Token errors should send report to iprepd
-
-# You should be able to use an invalid token 5 times but then fail the next
-$t->get_ok(
-  $config->{browser_url} . '/token.cgi?t=bad_token&a=request_new_account')
-  ->status_is(200)->content_like(qr/Token Does Not Exist/);
-
-# Check that iprepd was properly notified
-$t->get_ok('http://externalapi.test:8001/violations/last')->status_is(200)
-  ->json_is('/violation' => 'bmo.token_mismatch')->json_has('/object')
-  ->json_is('/type', 'ip');
-
-# Check that iprepd is notified for new account emails
-$sel->open_ok('/createaccount.cgi', undef, 'Go to the new account page');
-$sel->type_ok('login', 'you@example.com', 'Enter new account email');
-$sel->check_ok('etiquette', 'Accept etiquette');
-$sel->click_ok('//input[@value="Create Account"]', 'Submit');
-$sel->title_like(qr/Request for new user account/,
-  'Request for new account sent');
-
-# Check that iprepd was properly notified
-$t->get_ok('http://externalapi.test:8001/violations/last')->status_is(200)
-  ->json_is('/violation' => 'bmo.create_account')->json_has('/object')
-  ->json_is('/type', 'ip');
-
-# Check that iprepd is notified for password reset emails
-$sel->open_ok('/home', 'Go to home page');
-$sel->click_ok('forgot_link_top', 'Show password reset field');
-$sel->type_ok(
-  '//input[@name="loginname"]',
-  $config->{admin_user_login},
-  'Enter email for password reset'
-);
-$sel->click_ok('forgot_button_top', 'Submit');
-$sel->title_is('Request to Change Password', 'Request for password reset sent');
-
-# Check that iprepd was properly notified
-$t->get_ok('http://externalapi.test:8001/violations/last')->status_is(200)
-  ->json_is('/violation' => 'bmo.password_reset')->json_has('/object')
-  ->json_is('/type', 'ip');
-
-# Check that iprepd is notified for password reset emails
-log_in($sel, $config, 'unprivileged');
-$sel->click_ok('header-account-menu-button');
-$sel->click_ok("link=Preferences");
-$sel->title_is("User Preferences");
-$sel->click_ok("link=Account");
-$sel->title_is("User Preferences");
-$sel->type_ok(
-  '//input[@name="new_login_name"]',
-  'new-' . $config->{unprivileged_user_login},
-  'Enter new email'
-);
-$sel->type_ok(
-  '//input[@name="old_password"]',
-  $config->{unprivileged_user_passwd},
-  'Enter current password'
-);
-$sel->click_ok('update');
-logout($sel);
-
-# Check that iprepd was properly notified
-$t->get_ok('http://externalapi.test:8001/violations/last')->status_is(200)
-  ->json_is('/violation' => 'bmo.email_change')->json_has('/object')
-  ->json_is('/type', 'ip');
 
 # Turn rate limiting off
 log_in($sel, $config, 'admin');

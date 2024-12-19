@@ -55,7 +55,6 @@ requires 'GD::Barcode', '== 1.15';
 requires 'GD::Graph';
 requires 'GD::Text';
 requires 'Graph';
-requires 'Graph::D3';
 requires 'HTML::Escape', '1.10';
 requires 'HTML::Parser', '3.67';
 requires 'HTML::Scrubber';

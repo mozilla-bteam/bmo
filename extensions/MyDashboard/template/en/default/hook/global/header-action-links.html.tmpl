@@ -7,10 +7,11 @@
   #%]
 
 [% IF user.login %]
-  <li class="link-dashboard">
-    <a href="[% basepath FILTER none %]page.cgi?id=mydashboard.html" title="Show My Dashboard">
-      <span class="icon" aria-hidden="true"></span>
-      <span class="label">My Dashboard</span>
+  <li role="none">
+    <a class="header-button" href="[% basepath FILTER none %]page.cgi?id=mydashboard.html"
+       title="Show My Dashboard" role="menuitem">
+      <span class="icon" aria-hidden="true" data-icon="dashboard"></span>
+      <span class="label" role="none">My Dashboard</span>
     </a>
   </li>
 [% END %]

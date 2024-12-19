@@ -85,6 +85,8 @@ be required to decrypt it to view the reset instructions.
 
 <h2>PGP</h2>
 
+<h3>Setup</h3>
+
 <b>PGP keys must be ASCII-armoured - i.e. text, with the first line containing BEGIN PGP PUBLIC KEY.</b></p>
 
 <p>If you already have your own PGP key in a keyring, skip straight to step 3. Otherwise:</p>
@@ -122,6 +124,18 @@ be required to decrypt it to view the reset instructions.
     here</a> for information on setup.</p>
   </li>
 </ol>
+
+<h3>Thunderbird</h3>
+
+<ul>
+  <li>Open Thunderbird.</li>
+  <li>Open Account Settings.</li>
+  <li>Open End-To-End Encryption.</li>
+  <li>In the OpenPGP section, click Add Key and create a new key.</li>
+  <li>Back in the End-To-End Encryption settings, click on OpenPGP Key Manager.</li>
+  <li>Click your new key and then File -> Export Public Key(s) to a file.</li>
+  <li>Copy and paste the file contents to the Secure Mail preferences in your Bugzilla settings.</li>
+</ul>
 
 <p>Further reading: <a href="https://www.madboa.com/geek/gpg-quickstart/">GPG Quickstart</a>.</p>
 

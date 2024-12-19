@@ -12,7 +12,7 @@ use Bugzilla::Util qw(generate_random_password);
 use Bugzilla::Token qw(issue_hash_sig check_hash_sig);
 use Bugzilla::Localconfig;
 use Test2::V0;
-use Test2::Mock qw(mock);
+use Test2::Tools::Mock qw(mock);
 
 my $site_wide_secret = generate_random_password(256);
 my $Localconfig = mock 'Bugzilla::Localconfig' => (

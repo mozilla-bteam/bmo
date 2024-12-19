@@ -174,6 +174,9 @@ sub comment_after_add_tag {
   my $comment = $args->{comment};
   my $author  = $comment->author;
 
+  # If tag is spam, record comment id for later cleanup
+  _cleanup_spam_comment($comment->id, 'add') if $tag eq 'spam';
+
   # exclude disabled users
   return if !$author->is_enabled;
 
@@ -236,6 +239,31 @@ sub comment_after_add_tag {
   }
 }
 
+sub comment_after_remove_tag {
+  my ($self, $args) = @_;
+  my $tag     = lc $args->{tag};
+  my $comment = $args->{comment};
+
+  return unless $tag eq 'spam';
+
+  # If removing a spam tag, remove comment id from cleanup queue
+  _cleanup_spam_comment($comment->id, 'remove') if $tag eq 'spam';
+}
+
+sub _cleanup_spam_comment {
+  my ($comment_id, $action) = @_;
+  my $dbh = Bugzilla->dbh;
+
+  if ($action eq 'add') {
+    $dbh->do('INSERT INTO antispam_comment_cleanup (comment_id, comment_ts) VALUES (?, now())',
+      undef, $comment_id);
+  }
+  if ($action eq 'remove') {
+    $dbh->do('DELETE FROM antispam_comment_cleanup WHERE comment_id = ?',
+      undef, $comment_id);
+  }
+}
+
 #
 # hooks
 #
@@ -291,6 +319,14 @@ sub config_add_panels {
   $modules->{AntiSpam} = "Bugzilla::Extension::AntiSpam::Config";
 }
 
+sub db_sanitize {
+  my $dbh = Bugzilla->dbh;
+  print "Deleting antispam settings...\n";
+  $dbh->do('TRUNCATE TABLE antispam_domain_blocklist');
+  $dbh->do('TRUNCATE TABLE antispam_comment_blocklist');
+  $dbh->do('TRUNCATE TABLE antispam_ip_blocklist');
+}
+
 #
 # installation
 #
@@ -332,6 +368,17 @@ sub db_schema_abstract_schema {
     ],
     INDEXES =>
       [antispam_ip_blocklist_idx => {FIELDS => ['ip_address'], TYPE => 'UNIQUE',},],
+  };
+  $args->{'schema'}->{'antispam_comment_cleanup'} = {
+    FIELDS => [
+      id         => {TYPE => 'MEDIUMSERIAL', NOTNULL => 1, PRIMARYKEY => 1,},
+      comment_id => {
+        TYPE       => 'INT4',
+        REFERENCES =>
+          {TABLE => 'longdescs', COLUMN => 'comment_id', DELETE => 'CASCADE'}
+      },
+      comment_ts => {TYPE => 'DATETIME', NOTNULL => 1},
+    ],
   };
 }
 

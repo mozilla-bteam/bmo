@@ -109,13 +109,13 @@ sub update {
       {
         if ($old_value ne $new_value) {
           $dbh->do('UPDATE params SET value = ? WHERE name = ?', undef, $new_value, $key);
-          $changes{"$id:$key"} = [$old_value, $new_value];
+          $changes{$key} = [$old_value, $new_value];
         }
       }
       else {
         $dbh->do('INSERT INTO params (name, value) VALUES (?, ?)',
           undef, $key, $new_value);
-        $changes{"$id:$key"} = ['', $new_value];
+        $changes{$key} = ['', $new_value];
       }
     }
 
@@ -132,10 +132,8 @@ sub update {
     # not the case here so we assign the 'id' variable each interation
     # to make audit_log think each is a separate instance of
     # Bugzilla::Config and each change is a separate transaction.
-    foreach my $item (keys %changes) {
-      my ($id, $key) = split /:/, $item;
-      $self->{id} = $id;
-      $self->audit_log({$key => [$changes{$item}->[0], $changes{$item}->[1]]});
+    foreach my $key (keys %changes) {
+      $self->audit_log({$key => [$changes{$key}->[0], $changes{$key}->[1]]});
     }
   }
   catch {
@@ -301,7 +299,7 @@ sub migrate_params {
   }
 
   # Generate unique Duo integration secret key
-  if ($param->{duo_akey} eq '') {
+  if (!exists $param->{duo_akey} || $param->{duo_akey} eq '') {
     require Bugzilla::Util;
     $param->{duo_akey} = Bugzilla::Util::generate_random_password(40);
   }
@@ -355,12 +353,6 @@ sub process_params {
 
         # assume single linefeed is an empty string
         $value =~ s/^\n$//;
-      }
-
-      # Stop complaining if the URL has no trailing slash.
-      # XXX - This hack can go away once bug 303662 is implemented.
-      if ($name =~ /(?<!webdot)base$/) {
-        $value = "$value/" if ($value && $value !~ m{/$});
       }
     }
 

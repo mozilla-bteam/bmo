@@ -190,10 +190,17 @@ window.addEventListener('DOMContentLoaded', () => {
           dataset: { overlay: mode },
           search,
         } = $link;
-        const params = new URLSearchParams(search);
-        const id = Number(params.get('id'));
-        const action = params.get('action');
+        const { id: idStr, action } = Object.fromEntries(new URLSearchParams(search));
+        const id = Number(idStr);
 
+        // The attachment overlay doesn’t work well if the linked attachment is on another bug. In
+        // such cases, just link to the legacy attachment page.
+        if (!Object.keys(tokens).includes(idStr)) {
+          return;
+        }
+
+        // Also, if the attachment `action` param is not `edit` and the lightbox display mode is not
+        // specified, open the link directly.
         if (action !== 'edit' && !mode) {
           return;
         }
@@ -202,9 +209,15 @@ window.addEventListener('DOMContentLoaded', () => {
           event.preventDefault();
 
           if (event.ctrlKey || event.metaKey) {
-            // Open the bug page, not the legacy attachment page, in a new tab with Ctrl/Cmd+click.
-            // The `attachment_id` URL param works as an overlay trigger. (See below)
-            window.open(`${basepath}show_bug.cgi?id=${bugId}&attachment_id=${id}`);
+            if ($link.dataset.details) {
+              // Details link
+              // Open the bug page, not the legacy attachment page, in a new tab with Ctrl/Cmd+click.
+              // The `attachment_id` URL param works as an overlay trigger. (See below)
+              window.open(`${basepath}show_bug.cgi?id=${bugId}&attachment_id=${id}`);
+            } else {
+              // Open the attachment directly
+              window.open($link.href);
+            }
           } else {
             showOverlay();
             loadAttachment(id, mode);

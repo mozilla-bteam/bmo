@@ -26,7 +26,8 @@ To: [% emailaddress %]
 Subject: [% PROCESS subject %]
 X-Bugzilla-Type: admin
 
-A request was canceled from [% remoteaddress %].
+A previous request has been canceled because:
+[%+ PROCESS cancelactionmessage %]
 
 If you did not request this, it could be either an honest
 mistake or someone attempting to break into your [% terms.Bugzilla %] account.
@@ -34,12 +35,10 @@ mistake or someone attempting to break into your [% terms.Bugzilla %] account.
 Take a look at the information below and forward this email
 to [% Param('maintainer') %] if you suspect foul play.
 
-            Token: [% token %]
-       Token Type: [% tokentype %]
-             User: [% emailaddress %]
-       Issue Date: [% issuedate FILTER time("%Y-%m-%d %H:%M:%S %Z", timezone) %]
-       Event Data: [% eventdata %]
-Canceled Because: [% PROCESS cancelactionmessage %]
+           Token: [% token %]
+      Token Type: [% tokentype %]
+            User: [% emailaddress %]
+      Issue Date: [% issuedate FILTER time("%Y-%m-%d %H:%M:%S %Z", timezone) %]
 
 [% BLOCK subject %]
   [% IF tokentype == 'new_account' %]

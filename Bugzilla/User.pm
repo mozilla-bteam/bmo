@@ -85,7 +85,8 @@ sub DB_COLUMNS {
     'profiles.mfa',
     'profiles.mfa_required_date',
     'profiles.nickname',
-    'profiles.bounce_count'
+    'profiles.bounce_count',
+    $dbh->sql_date_format('modification_ts', '%Y-%m-%d  %H:%i:%s') . ' AS modification_ts',
     ),
     ;
 }
@@ -107,6 +108,7 @@ use constant VALIDATORS => {
   password_change_reason   => \&_check_password_change_reason,
   mfa                      => \&_check_mfa,
   bounce_count             => \&_check_numeric,
+  modification_ts          => \&_check_timestamp,
 };
 
 sub UPDATE_COLUMNS {
@@ -124,6 +126,7 @@ sub UPDATE_COLUMNS {
     mfa_required_date
     nickname
     bounce_count
+    modification_ts
   );
   push(@cols, 'cryptpassword') if exists $self->{cryptpassword};
   return @cols;
@@ -337,6 +340,11 @@ sub update {
         || exists $changes->{cryptpassword})
     );
 
+  # Update modification_ts if any changes were made
+  if (keys %{$changes}) {
+    $dbh->do('UPDATE profiles set modification_ts = NOW() WHERE userid = ?', undef, $self->id)
+  }
+
   # XXX Can update profiles_activity here as soon as it understands
   #     field names like login_name.
 
@@ -446,6 +454,10 @@ sub _check_numeric {
     return "must be a numeric value";
   }
   return $value;
+}
+
+sub _check_timestamp {
+  return Bugzilla->dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
 }
 
 ################################################################################
@@ -669,6 +681,7 @@ sub showmybugslink { $_[0]->{showmybugslink}; }
 sub email_disabled { $_[0]->{disable_mail} || !$_[0]->{is_enabled}; }
 sub email_enabled  { !$_[0]->email_disabled; }
 sub last_seen_date { $_[0]->{last_seen_date}; }
+sub modification_ts          { $_[0]->{modification_ts}; }
 sub password_change_required { $_[0]->{password_change_required}; }
 sub password_change_reason   { $_[0]->{password_change_reason}; }
 
@@ -2658,6 +2671,9 @@ sub create {
   $params->{nickname}
     = _generate_nickname($params->{realname}, $params->{login_name}, 0);
 
+  my $modification_ts = $dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
+  $params->{modification_ts} = $modification_ts;
+
   my $user = $class->SUPER::create($params);
 
   # Turn on all email for the new user
@@ -2698,8 +2714,8 @@ sub create {
   $dbh->do(
     'INSERT INTO profiles_activity
                           (userid, who, profiles_when, fieldid, newvalue)
-                   VALUES (?, ?, NOW(), ?, NOW())', undef,
-    ($user->id, $who, $creation_date_fieldid)
+                   VALUES (?, ?, ?, ?, ?)', undef,
+    ($user->id, $who, $modification_ts, $creation_date_fieldid, $modification_ts)
   );
 
   $dbh->bz_commit_transaction();

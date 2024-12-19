@@ -497,12 +497,7 @@ $Template::Stash::SCALAR_OPS->{0} = sub {
 # that truncates a string to a certain length.
 $Template::Stash::SCALAR_OPS->{truncate} = sub {
   my ($string, $length, $ellipsis) = @_;
-  return $string if !$length || length($string) <= $length;
-
-  $ellipsis ||= '';
-  my $strlen = $length - length($ellipsis);
-  my $newstr = substr($string, 0, $strlen) . $ellipsis;
-  return $newstr;
+  return truncate_string($string, $length, $ellipsis);
 };
 
 # Override the built in .lower() vmethod
@@ -1066,11 +1061,6 @@ sub create {
       # These don't work as normal constants.
       DB_MODULE            => \&Bugzilla::Constants::DB_MODULE,
       'default_authorizer' => sub { return Bugzilla::Auth->new() },
-
-# It is almost always better to do mobile feature detection, client side in js.
-# However, we need to set the meta[name=viewport] server-side or the behavior is
-# not as predictable. It is possible other parts of the frontend may use this feature too.
-      'is_mobile_browser' => sub { return Bugzilla->cgi->user_agent =~ /Mobi/ },
 
       'socorro_lens_url' => sub {
         my ($sigs) = @_;

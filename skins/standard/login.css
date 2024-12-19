@@ -1,0 +1,126 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * This Source Code Form is "Incompatible With Secondary Licenses", as
+ * defined by the Mozilla Public License, v. 2.0.
+ */
+
+#login-wrapper {
+  display: flex;
+}
+
+
+#login-wrapper h1 {
+  margin: 0;
+}
+
+.field:not(:first-child) {
+  margin: 12px 0 0;
+}
+
+.field label:first-child {
+  display: block;
+  margin: 4px 0;
+  font-weight: bold;
+}
+
+.field.remember {
+  text-align: center;
+}
+
+input[type="email"],
+input[type="password"],
+input[type="submit"],
+button[type="submit"] {
+  width: 100%;
+}
+
+#login-primary {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+#login-primary .method-separator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--disabled-button-foreground-color);
+  font-size: var(--font-size-small);
+  text-align: center;
+}
+
+#login-primary .method-separator::before,
+#login-primary .method-separator::after {
+  flex: auto;
+  height: 1px;
+  background-color: var(--menu-border-color);
+  content: '';
+}
+
+.cookie-notify {
+  margin-bottom: 0;
+  color: var(--tertiary-label-color);
+  font-size: var(--font-size-small);
+}
+
+#login-secondary section:not(:first-child) {
+  margin: 32px 0 0;
+}
+
+#login-secondary h2 {
+  margin: 0;
+  font-size: var(--font-size-h3);
+}
+
+#verify-totp-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#verify-totp-input input[type="submit"] {
+  width: auto;
+}
+
+#verify-totp-error {
+  margin-top: 8px;
+  color: var(--error-message-foreground-color);
+}
+
+@media screen and (768px <= width) {
+  #login-wrapper {
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 32px 64px;
+    margin: 64px auto;
+    width: calc(320px + 64px + 320px);
+  }
+
+  #login-wrapper h1 {
+    width: 100%;
+  }
+
+  #login-primary,
+  #login-secondary {
+    width: 320px;
+  }
+}
+
+@media screen and (width < 768px) {
+  #login-wrapper {
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .cookie-notify {
+    display: none;
+  }
+
+  .verify-totp input[type="text"] {
+    width: 100%;
+    font-size: var(--font-size-h3);
+    text-align: center;
+  }
+}

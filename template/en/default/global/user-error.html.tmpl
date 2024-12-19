@@ -372,6 +372,22 @@
     Comments cannot be longer than
     [%+ constants.MAX_COMMENT_LENGTH FILTER html %] characters.
 
+  [% ELSIF error == "comment_reaction_disabled" %]
+    [% title = "Comment Reactions Disabled" %]
+    Comment reactions are not enabled.
+
+  [% ELSIF error == "comment_reaction_invalid" %]
+    [% title = "Invalid Comment Reaction" %]
+    The comment reaction "[% reaction FILTER html %]" is not supported.
+
+  [% ELSIF error == "comment_reaction_closed" %]
+    [% title = "Comment Reactions Closed" %]
+    This [% terms.bug %] no longer accepts comment reactions.
+
+  [% ELSIF error == "comment_reaction_restricted" %]
+    [% title = "Comment Reactions Restricted" %]
+    You are not allowed to react to comments on this [% terms.bug %].
+
   [% ELSIF error == "comment_tag_disabled" %]
     [% title = "Comment Tagging Disabled" %]
     The comment tagging is not enabled.
@@ -1918,10 +1934,10 @@
     Sorry, but you are not allowed to (un)mark comments or attachments
     as private.
 
-  [% ELSIF error == "webdot_too_large" %]
+  [% ELSIF error == "dep_graph_too_large" %]
     [% title = "Dependency Graph Too Large" %]
     The dependency graph contains too many [% terms.bugs %] to display (more
-    than [% constants.MAX_WEBDOT_BUGS FILTER html %] [%+ terms.bugs %]).
+    than [% constants.MAX_DEP_GRAPH_BUGS FILTER html %] [%+ terms.bugs %]).
 
   [% ELSIF error == "wrong_token_for_cancelling_email_change" %]
     [% title = "Wrong Token" %]
@@ -2035,7 +2051,10 @@
 [% END %]
 
 [% UNLESS header_done %]
-  [% PROCESS global/header.html.tmpl robots = 'noindex' %]
+  [% PROCESS global/header.html.tmpl
+    robots     = 'noindex'
+    responsive = 1
+  %]
 [% END %]
 
 [% PROCESS global/docslinks.html.tmpl

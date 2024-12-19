@@ -30,40 +30,53 @@
 [% PROCESS global/variables.none.tmpl %]
 
 [% PROCESS global/header.html.tmpl
-  title        = "Log in to $terms.Bugzilla",
-  onload       = "document.forms['login'].Bugzilla_login.focus()"
-  allow_mobile = 1
+  title      = "Log in to $terms.Bugzilla",
+  style_urls = ["skins/standard/login.css"]
+  responsive = 1
 %]
 
 [% USE Bugzilla %]
 
-<p>
-  I need an email address and password to continue.
-</p>
+<div id="login-wrapper">
 
-<div id="login" class="login-form">
+<h1>Log in to [% "$terms.Bugzilla" FILTER html %]</h1>
+
+<div id="login-primary">
+  [% IF Param('oauth2_client_enabled') %]
+    [% INCLUDE account/auth/oauth2_login_button.html.tmpl
+      target => target
+    %]
+  [% END %]
+
+  [% additional_methods = Hook.process('additional_methods') %]
+  [% additional_methods FILTER none %]
+
+  [% IF Param('oauth2_client_enabled') || additional_methods %]
+    <div class="method-separator">or</div>
+  [% END %]
+
   <form name="login" action="[% basepath FILTER html %][% target FILTER uri FILTER html %]" method="POST"
         [%- IF Bugzilla.cgi.param("data") %] enctype="multipart/form-data"[% END %]>
-    <div class="field-login">
-      <label for="Bugzilla_login">Email Address:</label>
+    <div class="field login">
+      <label for="Bugzilla_login">Email:</label>
       <input id="Bugzilla_login" name="Bugzilla_login"
              [%- ' type="email"' UNLESS Param('emailsuffix') %]
-             required>
+             required autofocus>
       [% Param('emailsuffix') FILTER html %]
     </div>
 
-    <div class="field-password">
+    <div class="field password">
       <label for="Bugzilla_password">Password:</label>
       <input type="password" id="Bugzilla_password" name="Bugzilla_password" required>
     </div>
 
     [% IF Param('rememberlogin') == 'defaulton' ||
        Param('rememberlogin') == 'defaultoff' %]
-      <div class="field-remember">
+      <div class="field remember">
         <input type="checkbox" id="Bugzilla_remember" name="Bugzilla_remember" value="on"
                [%+ "checked" IF Param('rememberlogin') == "defaulton" %]>
         <label for="Bugzilla_remember" class="checkbox-note">
-          Remember my email address
+          Remember me
         </label>
       </div>
     [% END %]
@@ -71,10 +84,10 @@
     [% PROCESS "global/hidden-fields.html.tmpl"
        exclude="^Bugzilla_(login|password)$" %]
 
-    <div class="field-submit">
+    <div class="field submit">
       <input type="hidden" name="Bugzilla_login_token"
              value="[% get_login_request_token() FILTER html %]">
-      <input type="submit" name="GoAheadAndLogIn" value="Log in" id="log_in">
+      <input type="submit" name="GoAheadAndLogIn" value="Log In" id="log_in">
     </div>
 
     <p class="cookie-notify">
@@ -84,39 +97,42 @@
   </form>
 </div>
 
-[% IF Param('oauth2_client_enabled') %]
-  [% INCLUDE account/auth/oauth2_login_button.html.tmpl
-     target => target
-  %]
-[% END %]
-
-[% Hook.process('additional_methods') %]
-
 [%# Allow the user to create a new account, or request a token to change
   # their password, assuming that our auth method allows that.
   #%]
-
+<div id="login-secondary">
   [% IF Param("allow_account_creation") && user.authorizer.user_can_create_account %]
-    <hr>
-
-    <p>
-      If you don't have a [% terms.Bugzilla %] account, you can
-      <a href="[% basepath FILTER none %]createaccount.cgi">create a new account</a>.
-    </p>
+    <section>
+      <h2>New to [% terms.Bugzilla %]?</h2>
+      <p>
+        If you don't have a [% terms.Bugzilla %] account, you can
+        <a href="[% basepath FILTER none %]createaccount.cgi">create a new account</a>.
+      </p>
+    </section>
   [% END %]
 
   [% IF user.authorizer.can_change_password %]
-    <hr>
-
-    <form id="forgot" method="get" action="[% basepath FILTER none %]token.cgi">
-      <input type="hidden" name="a" value="reqpw">
-      If you have an account, but have forgotten your password,
-      enter your email address below and submit a request
-      to change your password.<br>
-      <input name="loginname">
-      <input type="hidden" id="token" name="token" value="[% issue_hash_token(['reqpw']) FILTER html %]">
-      <input type="submit" id="request" value="Reset Password">
-    </form>
+    <section>
+      <h2>Forgot Password?</h2>
+      <form id="forgot" method="get" action="[% basepath FILTER none %]token.cgi">
+        <input type="hidden" name="a" value="reqpw">
+        <input type="hidden" id="token" name="token"
+               value="[% issue_hash_token(['reqpw']) FILTER html %]">
+        <p>
+          If you have an account, but have forgotten your password, enter your
+          email address below and submit a request to change your password.
+        </p>
+        <div class="field login">
+          <input type="email" name="loginname">
+        </div>
+        <div class="field submit">
+          <input type="submit" id="request" value="Reset Password" class="secondary">
+        </div>
+      </form>
+    </section>
   [% END %]
+</div>
+
+</div>
 
 [% PROCESS global/footer.html.tmpl %]

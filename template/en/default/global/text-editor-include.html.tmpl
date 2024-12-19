@@ -1,0 +1,46 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[%
+
+style_urls.push('skins/standard/text-editor.css');
+
+# Use `unshift()` instead of `push()` to make sure the script is loaded before `InlineCommentEditor`
+javascript_urls.unshift('js/text-editor.js');
+
+js_BUGZILLA.string.TextEditor = {
+  text_editor => 'Text Editor',
+  comment_editor => 'Comment Editor',
+  edit => 'Edit',
+  preview => 'Preview',
+  toolbar_label => 'Markdown text-formatting toolbar',
+  command_bold => 'Bold',
+  command_italic => 'Italic',
+  command_code => 'Code',
+  command_link => 'Link',
+  command_heading => 'Heading',
+  command_quote => 'Quote',
+  command_numbered_list => 'Numbered list',
+  command_bulleted_list => 'Bulleted list',
+  loading => 'Loading…',
+  preview_error => 'Preview could not be loaded. Please try again later.',
+  markdown_link => {
+    text => 'Markdown supported',
+    href => 'https://guides.github.com/features/mastering-markdown/',
+  },
+  etiquette_link => {
+    text => 'Etiquette',
+    href => BUGZILLA.config.basepath _ "page.cgi?id=etiquette.html",
+  },
+  guidelines_link => {
+    text => "$terms.Bug Writing Guidelines",
+    href => BUGZILLA.config.basepath _ "page.cgi?id=bug-writing.html",
+  },
+};
+
+%]

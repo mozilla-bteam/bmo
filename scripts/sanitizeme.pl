@@ -42,10 +42,10 @@ my $dbh = Bugzilla->dbh;
 # a user who is not logged in.
 
 my (
-  $dry_run,     $from_cron, $keep_attachments, $keep_group_bugs,
-  $keep_groups, $execute,   $keep_passwords,   $keep_insider,
-  $trace,       $enable_email
-) = (0, 0, 0, '', 0, 0, 0, 0, 0, 0);
+  $dry_run,     $from_cron,    $keep_attachments, $keep_group_bugs,
+  $keep_groups, $execute,      $keep_passwords,   $keep_insider,
+  $trace,       $enable_email, $keep_fulltext
+) = (0, 0, 0, '', 0, 0, 0, 0, 0, 0, 0);
 my $keep_group_bugs_sql = '';
 
 my $syntax = <<EOF;
@@ -57,6 +57,7 @@ options:
 --keep-group-bugs  disable removal of the specified groups and associated bugs
 --keep-groups      disable removal of group definitions
 --enable-email     do not disable email for all users
+--keep-fulltext    disable removal of fulltext data
 --dry-run          do not update the database, just output what will be deleted
 --from-cron        quite mode - suppress non-warning/error output
 --trace            output sql statements
@@ -72,6 +73,7 @@ GetOptions(
   "keep-groups"       => \$keep_groups,
   "trace"             => \$trace,
   "enable-email"      => \$enable_email,
+  "keep-fulltext"     => \$keep_fulltext,
 ) or die $syntax;
 die "--execute switch required to perform database sanitization.\n\n$syntax"
   unless $execute or $dry_run;
@@ -110,6 +112,7 @@ eval {
   delete_user_request_log();
   Bugzilla::Hook::process('db_sanitize');
   disable_email_delivery() unless $enable_email;
+  delete_bugs_fulltext() unless $keep_fulltext;
   delete_system_parameters();
   delete_oauth_providers();
   delete_bloomfilter();
@@ -171,16 +174,17 @@ sub delete_deleted_comments {
     "SELECT comment_id FROM longdescs_tags WHERE tag='deleted'");
   return unless @$comment_ids;
   print "Deleting 'deleted' comments...\n";
-  my @bug_ids = uniq @{
-    $dbh->selectcol_arrayref(
-      "SELECT bug_id FROM longdescs WHERE comment_id IN ("
-        . join(',', @$comment_ids) . ")"
-    )
-  };
   $dbh->do(
     "DELETE FROM longdescs WHERE comment_id IN (" . join(',', @$comment_ids) . ")");
-  foreach my $bug_id (@bug_ids) {
-    Bugzilla::Bug->new($bug_id)->_sync_fulltext(update_comments => 1);
+
+  if ($keep_fulltext) {
+    my $bug_ids
+      = $dbh->selectcol_arrayref(
+      'SELECT DISTINCT bug_id FROM longdescs WHERE comment_id IN (' . join ',',
+      @$comment_ids . ')');
+    foreach my $bug_id (@{$bug_ids}) {
+      Bugzilla::Bug->new($bug_id)->_sync_fulltext(update_comments => 1);
+    }
   }
 }
 
@@ -193,7 +197,7 @@ sub delete_insider_comments {
     "DELETE attach_data FROM attachments JOIN attach_data ON attachments.attach_id = attach_data.id WHERE attachments.isprivate = 1"
   );
   $dbh->do("DELETE FROM attachments WHERE isprivate = 1");
-  $dbh->do("UPDATE bugs_fulltext SET comments = comments_noprivate");
+  $dbh->do('UPDATE bugs_fulltext SET comments = comments_noprivate') if $keep_fulltext;
 }
 
 sub delete_security_groups {
@@ -253,6 +257,34 @@ sub delete_sensitive_user_data {
   $dbh->do("DELETE FROM ts_funcmap");
   $dbh->do("DELETE FROM ts_job");
   $dbh->do("DELETE FROM ts_note");
+
+  # Reminders
+  $dbh->do('TRUNCATE TABLE reminders');
+
+  # Whine events
+  $dbh->do('DELETE FROM whine_events');
+
+  # Watched users by other users
+  $dbh->do('TRUNCATE TABLE watch');
+
+  # Series data (charts)
+  $dbh->do('DELETE FROM series_categories');
+
+  # Email rate limiting
+  $dbh->do('TRUNCATE TABLE email_rates');
+
+  # Clear MFA for all users
+  $dbh->do("UPDATE profiles SET mfa = ''");
+
+  # Ignored bugs
+  $dbh->do('TRUNCATE TABLE email_bug_ignore');
+
+  # secbugs_* tables no longer used by any code
+  # but may contain sensitive info on older bugs
+  $dbh->do('TRUNCATE TABLE secbugs_Bugs');
+  $dbh->do('TRUNCATE TABLE secbugs_BugHistory');
+  $dbh->do('TRUNCATE TABLE secbugs_Details');
+  $dbh->do('TRUNCATE TABLE secbugs_Stats');
 }
 
 sub delete_attachment_data {
@@ -282,6 +314,13 @@ sub disable_email_delivery {
   # Also clear out the default flag cc as well since they do not
   # have to be in the profiles table
   $dbh->do("UPDATE flagtypes SET cc_list = NULL");
+}
+
+sub delete_bugs_fulltext {
+  # Delete data from the bugs_fulltext table as the data
+  # can be regenerated if needed
+  print "Deleting bugs fulltext data...\n";
+  $dbh->do('TRUNCATE TABLE bugs_fulltext');
 }
 
 sub delete_system_parameters {

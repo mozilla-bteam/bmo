@@ -539,38 +539,76 @@ sub SaveEmail {
 sub DoPermissions {
   my $dbh  = Bugzilla->dbh;
   my $user = Bugzilla->user;
-  my (@has_bits, @set_bits);
 
-  my $groups
-    = $dbh->selectall_arrayref('SELECT DISTINCT name, description FROM '
-      . $dbh->quote_identifier('groups')
-      . ' WHERE id IN ('
-      . $user->groups_as_string
-      . ') ORDER BY name');
-  foreach my $group (@$groups) {
-    my ($nam, $desc) = @$group;
-    push(@has_bits, {"desc" => $desc, "name" => $nam});
-  }
-  $groups = $dbh->selectall_arrayref(
-    'SELECT DISTINCT id, name, description
-       FROM ' . $dbh->quote_identifier('groups') . '
-      ORDER BY name'
+  # we need to show which groups are direct and which are inherited
+  my $groups_to_check = $dbh->selectcol_arrayref(
+    q{SELECT DISTINCT group_id
+          FROM user_group_map
+         WHERE user_id = ? AND isbless = 0}, undef, $user->id
   );
-  foreach my $group (@$groups) {
-    my ($group_id, $nam, $desc) = @$group;
-    if ($user->can_bless($group_id)) {
-      push(@set_bits, {"desc" => $desc, "name" => $nam});
+
+  my $rows = $dbh->selectall_arrayref(
+    q{SELECT DISTINCT grantor_id, member_id
+         FROM group_group_map
+        WHERE grant_type = ?}, undef, GROUP_MEMBERSHIP
+  );
+
+  my %group_membership;
+  foreach my $row (@{$rows}) {
+    my ($grantor_id, $member_id) = @{$row};
+    push @{$group_membership{$member_id}}, $grantor_id;
+  }
+
+  my %checked_groups;
+  my %direct_groups;
+  my %indirect_groups;
+  my %groups;
+
+  foreach my $member_id (@{$groups_to_check}) {
+    $direct_groups{$member_id} = 1;
+  }
+
+  while (scalar(@{$groups_to_check}) > 0) {
+    my $member_id = shift @{$groups_to_check};
+    if (!$checked_groups{$member_id}) {
+      $checked_groups{$member_id} = 1;
+      my $members      = $group_membership{$member_id};
+      my @new_to_check = grep { !$checked_groups{$_} } @{$members};
+      push @{$groups_to_check}, @new_to_check;
+      foreach my $id (@new_to_check) {
+        $indirect_groups{$id} = $member_id;
+      }
+      $groups{$member_id} = 1;
     }
   }
+
+  my @groups;
+  my $ra_groups = Bugzilla::Group->new_from_list([keys %groups]);
+  foreach my $group (@{$ra_groups}) {
+    my %inherited;
+    if (!$direct_groups{$group->id}) {
+      foreach my $g (@{$ra_groups}) {
+        if ($g->id == $indirect_groups{$group->id}) {
+          $inherited{$g->name} = 1;
+        }
+      }
+    }
+    push @groups,
+      {
+      name        => $group->name,
+      description => $group->description,
+      can_bless   => $user->can_bless($group->id),
+      inherited   => [keys %inherited],
+      };
+  }
+
+  $vars->{groups} = \@groups;
 
   # If the user has product specific privileges, inform them about that.
   foreach my $privs (PER_PRODUCT_PRIVILEGES) {
     next if $user->in_group($privs);
-    $vars->{"local_$privs"} = $user->get_products_by_permission($privs);
+    $vars->{"product_$privs"} = $user->get_products_by_permission($privs);
   }
-
-  $vars->{'has_bits'} = \@has_bits;
-  $vars->{'set_bits'} = \@set_bits;
 }
 
 # No SavePermissions() because this panel has no changeable fields.
@@ -1085,8 +1123,10 @@ my $save_changes    = $cgi->param('dosave');
 my $disable_account = $cgi->param('account_disable');
 $vars->{'changes_saved'} = $save_changes || $mfa_token;
 
-my $current_tab_name = $cgi->param('tab') || "account";
+my $specified_tab_name = $cgi->param('tab');
+my $current_tab_name = $specified_tab_name || 'account';
 
+$vars->{'specified_tab_name'} = $specified_tab_name;
 $vars->{'current_tab_name'} = $current_tab_name;
 
 my $token = $cgi->param('token');

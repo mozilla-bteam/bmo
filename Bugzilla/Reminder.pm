@@ -19,6 +19,7 @@ use Bugzilla::User;
 use Bugzilla::Util qw(datetime_from trim validate_date);
 
 use DateTime;
+use Mojo::JSON qw( false true);
 
 use constant DB_TABLE => 'reminders';
 
@@ -48,7 +49,7 @@ use constant VALIDATORS => {
 use constant AUDIT_CREATES => 1;
 use constant AUDIT_UPDATES => 1;
 use constant AUDIT_REMOVES => 1;
-use constant USE_MEMCACHED => 1;
+use constant USE_MEMCACHED => 0;
 
 # getters
 
@@ -72,9 +73,22 @@ sub creation_ts {
   return $self->{creation_ts} ? datetime_from($self->{creation_ts}) : undef;
 }
 
-sub id   { return $_[0]->{id}; }
-sub note { return $_[0]->{note}; }
-sub sent { return $_[0]->{sent}; }
+sub id     { return $_[0]->{id}; }
+sub bug_id { return $_[0]->{bug_id}; }
+sub note   { return $_[0]->{note}; }
+sub sent   { return $_[0]->{sent}; }
+
+sub to_hash {
+  my ($self) = @_;
+  return {
+    id          => $self->id,
+    bug_id      => $self->bug_id,
+    note        => $self->note,
+    reminder_ts => $self->reminder_ts,
+    creation_ts => $self->creation_ts,
+    sent        => ($self->sent ? true : false),
+  };
+}
 
 # setters
 

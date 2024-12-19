@@ -83,9 +83,117 @@ $sel->select_ok("bug_status", "label=RESOLVED");
 $sel->click_ok('bottom-save-btn', 'Save changes');
 check_page_load($sel, qq{http://HOSTNAME/show_bug.cgi?id=$bug1_id});
 $sel->is_text_present_ok("Changes submitted for bug $bug1_id");
+logout($sel);
+
+# Test emoji comment reactions.
+
+my $reactions_base_path = '//div[@class="comment-reactions"]';
+my $reactions_anchor_path = $reactions_base_path . '/button[@class="anchor"]';
+my $reactions_picker_path = $reactions_base_path . '/div[@class="picker"]';
+my $reactions_sums_path = $reactions_base_path . '/div[@class="sums"]';
+my $reactions_btn1_path = '/button[@data-reaction-name="+1"]';
+my $reactions_btn2_path = '/button[@data-reaction-name="smile"]';
+
+# Disable reactions
+log_in($sel, $config, 'admin');
+set_parameters($sel, {"Advanced" => {"use_comment_reactions-off" => undef}});
+logout($sel);
+
+# Reactions are now hidden
+go_to_bug($sel, $bug1_id);
+ok(!$sel->is_element_present($reactions_base_path));
+
+# Enable reactions
+log_in($sel, $config, 'admin');
+set_parameters($sel, {"Advanced" => {"use_comment_reactions-on" => undef}});
+logout($sel);
+
+# Reactions are now visible
+log_in($sel, $config, 'QA_Selenium_TEST');
+go_to_bug($sel, $bug1_id);
+$sel->is_element_present_ok($reactions_base_path);
+$sel->click_ok($reactions_anchor_path);
+$sel->click_ok($reactions_picker_path . $reactions_btn1_path
+  . '[@aria-pressed="false"]');
+$sel->is_element_present_ok($reactions_sums_path . $reactions_btn1_path
+  . '[@data-reaction-count="1"][@aria-pressed="true"]');
+$sel->click_ok($reactions_anchor_path);
+$sel->is_element_present_ok($reactions_picker_path . $reactions_btn1_path
+  . '[@aria-pressed="true"]');
+$sel->click_ok($reactions_picker_path . $reactions_btn2_path
+  . '[@aria-pressed="false"]');
+$sel->click_ok($reactions_sums_path . $reactions_btn2_path
+  . '[@data-reaction-count="1"][@aria-pressed="true"]');
+$sel->is_element_present_ok($reactions_sums_path . $reactions_btn2_path
+  . '[@data-reaction-count="0"][@aria-pressed="false"]');
+logout($sel);
+
+# Choose comment reactions by a different user. No privilege required to react
+log_in($sel, $config, 'unprivileged');
+go_to_bug($sel, $bug1_id);
+$sel->click_ok($reactions_sums_path . $reactions_btn1_path
+  . '[@data-reaction-count="1"][@aria-pressed="false"]');
+$sel->is_element_present_ok($reactions_sums_path . $reactions_btn1_path
+  . '[@data-reaction-count="2"][@aria-pressed="true"]');
+$sel->click_ok($reactions_anchor_path);
+$sel->click_ok($reactions_picker_path . $reactions_btn1_path
+  . '[@aria-pressed="true"]');
+$sel->is_element_present_ok($reactions_sums_path . $reactions_btn1_path
+  . '[@data-reaction-count="1"][@aria-pressed="false"]');
+$sel->click_ok($reactions_anchor_path);
+$sel->click_ok($reactions_picker_path . $reactions_btn2_path
+  . '[@aria-pressed="false"]');
+$sel->is_element_present_ok($reactions_sums_path . $reactions_btn2_path
+  . '[@data-reaction-count="1"][@aria-pressed="true"]');
+logout($sel);
+
+# Restrict comments on the bug to users in the editbugs group
+log_in($sel, $config, 'admin');
+go_to_bug($sel, $bug1_id);
+$sel->check_ok('restrict_comments');
+$sel->click_ok('bottom-save-btn', 'Save changes');
+logout($sel);
+
+# An unprivileged user cannot react but can see reactions
+log_in($sel, $config, 'unprivileged');
+go_to_bug($sel, $bug1_id);
+ok(!$sel->is_element_present($reactions_anchor_path));
+ok(!$sel->is_element_present($reactions_picker_path));
+$sel->is_element_present_ok($reactions_sums_path . $reactions_btn1_path
+  . '[@data-reaction-count="1"][@aria-pressed="false"][@disabled]');
+$sel->is_element_present_ok($reactions_sums_path . $reactions_btn2_path
+  . '[@data-reaction-count="1"][@aria-pressed="true"][@disabled]');
+logout($sel);
+
+# An editbugs user can still react
+log_in($sel, $config, 'editbugs');
+go_to_bug($sel, $bug1_id);
+$sel->click_ok($reactions_anchor_path);
+$sel->click_ok($reactions_picker_path . $reactions_btn1_path
+  . '[@aria-pressed="false"]');
+$sel->is_element_present_ok($reactions_sums_path . $reactions_btn1_path
+  . '[@data-reaction-count="2"][@aria-pressed="true"]');
+logout($sel);
+
+# Restore comment restriction
+log_in($sel, $config, 'admin');
+go_to_bug($sel, $bug1_id);
+$sel->uncheck_ok('restrict_comments');
+$sel->click_ok('bottom-save-btn', 'Save changes');
+logout($sel);
+
+# A logged out user cannot react but can see reactions of other users
+go_to_bug($sel, $bug1_id);
+ok(!$sel->is_element_present($reactions_anchor_path));
+ok(!$sel->is_element_present($reactions_picker_path));
+$sel->is_element_present_ok($reactions_sums_path . $reactions_btn1_path
+  . '[@data-reaction-count="2"][@aria-pressed="false"][@disabled]');
+$sel->is_element_present_ok($reactions_sums_path . $reactions_btn2_path
+  . '[@data-reaction-count="1"][@aria-pressed="false"][@disabled]');
 
 # Now move the bug into another product, which has a mandatory group.
 
+log_in($sel, $config, 'QA_Selenium_TEST');
 go_to_bug($sel, $bug1_id);
 $sel->select_ok("product",   "label=QA-Selenium-TEST");
 $sel->select_ok("component", "label=QA-Selenium-TEST");
@@ -304,17 +412,17 @@ $sel->remove_all_selections_ok("bug_status");
 $sel->remove_all_selections_ok("resolution");
 screenshot_page($sel, '/app/artifacts/line264.png');
 $sel->is_checked_ok("emailassigned_to1");
-$sel->select_ok("emailtype1", "value=exact");
+$sel->select_ok("emailtype1", "value=equals");
 $sel->type_ok("email1", $config->{admin_user_login});
 $sel->check_ok("emailassigned_to2");
 $sel->check_ok("emailqa_contact2");
 $sel->check_ok("emailcc2");
-$sel->select_ok("emailtype2", "value=exact");
+$sel->select_ok("emailtype2", "value=equals");
 $sel->type_ok("email2", $config->{QA_Selenium_TEST_user_login});
 screenshot_page($sel, '/app/artifacts/line271.png');
 $sel->click_ok("Search");
 check_page_load($sel,
-  q{http://HOSTNAME/buglist.cgi?emailreporter2=1&order=Importance&emailtype2=exact&list_id=__LIST_ID__&emailtype1=exact&emailcc2=1&emailassigned_to1=1&query_format=advanced&emailqa_contact2=1&email2=QA-Selenium-TEST%40mozilla.test&emailassigned_to2=1&email1=admin%40mozilla.test&product=TestProduct}
+  q{http://HOSTNAME/buglist.cgi?emailreporter2=1&order=Importance&emailtype2=equals&list_id=__LIST_ID__&emailtype1=equals&emailcc2=1&emailassigned_to1=1&query_format=advanced&emailqa_contact2=1&email2=QA-Selenium-TEST%40mozilla.test&emailassigned_to2=1&email1=admin%40mozilla.test&product=TestProduct}
 );
 $sel->title_is("Bug List");
 screenshot_page($sel, '/app/artifacts/line275.png');
@@ -399,7 +507,7 @@ $sel->is_text_present_ok("2 bugs found");
 screenshot_page($sel, '/app/artifacts/line350.png');
 $sel->click_ok('change-several');
 check_page_load($sel,
-  q{http://HOSTNAME/buglist.cgi?email1=admin%40mozilla.test&email2=QA-Selenium-TEST%40mozilla.test&emailassigned_to1=1&emailassigned_to2=1&emailcc2=1&emailqa_contact2=1&emailreporter2=1&emailtype1=exact&emailtype2=exact&product=TestProduct&query_format=advanced&order=priority%2Cbug_severity&tweak=1&list_id=__LIST_ID__}
+  q{http://HOSTNAME/buglist.cgi?email1=admin%40mozilla.test&email2=QA-Selenium-TEST%40mozilla.test&emailassigned_to1=1&emailassigned_to2=1&emailcc2=1&emailqa_contact2=1&emailreporter2=1&emailtype1=equals&emailtype2=equals&product=TestProduct&query_format=advanced&order=priority%2Cbug_severity&tweak=1&list_id=__LIST_ID__}
 );
 $sel->title_is("Bug List");
 $sel->click_ok("check_all");
@@ -531,7 +639,7 @@ $sel->title_is("Bug List: My bugs from QA_Selenium");
 $sel->is_text_present_ok("2 bugs found");
 $sel->click_ok('change-several', 'Change Several Bugs at Once');
 check_page_load($sel,
-  q{http://HOSTNAME/buglist.cgi?email1=admin%40mozilla.test&email2=QA-Selenium-TEST%40mozilla.test&emailassigned_to1=1&emailassigned_to2=1&emailcc2=1&emailqa_contact2=1&emailreporter2=1&emailtype1=exact&emailtype2=exact&product=TestProduct&query_format=advanced&order=priority%2Cbug_severity&tweak=1&list_id=__LIST_ID__}
+  q{http://HOSTNAME/buglist.cgi?email1=admin%40mozilla.test&email2=QA-Selenium-TEST%40mozilla.test&emailassigned_to1=1&emailassigned_to2=1&emailcc2=1&emailqa_contact2=1&emailreporter2=1&emailtype1=equals&emailtype2=equals&product=TestProduct&query_format=advanced&order=priority%2Cbug_severity&tweak=1&list_id=__LIST_ID__}
 );
 $sel->title_is("Bug List");
 $sel->click_ok("check_all");

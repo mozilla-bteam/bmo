@@ -1,6 +1,6 @@
-FROM mozillabteam/bmo-perl-slim:20231024.1 AS base
+FROM mozillabteam/bmo-perl-slim:20240822.1 AS base
 
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 
 ARG CI
 ARG CIRCLE_SHA1
@@ -10,16 +10,15 @@ ENV CI=${CI}
 ENV CIRCLE_BUILD_URL=${CIRCLE_BUILD_URL}
 ENV CIRCLE_SHA1=${CIRCLE_SHA1}
 
+# we run a loopback logging server on this TCP port.
 ENV LOG4PERL_CONFIG_FILE=log4perl-json.conf
+ENV LOGGING_PORT=5880
+ENV LOCALCONFIG_ENV=1
 
 RUN apt-get update \
     && apt-get upgrade -y \
-    && apt-get install -y rsync
-
-# we run a loopback logging server on this TCP port.
-ENV LOGGING_PORT=5880
-
-ENV LOCALCONFIG_ENV=1
+    && apt-get install -y rsync curl \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -37,14 +36,20 @@ RUN perl checksetup.pl --no-database --default-localconfig && \
 
 EXPOSE 8000
 
+HEALTHCHECK CMD curl -sfk http://localhost -o/dev/null
+
 ENTRYPOINT ["/app/scripts/entrypoint.pl"]
 CMD ["httpd"]
 
-FROM base AS TEST
+FROM base AS test
+
+HEALTHCHECK NONE
 
 USER root
 
-RUN apt-get install -y curl firefox-esr lsof
+RUN apt-get update \
+    && apt-get install -y firefox-esr lsof \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN curl -L https://github.com/mozilla/geckodriver/releases/download/v0.33.0/geckodriver-v0.33.0-linux64.tar.gz -o /tmp/geckodriver.tar.gz \
   && cd /tmp \

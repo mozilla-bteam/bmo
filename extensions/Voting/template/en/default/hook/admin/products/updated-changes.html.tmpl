@@ -88,6 +88,7 @@
       [%# This is INCLUDED instead of PROCESSED to avoid variables getting
           overwritten, which happens otherwise %]
       [% INCLUDE bug/process/results.html.tmpl
+        recipient_count = changes._confirmed_bugs_sent_bugmail.$id.size
         type = 'votes'
         header_done = 1
         sent_bugmail = changes._confirmed_bugs_sent_bugmail.$id

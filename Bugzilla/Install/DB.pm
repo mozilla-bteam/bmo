@@ -26,7 +26,7 @@ use Bugzilla::Field;
 use Date::Parse;
 use Date::Format;
 use IO::File;
-use List::MoreUtils qw(uniq);
+use List::Util qw(max uniq);
 use URI;
 use URI::QueryParam;
 
@@ -837,6 +837,9 @@ sub update_table_definitions {
 
   # Bug 1803658 - dkl@mozilla.com
   $dbh->bz_alter_column('ts_error', 'message', {TYPE => 'TEXT', NOTNULL => 1});
+
+  # Bug 1926081 - dkl@mozilla.com
+  _migrate_profiles_modification_ts();
 
   ################################################################
   # New --TABLE-- changes should go *** A B O V E *** this point #
@@ -4435,6 +4438,73 @@ sub _update_see_also_any_url {
       "UPDATE bug_see_also SET class = 'Bugzilla::BugUrl::Local' WHERE class = 'Bugzilla::BugUrl::Bugzilla::Local'"
     );
   }
+}
+
+sub _migrate_profiles_modification_ts {
+  my $dbh = Bugzilla->dbh;
+
+  return if $dbh->bz_column_info('profiles', 'modification_ts');
+
+  $dbh->bz_add_column('profiles', 'modification_ts', {TYPE => 'DATETIME'});
+
+  # A fresh DB will not have this column yet as it is added later by an extension
+  # so we will need to ignore it later in this case.
+  my $has_creation_ts = $dbh->bz_column_info('profiles', 'creation_ts');
+
+  my $sth = $dbh->prepare(
+    'UPDATE profiles SET modification_ts = FROM_UNIXTIME(?) WHERE userid = ?');
+
+  # Todays timestamp
+  my $now_when
+    = $dbh->selectrow_array('SELECT UNIX_TIMESTAMP(LOCALTIMESTAMP(0))');
+
+  my $user_ids
+    = $dbh->selectcol_arrayref('SELECT userid FROM profiles ORDER BY userid');
+
+  my $count = 1;
+  my $total = scalar @{$user_ids};
+
+  foreach my $user_id (@{$user_ids}) {
+    indicate_progress({total => $total, current => $count++, every => 25});
+
+    my $audit_log_when = $dbh->selectrow_array(
+      'SELECT UNIX_TIMESTAMP(at_time) FROM audit_log
+        WHERE class = \'Bugzilla::User\' AND object_id = ? ORDER BY at_time DESC '
+        . $dbh->sql_limit(1), undef, $user_id
+    );
+    my $profiles_act_when = $dbh->selectrow_array(
+      'SELECT UNIX_TIMESTAMP(profiles_when) FROM profiles_activity
+        WHERE userid = ? ORDER BY profiles_when DESC '
+        . $dbh->sql_limit(1), undef, $user_id
+    );
+
+    $audit_log_when    ||= 0;
+    $profiles_act_when ||= 0;
+
+    my $creation_when = 0;
+    if ($has_creation_ts) {
+      $creation_when
+        = $dbh->selectrow_array(
+        'SELECT UNIX_TIMESTAMP(creation_ts) FROM profiles WHERE userid = ?',
+        undef, $user_id);
+      $creation_when ||= 0;
+    }
+
+    my $modification_ts = 0;
+    # IF we could not find anything then use todays date
+    if (!$audit_log_when && !$profiles_act_when && !$creation_when) {
+      $modification_ts = $now_when;
+    }
+    # We used unix timestamps to make value comparison easier without using DateTime instance of each.
+    else {
+      $modification_ts = max($audit_log_when, $profiles_act_when, $creation_when);
+    }
+
+    $sth->execute($modification_ts, $user_id);
+  }
+
+  $dbh->bz_alter_column('profiles', 'modification_ts',
+    {TYPE => 'DATETIME', NOTNULL => 1});
 }
 
 1;

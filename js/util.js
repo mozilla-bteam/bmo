@@ -348,10 +348,12 @@ function bz_toggleClass(anElement, aClass) {
 function timeAgo(param) {
     var ss = param.constructor === Date ? Math.round((new Date() - param) / 1000) : param;
     var mm = Math.round(ss / 60),
-        hh = Math.round(mm / 60),
-        dd = Math.round(hh / 24),
-        mo = Math.round(dd / 30),
-        yy = Math.round(mo / 12);
+        hh = Math.round(ss / (60 * 60)),
+        dd = Math.round(ss / (60 * 60 * 24)),
+        // They are not the best definition of month and year,
+        // but they should be good enough to be used here.
+        mo = Math.round(ss / (60 * 60 * 24 * 30)),
+        yy = Math.round(ss / (60 * 60 * 24 * 365.2422));
     if (ss < 10) return 'Just now';
     if (ss < 45) return ss + ' seconds ago';
     if (ss < 90) return '1 minute ago';
@@ -708,6 +710,139 @@ Bugzilla.Error = class CustomError extends Error {
 };
 
 /**
+ * Provide static utility methods related to event handlers.
+ */
+Bugzilla.Event = class Event {
+  /**
+   * Add keyboard shortcuts to an element.
+   * @param {EventTarget} $target Event target, such as an `HTMLElement`, `document` or `window`.
+   * @param {Record<string, { handler: (event: KeyboardEvent) => void, preventDefault?: boolean,
+   * stopPropagation?: boolean, setAriaAttr?: boolean }>} mapping Key binding mapping object where
+   * the key is a key combination and the value is a handler function and event options. In most
+   * cases, `Control` (Windows/Linux) and `Meta` (macOS) should be replaced with the `Accel` virtual
+   * modifier that corresponds to both keys. Also, the Space key should be written as `Space`,
+   * whereas `event.key` returns a single space character for that key.
+   * @see https://w3c.github.io/aria/#aria-keyshortcuts
+   * @see https://developer.mozilla.org/en-US/docs/Web/API/UI_Events/Keyboard_event_key_values
+   * @example { 'Accel+Shift+R': () => this.reload(), 'Accel+Space': event => this.open_bug(event) }
+   */
+  static activateKeyShortcuts($target, mapping) {
+    const { isMac } = Bugzilla.UserAgent;
+
+    const shortcuts = Object.entries(mapping).map(([combination, options]) => {
+      const keys = new Set(combination.split('+'));
+      const accelKey = keys.delete('Accel');
+
+      const keyConfig = {
+        ctrlKey: keys.delete('Control') || (!isMac && accelKey),
+        metaKey: keys.delete('Meta') || (isMac && accelKey),
+        altKey: keys.delete('Alt'),
+        shiftKey: keys.delete('Shift'),
+      };
+
+      const key = keys.size ? [...keys][0] : undefined;
+
+      if (key) {
+        // While the keys should be written in the format of `KeyboardEvent` key values (with the
+        // exception of Accel and Space, as explained above), `event.key` itself cannot always be
+        // relied upon because it can change when the Shift key is pressed. For that reason, we
+        // primarily use `event.keyCode` instead.
+        const keyCode =
+          KeyboardEvent[`DOM_VK_${{ '.': 'PERIOD', Enter: 'RETURN' }[key] ?? key.toUpperCase()}`];
+
+        if (keyCode) {
+          Object.assign(keyConfig, { keyCode });
+        } else {
+          Object.assign(keyConfig, { key });
+        }
+      }
+
+      const {
+        preventDefault = true,
+        stopPropagation = true,
+        setAriaAttr = false,
+        handler,
+      } = options;
+
+      if ($target instanceof HTMLElement && setAriaAttr) {
+        $target.setAttribute('aria-keyshortcuts', this.formatKeyShortcut(combination, true));
+      }
+
+      return {
+        keys: keyConfig,
+        preventDefault,
+        stopPropagation,
+        handler,
+      };
+    });
+
+    $target.addEventListener('keydown', (/** @type {KeyboardEvent} */ event) => {
+      if (event.isComposing) {
+        return;
+      }
+
+      shortcuts.forEach(({ keys, preventDefault, stopPropagation, handler }) => {
+        if (Object.entries(keys).every(([key, value]) => event[key] === value)) {
+          if (preventDefault) {
+            event.preventDefault();
+          }
+
+          if (stopPropagation) {
+            event.stopPropagation();
+          }
+
+          handler(event);
+        }
+      });
+    });
+  }
+
+  /**
+   * Format the given keyboard shortcut according to the user’s operating system.
+   * @param {string} combination Shortcut, e.g. `Accel+Shift+R`.
+   * @param {boolean} [forAria] Whether the formatted shortcut is used for the `aria-keyshortcuts`
+   * attribute.
+   * @returns {string} Formatted shortcut.
+   */
+  static formatKeyShortcut = (combination, forAria = false) => {
+    const { isMac } = Bugzilla.UserAgent;
+
+    if (forAria) {
+      return combination.replace(/\bAccel\b/, isMac ? 'Meta' : 'Control');
+    }
+
+    if (!isMac) {
+      return combination.replace(/\bAccel\b/, 'Ctrl');
+    }
+
+    const keys = new Set(combination.split('+'));
+    const keyArray = [];
+
+    if (keys.delete('Control')) {
+      keyArray.push('⌃');
+    }
+
+    if (keys.delete('Shift')) {
+      keyArray.push('⇧');
+    }
+
+    if (keys.delete('Alt')) {
+      keyArray.push('⌥');
+    }
+
+    if (keys.delete('Meta') || keys.delete('Accel')) {
+      keyArray.push('⌘');
+    }
+
+    if (keys.size) {
+      keyArray.push([...keys][0]);
+    }
+
+    return keyArray.join('');
+  }
+};
+
+/**
  * A simple Web Storage API wrapper handling JSON parse/stringify.
  */
 Bugzilla.Storage = class LocalStorage {
@@ -771,3 +906,42 @@ Bugzilla.Storage = class LocalStorage {
     window.localStorage.clear();
   }
 }
+
+/**
+ * Provide static utility methods related to string parsing and manipulation.
+ */
+Bugzilla.String = class String {
+  /**
+   * Escape special characters in a string so it can be used for `new RegExp()`.
+   * @param {string} string Input string.
+   * @returns {string} Escaped string.
+   * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions#escaping
+   */
+  static escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  /**
+   * Generate a random hash string like `57d627e` that can be used for DOM node IDs.
+   * @param {number} [length] Size of hash.
+   * @returns {string} Generated hash.
+   */
+  static generateHash(length = 7) {
+    return [...Array(length)]
+      .map(() => '0123456789abcdef'[Math.floor(Math.random() * 16)])
+      .join('');
+  }
+};
+
+/**
+ * Provide static utility methods related to the user’s browser and operating system.
+ */
+Bugzilla.UserAgent = class UserAgent {
+  /**
+   * Check if the user is on the macOS platform.
+   * @type {boolean}
+   */
+  static get isMac() {
+    return navigator.platform === 'MacIntel';
+  }
+};

@@ -40,9 +40,6 @@ window.addEventListener('DOMContentLoaded', () => {
     var attachment_table = document.getElementById('attachment_table');
     if (attachment_table)
       attachment_table.style.width = comment_width;
-    var new_comment = document.getElementById('comment');
-    if (new_comment)
-      new_comment.style.width = comment_width;
   }
   $('#cab-review-gate-close')
     .click(function(event) {

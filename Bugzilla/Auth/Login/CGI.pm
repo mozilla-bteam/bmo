@@ -45,26 +45,15 @@ sub get_login_info {
     $valid = 1 if $expected_token eq $login_token;
     $cgi->remove_cookie('Bugzilla_login_request_cookie');
   }
-
   # WebServices and other local scripts can bypass this check.
   # This is safe because we won't store a login cookie in this case.
   elsif (Bugzilla->usage_mode != USAGE_MODE_BROWSER) {
     $valid = 1;
   }
-
-  # Else falls back to the Referer header and accept local URLs.
-  # Attachments are served from a separate host (ideally), and so
-  # an evil attachment cannot abuse this check with a redirect.
-  elsif (my $referer = $cgi->referer) {
-    my $urlbase = Bugzilla->localconfig->urlbase;
-    $valid = 1 if $referer =~ /^\Q$urlbase\E/;
-  }
-
-  # If the web browser doesn't accept cookies and the Referer header
-  # is missing, we have no way to make sure that the authentication
-  # request comes from the user.
+  # If the web browser doesn't accept cookies, we have no way to 
+  # make sure that the authentication request comes from the user.
   elsif ($login && $password) {
-    Bugzilla->iprepd_report('bmo.token_mismatch');
+    Bugzilla->check_rate_limit('token_mismatch');
     ThrowUserError('auth_untrusted_request', {login => $login});
   }
 

@@ -29,7 +29,7 @@ use base qw(Exporter);
   get_text template_var disable_utf8
   enable_utf8 detect_encoding email_filter
   round extract_nicks fetch_product_versions mojo_user_agent
-  is_fake_recipient_address);
+  is_fake_recipient_address mermaid_quote truncate_string);
 use Bugzilla::Logging;
 use Bugzilla::Constants;
 use Bugzilla::RNG qw(irand);
@@ -650,10 +650,12 @@ sub time_ago {
   # DateTime object or seconds
   my $ss = ref($param) ? time() - $param->epoch : $param;
   my $mm = round($ss / 60);
-  my $hh = round($mm / 60);
-  my $dd = round($hh / 24);
-  my $mo = round($dd / 30);
-  my $yy = round($mo / 12);
+  my $hh = round($ss / (60 * 60));
+  my $dd = round($ss / (60 * 60 * 24));
+  # They are not the best definition of month and year,
+  # but they should be good enough to be used here.
+  my $mo = round($ss / (60 * 60 * 24 * 30));
+  my $yy = round($ss / (60 * 60 * 24 * 365.2422));
 
   return 'Just now'           if $ss < 10;
   return $ss . ' seconds ago' if $ss < 45;
@@ -1050,6 +1052,28 @@ sub is_fake_recipient_address {
     return 1;
   }
   return 0;
+}
+
+# We need to escape ([ and ]) characters for the mermaid summaries
+sub mermaid_quote {
+  my $text = shift;
+  $text =~ s/[(]/#40;/g;
+  $text =~ s/[)]/#41;/g;
+  $text =~ s/\[/#91;/g;
+  $text =~ s/\]/#93;/g;
+  $text =~ s/"/#34;/g;
+  return $text;
+}
+
+# Return a truncated version of the string provided
+sub truncate_string {
+  my ($string, $length, $ellipsis) = @_;
+  return $string if !$length || length $string <= $length;
+
+  $ellipsis ||= '';
+  my $strlen = $length - length $ellipsis;
+  my $newstr = substr($string, 0, $strlen) . $ellipsis;
+  return $newstr;
 }
 
 1;

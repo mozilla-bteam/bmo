@@ -713,10 +713,7 @@
 
     <td colspan="2" align="left" id="show_dependency_tree_or_graph">
       Show dependency <a href="[% basepath FILTER none %]showdependencytree.cgi?id=[% bug.bug_id %]&amp;hide_resolved=1">tree</a>
-
-      [% IF Param('webdotbase') %]
-        /&nbsp;<a href="[% basepath FILTER none %]showdependencygraph.cgi?id=[% bug.bug_id %]">graph</a>
-      [% END %]
+      /&nbsp;<a href="[% basepath FILTER none %]showdependencygraph.cgi?id=[% bug.bug_id %]">graph</a>
     </td>
   </tr>
 [% END %]
@@ -1234,7 +1231,9 @@
       <!-- This table keeps the submit button aligned with the box. -->
       <table><tr><td>
         [% IF bug.check_can_change_field('longdesc', 0, 1).allowed %]
-          [% INCLUDE bug/comment.html.tmpl
+          [% INCLUDE global/textarea.html.tmpl
+                     name      = 'comment'
+                     id        = 'comment'
                      minrows   = 5
                      maxrows   = 15
                      cols      = constants.COMMENT_COLS

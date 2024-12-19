@@ -635,6 +635,7 @@ my %set_params = (
   password_complexity            => 'bmo',
   rate_limit_active              => 1,
   rate_limit_rules               => '{"get_attachments":[75,0],"get_comments":[75,0],"get_bug":[200,0],"show_bug":[120,0],"github":[10,0],"webpage_errors":[30,60]}',
+  reminders_enabled              => 1,
   restrict_comments_group        => 'editbugs',
   restrict_comments_enable_group => 'can_restrict_comments',
   search_allow_no_criteria       => 0,
