@@ -50,18 +50,14 @@ $cookies = $sel->driver->get_all_cookies;
 my $last_order_cookie = first { $_->{name} eq 'LASTORDER' } @{$cookies};
 ok($last_order_cookie, 'Last order cookie set properly');
 
-# Under user preferences, change cookie preferences to reject
+# Change cookie preferences to reject
 $sel->click_ok('header-account-menu-button');
-$sel->click_ok('link=Preferences');
+$sel->click_ok('link=Cookies');
 $sel->wait_for_page_to_load(WAIT_TIME);
-$sel->title_is('User Preferences');
-$sel->click_ok('link=Account');
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->title_is('User Preferences');
-$sel->uncheck_ok('cookie_consent');
-$sel->click_ok('update');
-$sel->wait_for_page_to_load(WAIT_TIME);
-$sel->title_is('User Preferences');
+$sel->title_is('Cookie Settings');
+$sel->click_ok('cookie-radio-preference-no');
+$sel->click_ok('cookie-consent-save');
+$sel->is_text_present_ok('Your Cookie settings have been updated');
 
 # Clear all cookies except the consent cookie and login stuff
 $cookies = $sel->driver->get_all_cookies;
