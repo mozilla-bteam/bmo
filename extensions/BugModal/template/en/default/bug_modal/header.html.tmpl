@@ -64,7 +64,8 @@
     "extensions/ComponentWatching/web/js/overlay.js",
     "js/bugzilla-readable-status-min.js",
     "js/field.js",
-    "js/comments.js"
+    "js/comments.js",
+    "js/util.js"
   );
   jquery.push(
     "contextMenu",
@@ -117,7 +118,8 @@
       remember_collapsed: [% user.settings.ui_remember_collapsed.value == "on" ? "true" : "false" %],
       inline_attachments: [% user.settings.inline_attachments.value == "on" ? "true" : "false" %],
       autosize_comments: [% user.settings.autosize_comments.value == "on" ? "true" : "false" %]
-    }
+    },
+    cookie_consent: [% Bugzilla.cgi.consent_cookie ? "true" : "false" %]
   };
   [% IF user.id %]
     BUGZILLA.default_assignee   = '[% bug.component_obj.default_assignee.login FILTER js %]';

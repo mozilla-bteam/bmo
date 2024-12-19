@@ -69,8 +69,6 @@ if (
 }
 else {
   my $template = Bugzilla->template;
-  $C->content_security_policy(
-    script_src => ['self', 'https://www.google-analytics.com']);
 
   # Return the appropriate HTTP response headers.
   print $cgi->header(

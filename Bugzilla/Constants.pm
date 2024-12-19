@@ -208,6 +208,10 @@ use Memoize;
   JOB_QUEUE_VIEW_MAX_JOBS
 
   BOUNCE_COUNT_MAX
+
+  CONSENT_COOKIE
+  ESSENTIAL_COOKIES
+  COOKIE_CONSENT_COUNTRIES
 );
 
 @Bugzilla::Constants::EXPORT_OK = qw(contenttypes);
@@ -678,6 +682,27 @@ use constant JOB_QUEUE_VIEW_MAX_JOBS => 2500;
 # before the account is completely disabled.
 use constant BOUNCE_COUNT_MAX => 5;
 
+# Consent cookie name
+use constant CONSENT_COOKIE => 'moz-consent-pref';
+
+# List of essential cookies that cannot be opted out
+use constant ESSENTIAL_COOKIES => qw(
+  bugzilla
+  Bugzilla_login
+  Bugzilla_logincookie
+  Bugzilla_login_request_cookie
+  github_state
+  github_token
+  mfa_verification_token
+  moz-consent-pref
+  sudo
+);
+
+# List of countries that require cookie consent
+use constant COOKIE_CONSENT_COUNTRIES => qw(
+  AT BE BG HR CY CZ DK EE FI FR DE GR HU IE IS IT LV
+  LI LT LU MT NL NO PL PT RO SK SI ES SE CH GB );
+
 sub bz_locations {
 
   # Force memoize() to re-compute data per project, to avoid
@@ -745,7 +770,7 @@ sub DEFAULT_CSP {
   my %policy = (
     default_src => ['self'],
     script_src =>
-      ['self', 'nonce', 'unsafe-inline', 'https://www.google-analytics.com'],
+      ['self', 'nonce', 'unsafe-inline'],
     frame_src   => [
       # This is for extensions/BMO/web/js/firefox-crash-table.js
       'https://crash-stop-addon.herokuapp.com',
@@ -759,9 +784,6 @@ sub DEFAULT_CSP {
 
       # This is for extensions/BMO/web/js/firefox-crash-table.js
       'https://product-details.mozilla.org',
-
-      # This is for extensions/GoogleAnalytics using beacon or XHR
-      'https://www.google-analytics.com',
 
       # This is from extensions/OrangeFactor/web/js/orange_factor.js
       'https://treeherder.mozilla.org/api/failurecount/',
@@ -805,7 +827,6 @@ sub SHOW_BUG_MODAL_CSP {
     script_src => [
       'self',          'nonce',
       'unsafe-inline', 'unsafe-eval',
-      'https://www.google-analytics.com'
     ],
     img_src     => ['self', 'data:', 'https://secure.gravatar.com'],
     media_src   => ['self'],
@@ -814,9 +835,6 @@ sub SHOW_BUG_MODAL_CSP {
 
       # This is for extensions/BMO/web/js/firefox-crash-table.js
       'https://product-details.mozilla.org',
-
-      # This is for extensions/GoogleAnalytics using beacon or XHR
-      'https://www.google-analytics.com',
 
       # This is from extensions/OrangeFactor/web/js/orange_factor.js
       'https://treeherder.mozilla.org/api/failurecount/',

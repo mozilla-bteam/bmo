@@ -22,6 +22,7 @@ use Bugzilla::Util;
 use Bugzilla::Search::Recent;
 
 use File::Basename;
+use List::Util qw(any none);
 use URI;
 
 BEGIN {
@@ -493,7 +494,7 @@ sub param {
 
 sub _fix_utf8 {
   my $input = shift;
-
+ 
   # The is_utf8 is here in case CGI gets smart about UTF-8 someday.
   utf8::decode($input) if defined $input && !ref $input && !utf8::is_utf8($input);
   return $input;
@@ -513,6 +514,16 @@ sub should_set {
 # and then output as required from |header|.
 sub send_cookie {
   my ($self, %paramhash) = @_;
+
+  # We check to see if the cookie be set is essential and if
+  # not we check to see if the user has given consent to set it
+  if (Bugzilla->params->{cookie_consent_enabled}
+    && $self->cookie_consent_required
+    && !$self->cookie_consented
+  )
+  {
+    return undef if none { $_ eq $paramhash{'-name'} } ESSENTIAL_COOKIES;
+  }
 
   # Complain if -value is not given or empty (bug 268146).
   if (!exists($paramhash{'-value'}) || !$paramhash{'-value'}) {
@@ -664,6 +675,30 @@ sub set_dated_content_disp {
   my $disposition = "$type; filename=\"$filename\"";
 
   $self->{'_content_disp'} = $disposition;
+}
+
+# Return true/false if a user has consent to non-essential cookies
+# 1. If cookie is not present then no consent
+# 2. If cookie is present and equal to 'yes' then we have consent
+# 3. Any other value we do not have consent
+sub cookie_consented {
+  my ($self) = @_;
+  if (defined $self->cookie(CONSENT_COOKIE)
+    && $self->cookie(CONSENT_COOKIE) eq 'yes')
+  {
+    return 1;
+  }
+  return 0;
+}
+
+# Return true if client is accessing this site
+# from within a required consent country
+sub cookie_consent_required {
+  my ($self) = @_;
+  return 1 if $ENV{CI};
+  my $client_region = $self->http('X-Client-Region') || '';
+  return 1 if any { $client_region eq $_ } COOKIE_CONSENT_COUNTRIES;
+  return 0;
 }
 
 # If a cookie is requested that has been set but not yet stored in the browser,
