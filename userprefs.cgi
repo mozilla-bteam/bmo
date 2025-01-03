@@ -72,6 +72,10 @@ sub DoAccount {
       }
     }
   }
+
+  $vars->{cookie_consent_changed}
+    = Bugzilla->request_cache->{cookie_consent_changed}
+    if Bugzilla->request_cache->{cookie_consent_changed};
 }
 
 sub SaveAccount {

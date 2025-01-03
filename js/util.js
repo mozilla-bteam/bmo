@@ -850,21 +850,19 @@ Bugzilla.Storage = class LocalStorage {
    * Get a value.
    * @param {string} key A storage key.
    * @param {any} [fallback] Whether to return `{}` instead of `null` when the value is unavailable.
-   * @returns {object | null} A storage value.
+   * @returns A storage value or null.
    */
-  static get(key, fallback = false) {
+  static get(key) {
     const cache = window.localStorage.getItem(key);
-    const fallbackValue = fallback ? {} : null;
-
-    if (cache === null) {
-      return fallbackValue;
+    let value = null;
+    if (cache !== null) {
+      try {
+        value = JSON.parse(cache);
+      } catch {
+        value = cache;
+      }
     }
-
-    try {
-      return JSON.parse(cache);
-    } catch {
-      return fallbackValue;
-    }
+    return value;
   }
 
   /**
@@ -873,7 +871,15 @@ Bugzilla.Storage = class LocalStorage {
    * @param {object} value A storage value.
    */
   static set(key, value) {
-    window.localStorage.setItem(key, JSON.stringify(value));
+    if (BUGZILLA.user.cookie_consent === 'no'
+      && !BUGZILLA.config.essential_cookies.includes(key))
+    {
+      return null;
+    }
+    if (typeof value === 'object' && value !== null) {
+      value = JSON.stringify(value);
+    }
+    window.localStorage.setItem(key, value);
   }
 
   /**

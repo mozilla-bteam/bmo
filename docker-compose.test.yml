@@ -27,6 +27,7 @@ services:
       - BZ_ANSWERS_FILE=/app/conf/checksetup_answers.txt
       - BZ_QA_CONF_FILE=/app/qa/config/selenium_test.conf
       - BZ_QA_CONFIG=1
+      - CI=1
       - LOCALCONFIG_ENV=1
       - LOG4PERL_CONFIG_FILE=log4perl-test.conf
       - LOGGING_PORT=5880

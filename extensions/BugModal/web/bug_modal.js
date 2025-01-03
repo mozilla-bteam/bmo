@@ -21,7 +21,7 @@ function slide_module(module, action, fast) {
             'aria-label': is_visible ? latch.data('label-expanded') : latch.data('label-collapsed'),
         });
         if (BUGZILLA.user.settings.remember_collapsed && module.is(':visible'))
-            localStorage.setItem(module.attr('id') + '.visibility', is_visible ? 'show' : 'hide');
+            Bugzilla.Storage.set(module.attr('id') + '.visibility', is_visible ? 'show' : 'hide');
     }
 
     if (action == 'show') {
@@ -43,7 +43,7 @@ function init_module_visibility() {
         var id = that.attr('id');
         if (!id) return;
         if (that.data('non-stick')) return;
-        var stored = localStorage.getItem(id + '.visibility');
+        var stored = Bugzilla.Storage.get(id + '.visibility');
         if (stored) {
             slide_module(that, stored, true);
         }
@@ -139,7 +139,7 @@ $(function() {
     // restore edit mode after navigating back
     function restoreEditMode() {
         if (!$('#editing').val()) {
-            if (localStorage.getItem('modal-perm-edit-mode') === 'true') {
+            if (Bugzilla.Storage.get('modal-perm-edit-mode') === 'true') {
                 $('#mode-btn').click();
                 $('#action-enable-perm-edit').attr('aria-checked', 'true');
             }
@@ -170,7 +170,7 @@ $(function() {
             text: text,
             savedAt: Date.now()
         };
-        localStorage.setItem(bugCommentCacheKey, JSON.stringify(value));
+        Bugzilla.Storage.set(bugCommentCacheKey, JSON.stringify(value));
     }
 
     /**
@@ -180,7 +180,7 @@ $(function() {
      * to take such special cases into account. Otherwise the current bug’s comment cache will be removed.
      */
     const clearSavedBugComment = (bug_id = BUGZILLA.bug_id) => {
-        localStorage.removeItem(`bug-modal-saved-comment-${bug_id}`);
+        Bugzilla.Storage.delete(`bug-modal-saved-comment-${bug_id}`);
     };
 
     /**
@@ -200,7 +200,7 @@ $(function() {
 
     function restoreSavedBugComment() {
         expireSavedComments();
-        let value = JSON.parse(localStorage.getItem(bugCommentCacheKey));
+        let value = Bugzilla.Storage.get(bugCommentCacheKey);
         if (value){
             let commentBox = document.querySelector("textarea#comment");
             if (commentBox.value === '')
@@ -213,10 +213,10 @@ $(function() {
     function expireSavedComments() {
         const AGE_THRESHOLD = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds.
         let expiredKeys = [];
-        for (let i = 0; i < localStorage.length; i++) {
-            let key = localStorage.key(i);
+        for (let i = 0; i < window.localStorage.length; i++) {
+            let key = window.localStorage.key(i);
             if (key.match(/^bug-modal-saved-comment-/)) {
-                let value = JSON.parse(localStorage.getItem(key));
+                let value = Bugzilla.Storage.get(key);
                 let savedAt = value['savedAt'] || 0;
                 let age = Date.now() - savedAt;
                 if (age < 0 || age > AGE_THRESHOLD) {
@@ -225,7 +225,7 @@ $(function() {
             }
         }
         expiredKeys.forEach((key) => {
-            localStorage.removeItem(key);
+            Bugzilla.Storage.delete(key);
         });
     }
 
@@ -543,7 +543,7 @@ $(function() {
             event.preventDefault();
             const enabled = $(this).attr('aria-checked') !== 'true';
             $(this).attr('aria-checked', enabled);
-            localStorage.setItem('modal-perm-edit-mode', enabled);
+            Bugzilla.Storage.set('modal-perm-edit-mode', enabled);
         });
 
     // reset
