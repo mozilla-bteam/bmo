@@ -348,8 +348,11 @@
             </a>
           </li>
           [% IF Param('cookie_consent_enabled') && Bugzilla.cgi.cookie_consent_required %]
-          <li role="presentation">
-            <a href="[% basepath FILTER none %]page.cgi?id=cookies.html" role="menuitem" tabindex="-1">Cookies</a>
+          <li role="none">
+            <a href="[% basepath FILTER none %]page.cgi?id=cookies.html" role="menuitem">
+              <span class="icon" aria-hidden="true" data-icon="cookie"></span>
+              <span class="label" role="none">Cookies</span>
+            </a>
           </li>
           [% END %]
           <li role="separator"></li>
