@@ -52,7 +52,7 @@ ok($last_order_cookie, 'Last order cookie set properly');
 
 # Change cookie preferences to reject
 $sel->click_ok('header-account-menu-button');
-$sel->click_ok('link=Cookies');
+$sel->click_ok('//a[./span[@data-icon="cookie"]]');
 $sel->wait_for_page_to_load(WAIT_TIME);
 $sel->title_is('Cookie Settings');
 $sel->click_ok('cookie-radio-preference-no');
