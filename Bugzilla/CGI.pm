@@ -677,6 +677,30 @@ sub set_dated_content_disp {
   $self->{'_content_disp'} = $disposition;
 }
 
+# Return true/false if a user has consent to non-essential cookies
+# 1. If cookie is not present then no consent
+# 2. If cookie is present and equal to 'yes' then we have consent
+# 3. Any other value we do not have consent
+sub cookie_consented {
+  my ($self) = @_;
+  if (defined $self->cookie(CONSENT_COOKIE)
+    && $self->cookie(CONSENT_COOKIE) eq 'yes')
+  {
+    return 1;
+  }
+  return 0;
+}
+
+# Return true if client is accessing this site
+# from within a required consent country
+sub cookie_consent_required {
+  my ($self) = @_;
+  return 1 if $ENV{CI};
+  my $client_region = $self->http('X-Client-Region') || '';
+  return 1 if any { $client_region eq $_ } COOKIE_CONSENT_COUNTRIES;
+  return 0;
+}
+
 # If a cookie is requested that has been set but not yet stored in the browser,
 # then we can return it here. 'X' means the cookie is being removed
 sub cookie {

@@ -870,9 +870,19 @@ sub data {
     '_no_security_check' => 1
   );
 
+  # Add some user information to the SQL so we can pinpoint where some
+  # slow running queries originate and help to refine the searches.
+  my $sql_user_info
+    = ' /* userid: '
+    . Bugzilla->user->id
+    . ' useragent: '
+    . Bugzilla->cgi->user_agent
+    . ' query: '
+    . Bugzilla->cgi->canonicalize_query() . ' */ ';
+
   $start_time = [gettimeofday()];
   $sql        = $search->_sql;
-  my $unsorted_data = $dbh->selectall_arrayref($sql);
+  my $unsorted_data = $dbh->selectall_arrayref($sql . $sql_user_info);    # Add extra info for logging purposes
   push(@extra_data, {sql => $sql, time => tv_interval($start_time)});
 
   # Let's sort the data. We didn't do it in the query itself because

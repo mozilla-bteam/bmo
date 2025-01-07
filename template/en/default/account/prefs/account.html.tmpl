@@ -24,6 +24,8 @@
   # new_login_name:    string. The user's new Bugzilla login whilst not confirmed. (optional)
   #%]
 
+[% USE Bugzilla %]
+
 [%# BMO - add hook for displaying user-profile link %]
 [% Hook.process('start') %]
 
