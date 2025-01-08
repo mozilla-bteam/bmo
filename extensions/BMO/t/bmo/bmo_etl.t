@@ -21,6 +21,7 @@ BEGIN {
 use Capture::Tiny qw(capture);
 use QA::Util      qw(get_config);
 use MIME::Base64  qw(encode_base64 decode_base64);
+use Mojo::JSON    qw(false);
 use Test::Mojo;
 use Test::More;
 
@@ -88,47 +89,68 @@ my $new_attach_1 = {
 
 $t->post_ok($url
     . "rest/bug/$bug_id_1/attachment"        =>
-    {'X-Bugzilla-API-Key' => $admin_api_key} => json => $new_attach_1)->status_is(201)
-  ->json_has('/attachments');
+    {'X-Bugzilla-API-Key' => $admin_api_key} => json => $new_attach_1)
+  ->status_is(201)->json_has('/attachments');
 
 my ($attach_id) = keys %{$t->tx->res->json->{attachments}};
 
 ### Section 4: Export data to test files
 
-my @cmd
-  = ('perl', 'extensions/BMO/bin/export_bmo_etl.pl', '--verbose', '--test', '--snapshot-date', '2000-01-01');
+my @cmd = (
+  './extensions/BMO/bin/export_bmo_etl.pl',
+  '--verbose', '--test', '--snapshot-date', '2000-01-01'
+);
 
 my ($output, $error, $rv) = capture { system @cmd; };
 ok(!$rv, 'Data exported to test files without error');
-ok(glob(bz_locations()->{'datadir'} . '/2000-01-01-bugs-*.json'), 'Export test files exist');
+ok(glob(bz_locations()->{'datadir'} . '/2000-01-01-bugs-*.json'),
+  'Export test files exist');
 
 ### Section 5: Export data to BigQuery test instance
 
-@cmd = ('perl', 'extensions/BMO/bin/export_bmo_etl.pl', '--verbose', '--snapshot-date', '2000-01-01');
+@cmd = (
+  './extensions/BMO/bin/export_bmo_etl.pl', '--verbose',
+  '--snapshot-date',                        '2000-01-01'
+);
 
 ($output, $error, $rv) = capture { system @cmd; };
 ok(!$rv, 'Data exported to BigQuery test instance without error');
 
 ### Section 6: Retrieve data from BigQuery instance and verify
 
-my $query = {query => 'SELECT summary FROM test.bugzilla.bugs WHERE id = ' . $bug_id_1};
+my $query = {
+  query => 'SELECT summary FROM test.bugzilla.bugs WHERE id = ' . $bug_id_1 . ';',
+  useLegacySql => false
+};
 $t->post_ok(
-  'http://bq:9050/bigquery/v2/projects/test/queries' => json =>
-    $query)->status_is(200)->json_is('/rows/0/f/0/v' => $new_bug_1->{summary});
+  'http://bq:9050/bigquery/v2/projects/test/queries' => json => $query)
+  ->status_is(200)->json_is('/rows/0/f/0/v' => $new_bug_1->{summary});
 
-$query = {query => 'SELECT description FROM test.bugzilla.attachments WHERE id = ' . $attach_id};
+$query = {
+  query => 'SELECT description FROM test.bugzilla.attachments WHERE id = '
+    . $attach_id . ';',
+  useLegacySql => false
+};
 $t->post_ok(
-  'http://bq:9050/bigquery/v2/projects/test/queries' => json =>
-    $query)->status_is(200)->json_is('/rows/0/f/0/v' => $new_attach_1->{summary});
+  'http://bq:9050/bigquery/v2/projects/test/queries' => json => $query)
+  ->status_is(200)->json_is('/rows/0/f/0/v' => $new_attach_1->{summary});
 
-$query = {query => 'SELECT depends_on_id FROM test.bugzilla.bug_dependencies WHERE bug_id = ' . $bug_id_2};
+$query = {
+  query =>
+    'SELECT depends_on_id FROM test.bugzilla.bug_dependencies WHERE bug_id = '
+    . $bug_id_2 . ';',
+  useLegacySql => false
+};
 $t->post_ok(
-  'http://bq:9050/bigquery/v2/projects/test/queries' => json =>
-    $query)->status_is(200)->json_is('/rows/0/f/0/v' => $bug_id_1);
+  'http://bq:9050/bigquery/v2/projects/test/queries' => json => $query)
+  ->status_is(200)->json_is('/rows/0/f/0/v' => $bug_id_1);
 
 ### Section 7: Exporting again on the same day (with the same snapshot date) will cause the script to exit
 
-@cmd = ('perl', 'extensions/BMO/bin/export_bmo_etl.pl', '--verbose', '--snapshot-date', '2000-01-01');
+@cmd = (
+  './extensions/BMO/bin/export_bmo_etl.pl', '--verbose',
+  '--snapshot-date',                        '2000-01-01'
+);
 
 ($output, $error, $rv) = capture { system @cmd; };
 ok($rv, 'Duplicate data exported to BigQuery test instance should fail');
