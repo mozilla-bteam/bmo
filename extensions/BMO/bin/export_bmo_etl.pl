@@ -295,7 +295,7 @@ sub process_flags {
         next if $excluded_bugs{$obj->bug_id};
 
         $data = {
-          attachment_id => $obj->attach_id,
+          attachment_id => $obj->attach_id || undef,
           bug_id        => $obj->bug_id,
           creation_ts   => $obj->creation_date,
           updated_ts    => $obj->modification_date,
@@ -339,8 +339,18 @@ sub process_tracking_flags {
   foreach my $row (@{$rows}) {
     next if $excluded_bugs{$row->{bug_id}};
 
-    my $data
-      = {bug_id => $row->{bug_id}, name => $row->{name}, value => $row->{value},};
+    # Standard fields
+    my $data = {bug_id => $row->{bug_id}};
+
+    # Fields that require custom values based on other criteria
+    if (exists $private_bugs{$row->{bug_id}}) {
+      $data->{name}  = undef;
+      $data->{value} = undef;
+    }
+    else {
+      $data->{name}  = $row->{name};
+      $data->{value} = $row->{value};
+    }
 
     push @results, $data;
 
@@ -374,7 +384,11 @@ sub proccess_keywords {
   foreach my $row (@{$rows}) {
     next if $excluded_bugs{$row->{bug_id}};
 
-    my $data = {bug_id => $row->{bug_id}, keyword => $row->{name},};
+    # Standard fields
+    my $data = {bug_id => $row->{bug_id}};
+
+    # Fields that require custom values based on other criteria
+    $data->{keyword} = !exists $private_bugs{$row->{bug_id}} ? $row->{name} : undef;
 
     push @results, $data;
 
@@ -405,8 +419,10 @@ sub process_see_also {
   foreach my $row (@{$rows}) {
     next if $excluded_bugs{$row->{bug_id}};
 
+    # Standard fields
     my $data = {bug_id => $row->{bug_id},};
 
+    # Fields that require custom values based on other criteria
     if ($private_bugs{$row->{bug_id}}) {
       $data->{url} = undef;
     }
@@ -583,6 +599,7 @@ sub process_users {
 
         my $obj = Bugzilla::User->new($id);
 
+        # Standard fields
         $data = {
           id        => $obj->id,
           last_seen => $obj->last_seen_date,
@@ -590,6 +607,7 @@ sub process_users {
           is_new    => $obj->is_new,
         };
 
+        # Fields that require custom values based on criteria
         $data->{nick} = $obj->nick ? $obj->nick : undef;
         $data->{name} = $obj->name ? $obj->name : undef;
         $data->{is_staff}
@@ -718,10 +736,14 @@ sub send_data {
   $request->header('Content-Type' => 'application/json');
   $request->content(encode_json($big_query));
 
-  my $res = $ua->request($request);
-  if (!$res->is_success) {
+  my $response = $ua->request($request);
+  my $result   = decode_json($response->content);
+
+  if (!$response->is_success
+    || (exists $result->{insertErrors} && @{$result->{insertErrors}}))
+  {
     delete_lock();
-    die 'Google Big Query insert failure: ' . $res->content . "\n";
+    die 'Google Big Query insert failure: ' . $response->content . "\n";
   }
 }
 
