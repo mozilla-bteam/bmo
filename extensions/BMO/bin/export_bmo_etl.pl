@@ -16,6 +16,7 @@ use Bugzilla::Attachment;
 use Bugzilla::Bug;
 use Bugzilla::Constants;
 use Bugzilla::Flag;
+use Bugzilla::Group;
 use Bugzilla::User;
 
 use HTTP::Headers;
@@ -182,9 +183,20 @@ sub process_bugs {
           : undef;
         $data->{milestone}
           = $obj->target_milestone ne '---' ? $obj->target_milestone : undef;
-        $data->{group}     = [map { $_->name } @{$obj->groups_in}];
         $data->{is_public} = $bug_is_private ? true : false;
         $data->{cc_count}  = scalar @{$obj->cc || []};
+
+        # If more than one group, then pick the one with the least of amount of members
+        if (!$bug_is_private) {
+          $data->{group} = undef;
+        }
+        elsif (scalar @{$obj->groups_in} == 1) {
+          my $groups = $obj->groups_in;
+          $data->{group} = $groups->[0]->name;
+        }
+        else {
+          $data->{group} = get_multi_group_value($obj);
+        }
 
         # Store a copy of the data for use in later executions
         store_cache($obj->id, $table_name, $obj->delta_ts, $data);
@@ -848,6 +860,27 @@ sub check_for_duplicates {
     delete_lock();
     die "Duplicate data found for snapshot date $snapshot_date\n";
   }
+}
+
+sub get_multi_group_value {
+  my ($bug) = @_;
+
+  my $largest_group_name  = '';
+  my $largest_group_count = 0;
+
+  foreach my $group (@{$bug->groups_in}) {
+     my $user_count = 0;
+     my $member_data = $group->members_complete;
+     foreach my $type (keys %{$member_data}) {
+       $user_count += scalar @{$member_data->{$type}};
+     }
+     if ($user_count > $largest_group_count) {
+       $largest_group_count = $user_count;
+       $largest_group_name = $group->name;
+     }
+  }
+
+  return $largest_group_name;
 }
 
 1;
