@@ -75,6 +75,7 @@
 .text-editor textarea {
   display: block;
   border-radius: 0 0 var(--control-border-radius) var(--control-border-radius);
+  font-variant-ligatures: none;
   padding: 12px;
   width: 100%;
   min-height: 10em;
