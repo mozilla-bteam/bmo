@@ -514,6 +514,15 @@ input[type="number"] {
   margin: -2px 0 8px;
 }
 
+/* disable ligatures in locations where URLs are used */
+.bug-url,
+#bug_file_loc,
+#field-see_also .link a,
+#see_also,
+.activity .change a {
+  font-variant-ligatures: none;
+}
+
 /**
  * actions
  */
