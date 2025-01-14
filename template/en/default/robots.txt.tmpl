@@ -1,9 +1,8 @@
 User-agent: *
 Disallow: [% basepath FILTER none %]
 Crawl-delay: 30
-[% IF Bugzilla.localconfig.urlbase == "https://bugzilla.mozilla.org/" %]
+[% IF urlbase == "https://bugzilla.mozilla.org/" %]
 
-[% USE Bugzilla %]
 Allow: [% basepath FILTER none %]$
 Allow: [% basepath FILTER none %]index.cgi
 
