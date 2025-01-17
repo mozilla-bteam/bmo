@@ -42,7 +42,6 @@ services:
       - memcached
       - s3
       - gcs
-      - bigquery
       - externalapi.test
       - bq
     ports:
