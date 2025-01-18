@@ -38,6 +38,7 @@ services:
       - memcached
       - s3
       - gcs
+      - bq
 
   externalapi.test:
     build: *build_bmo
@@ -70,3 +71,13 @@ services:
       - ./docker/gcs/attachments:/data/attachments
       - ./docker/gcs/sitemapindex:/data/sitemapindex
       - ./docker/gcs/mining:/data/mining
+
+  bq:
+    build:
+      context: ./docker/bigquery
+      dockerfile: Dockerfile
+    ports:
+      - 9050:9050
+    working_dir: /work
+    command: |
+      --project=test --data-from-yaml=/data.yaml
