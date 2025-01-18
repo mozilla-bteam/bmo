@@ -188,16 +188,16 @@ sub process_bugs {
         $data->{cc_count}  = scalar @{$obj->cc || []};
 
         # If more than one group, then pick the one with the least of amount of members
-	if (!$bug_is_private) {
+        if (!$bug_is_private) {
           $data->{group} = undef;
-	}
-	elsif (scalar @{$obj->groups_in} == 1) {
-	  my $groups = $obj->groups_in;
-	  $data->{group} = $groups->[0]->name;
-	}
-	else {
-	  $data->{group} = get_multi_group_value($obj);
-	}
+        }
+        elsif (scalar @{$obj->groups_in} == 1) {
+          my $groups = $obj->groups_in;
+          $data->{group} = $groups->[0]->name;
+        }
+        else {
+          $data->{group} = get_multi_group_value($obj);
+        }
 
         # Store a copy of the data for use in later executions
         store_cache($obj->id, $table_name, $obj->delta_ts, $data);
