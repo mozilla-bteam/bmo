@@ -91,6 +91,7 @@ check_for_duplicates();
 process_bugs();
 process_attachments();
 process_flags();
+process_flag_state_activity();
 process_tracking_flags();
 proccess_keywords();
 process_see_also();
@@ -223,7 +224,7 @@ sub process_attachments {
 
   my $sth
     = $dbh->prepare(
-    'SELECT attach_id AS id, modification_time FROM attachments WHERE attach_id > ? ORDER BY bug_id LIMIT '
+    'SELECT attach_id AS id, modification_time FROM attachments WHERE attach_id > ? ORDER BY attach_id LIMIT '
       . API_BLOCK_COUNT);
 
   while ($count < $total) {
@@ -329,6 +330,69 @@ sub process_flags {
 
     # Send the rows to the server
     send_data($table_name, \@flags, $count) if @flags;
+  }
+}
+
+sub process_flag_state_activity {
+  # Process flags that were removed today using the flag_state_activity table
+  # These entries will also go into the flags table in BigQuery.
+  my $table_name = 'flag_state_activity';
+  my $count      = 0;
+  my $last_id    = 0;
+
+  my $total
+    = $dbh->selectrow_array(
+    'SELECT COUNT(*) FROM flag_state_activity WHERE status = \'X\' AND flag_when LIKE \''
+      . $snapshot_date . ' %\'');
+  print "Processing $total $table_name.\n" if $verbose;
+
+  my $sth
+    = $dbh->prepare(
+    'SELECT id, flag_when FROM flag_state_activity WHERE id > ? AND status = \'X\' AND flag_when LIKE \''
+      . $snapshot_date . ' %\' ORDER BY id LIMIT '
+      . API_BLOCK_COUNT);
+
+  while ($count < $total) {
+    my @flags = ();
+
+    $sth->execute($last_id);
+
+    while (my ($id, $mod_time) = $sth->fetchrow_array()) {
+      print "Processing id $id with mod_time of $mod_time.\n" if $verbose;
+
+      # First check to see if we have a cached version with the same modification date
+      my $data = get_cache($id, $table_name, $mod_time);
+      if (!$data) {
+        print "$table_name id $id with time $mod_time not found in cache.\n"
+          if $verbose;
+
+        my $obj = Bugzilla::Extension::Review::FlagStateActivity->new($id);
+
+        next if $excluded_bugs{$obj->bug_id};
+
+        $data = {
+          attachment_id => $obj->attachment_id || undef,
+          bug_id        => $obj->bug_id,
+          creation_ts   => $obj->flag_when,
+          updated_ts    => $obj->flag_when,
+          requestee_id  => $obj->requestee_id,
+          setter_id     => $obj->setter_id,
+          name          => $obj->type->name,
+          value         => $obj->status,
+        };
+
+        # Store a new copy of the data for use later
+        store_cache($obj->id, $table_name, $obj->modification_date, $data);
+      }
+
+      push @flags, $data;
+
+      $count++;
+      $last_id = $id;
+    }
+
+    # Send the rows to the server
+    send_data('flags', \@flags, $count) if @flags;
   }
 }
 
@@ -755,7 +819,10 @@ sub send_data {
     || (exists $result->{insertErrors} && @{$result->{insertErrors}}))
   {
     delete_lock();
-    die 'Google Big Query insert failure: ' . $response->content . "\n";
+    die "Google Big Query insert failure:\nRequest:\n"
+      . $request->content
+      . "\n\nResponse:\n"
+      . $response->content . "\n";
   }
 }
 
@@ -865,8 +932,8 @@ sub check_for_duplicates {
 sub get_multi_group_value {
   my ($bug) = @_;
 
-  my $largest_group_name  = '';
-  my $largest_group_count = 0;
+  my $smallest_group_name  = undef;
+  my $smallest_group_count = 0;
 
   foreach my $group (@{$bug->groups_in}) {
      my $user_count = 0;
@@ -874,13 +941,13 @@ sub get_multi_group_value {
      foreach my $type (keys %{$member_data}) {
        $user_count += scalar @{$member_data->{$type}};
      }
-     if ($user_count > $largest_group_count) {
-       $largest_group_count = $user_count;
-       $largest_group_name = $group->name;
+     if ($user_count < $smallest_group_count) {
+       $smallest_group_count = $user_count;
+       $smallest_group_name = $group->name;
      }
   }
 
-  return $largest_group_name;
+  return $smallest_group_name;
 }
 
 1;
