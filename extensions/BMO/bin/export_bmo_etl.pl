@@ -18,6 +18,7 @@ use Bugzilla::Constants;
 use Bugzilla::Flag;
 use Bugzilla::Group;
 use Bugzilla::User;
+use Bugzilla::Extension::Review::FlagStateActivity;
 
 use HTTP::Headers;
 use HTTP::Request;
@@ -93,7 +94,7 @@ process_attachments();
 process_flags();
 process_flag_state_activity();
 process_tracking_flags();
-proccess_keywords();
+process_keywords();
 process_see_also();
 process_mentors();
 process_dependencies();
@@ -382,7 +383,7 @@ sub process_flag_state_activity {
         };
 
         # Store a new copy of the data for use later
-        store_cache($obj->id, $table_name, $obj->modification_date, $data);
+        store_cache($obj->id, $table_name, $obj->flag_when, $data);
       }
 
       push @flags, $data;
@@ -441,7 +442,7 @@ sub process_tracking_flags {
   }
 }
 
-sub proccess_keywords {
+sub process_keywords {
   my $table_name = 'keywords';
   my $rows       = $dbh->selectall_arrayref(
     'SELECT bug_id, keyworddefs.name AS name
