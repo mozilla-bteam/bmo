@@ -127,7 +127,7 @@ my %whitelist = (
   ],
   longdescs_reactions => [
     qw(
-      id comment_id user_id
+      id comment_id user_id reaction
       )
   ],
   longdescs_tags => [
@@ -248,7 +248,7 @@ foreach my $table (@tables) {
   else {
     print "dropping $table\n";
     drop_referencing($table);
-    $dbh->do("DROP TABLE IF EXISTS $table");
+    $dbh->do('DROP TABLE IF EXISTS ' . $dbh->quote_identifier($table));
   }
 }
 
@@ -320,12 +320,12 @@ sub drop_referencing {
 
     # drop the index
     my $rows
-      = $dbh->selectall_arrayref("SHOW INDEX FROM $table WHERE Column_name = ?",
+      = $dbh->selectall_arrayref('SHOW INDEX FROM ' . $dbh->quote_identifier($table) . ' WHERE Column_name = ?',
       {Slice => {}}, $column);
     foreach my $fk (@$rows) {
       print "  dropping index $fk->{Table}.$fk->{Key_name}\n";
       $dbh->do("ALTER TABLE "
-          . $dbh->quote_identifier($fk->{table})
+          . $dbh->quote_identifier($fk->{Table})
           . " DROP INDEX $fk->{Key_name}");
     }
   }
