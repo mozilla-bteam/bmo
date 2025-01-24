@@ -96,11 +96,28 @@ process_flag_state_activity();
 process_tracking_flags();
 process_keywords();
 process_see_also();
-process_mentors();
-process_dependencies();
-process_regressions();
-process_duplicates();
 process_users();
+
+process_two_columns(
+  'bug_mentors', 'bug_mentors',
+  ['bug_id', 'user_id'],
+  ['bug_id', 'user_id']
+);
+process_two_columns(
+  'dependencies', 'bug_dependencies',
+  ['blocked', 'dependson'],
+  ['bug_id',  'depends_on_id']
+);
+process_two_columns(
+  'regressions', 'bug_regressions',
+  ['regresses', 'regressed_by'],
+  ['bug_id',    'regresses_id']
+);
+process_two_columns(
+  'duplicates', 'bug_duplicates',
+  ['dupe',   'dupe_of'],
+  ['bug_id', 'duplicate_of_id']
+);
 
 # If we are done, remove the lock
 delete_lock();
@@ -108,22 +125,22 @@ delete_lock();
 ### Functions
 
 sub process_bugs {
-  my $table_name = 'bugs';
-  my $count      = 0;
-  my $last_id    = 0;
+  my $table_name  = 'bugs';
+  my $count       = 0;
+  my $last_offset = 0;
 
   my $total = $dbh->selectrow_array('SELECT COUNT(*) FROM bugs');
   print "Processing $total $table_name.\n" if $verbose;
 
   my $sth
     = $dbh->prepare(
-    'SELECT bug_id AS id, delta_ts AS modification_time FROM bugs WHERE bug_id > ? ORDER BY bug_id LIMIT '
-      . API_BLOCK_COUNT);
+    'SELECT bug_id AS id, delta_ts AS modification_time FROM bugs ORDER BY bug_id LIMIT ? OFFSET ?'
+    );
 
   while ($count < $total) {
     my @bugs = ();
 
-    $sth->execute($last_id);
+    $sth->execute(API_BLOCK_COUNT, $last_offset);
 
     while (my ($id, $mod_time) = $sth->fetchrow_array()) {
       print "Processing id $id with mod_time of $mod_time.\n" if $verbose;
@@ -207,8 +224,9 @@ sub process_bugs {
       push @bugs, $data;
 
       $count++;
-      $last_id = $id;
     }
+
+    $last_offset += API_BLOCK_COUNT;
 
     # Send the rows to the server
     send_data($table_name, \@bugs, $count) if @bugs;
@@ -216,22 +234,22 @@ sub process_bugs {
 }
 
 sub process_attachments {
-  my $table_name = 'attachments';
-  my $count      = 0;
-  my $last_id    = 0;
+  my $table_name  = 'attachments';
+  my $count       = 0;
+  my $last_offset = 0;
 
   my $total = $dbh->selectrow_array('SELECT COUNT(*) FROM attachments');
   print "Processing $total $table_name.\n" if $verbose;
 
   my $sth
     = $dbh->prepare(
-    'SELECT attach_id AS id, modification_time FROM attachments WHERE attach_id > ? ORDER BY attach_id LIMIT '
-      . API_BLOCK_COUNT);
+    'SELECT attach_id, modification_time FROM attachments ORDER BY attach_id LIMIT ? OFFSET ?'
+    );
 
   while ($count < $total) {
-    my @attachments = ();
+    my @results = ();
 
-    $sth->execute($last_id);
+    $sth->execute(API_BLOCK_COUNT, $last_offset);
 
     while (my ($id, $mod_time) = $sth->fetchrow_array()) {
       print "Processing id $id with mod_time of $mod_time.\n" if $verbose;
@@ -266,34 +284,33 @@ sub process_attachments {
         store_cache($obj->id, $table_name, $obj->modification_time, $data);
       }
 
-      push @attachments, $data;
+      push @results, $data;
 
       $count++;
-      $last_id = $id;
     }
 
+    $last_offset += API_BLOCK_COUNT;
+
     # Send the rows to the server
-    send_data($table_name, \@attachments, $count) if @attachments;
+    send_data($table_name, \@results, $count) if @results;
   }
 }
 
 sub process_flags {
-  my $table_name = 'flags';
-  my $count      = 0;
-  my $last_id    = 0;
+  my $table_name  = 'flags';
+  my $count       = 0;
+  my $last_offset = 0;
 
   my $total = $dbh->selectrow_array('SELECT COUNT(*) FROM flags');
   print "Processing $total $table_name.\n" if $verbose;
 
-  my $sth
-    = $dbh->prepare(
-    'SELECT id, modification_date FROM flags WHERE id > ? ORDER BY id LIMIT '
-      . API_BLOCK_COUNT);
+  my $sth = $dbh->prepare(
+    'SELECT id, modification_date FROM flags ORDER BY id LIMIT ? OFFSET ?');
 
   while ($count < $total) {
-    my @flags = ();
+    my @results = ();
 
-    $sth->execute($last_id);
+    $sth->execute(API_BLOCK_COUNT, $last_offset);
 
     while (my ($id, $mod_time) = $sth->fetchrow_array()) {
       print "Processing id $id with mod_time of $mod_time.\n" if $verbose;
@@ -323,40 +340,43 @@ sub process_flags {
         store_cache($obj->id, $table_name, $obj->modification_date, $data);
       }
 
-      push @flags, $data;
+      push @results, $data;
 
       $count++;
-      $last_id = $id;
     }
 
+    $last_offset += API_BLOCK_COUNT;
+
     # Send the rows to the server
-    send_data($table_name, \@flags, $count) if @flags;
+    send_data($table_name, \@results, $count) if @results;
   }
 }
 
 sub process_flag_state_activity {
+
   # Process flags that were removed today using the flag_state_activity table
   # These entries will also go into the flags table in BigQuery.
-  my $table_name = 'flag_state_activity';
-  my $count      = 0;
-  my $last_id    = 0;
+  my $table_name  = 'flag_state_activity';
+  my $count       = 0;
+  my $last_offset = 0;
 
   my $total
     = $dbh->selectrow_array(
     'SELECT COUNT(*) FROM flag_state_activity WHERE status = \'X\' AND flag_when LIKE \''
-      . $snapshot_date . ' %\'');
+      . $snapshot_date
+      . ' %\'');
   print "Processing $total $table_name.\n" if $verbose;
 
   my $sth
     = $dbh->prepare(
-    'SELECT id, flag_when FROM flag_state_activity WHERE id > ? AND status = \'X\' AND flag_when LIKE \''
-      . $snapshot_date . ' %\' ORDER BY id LIMIT '
-      . API_BLOCK_COUNT);
+    'SELECT id, flag_when FROM flag_state_activity WHERE status = \'X\' AND flag_when LIKE \''
+      . $snapshot_date
+      . ' %\' ORDER BY id LIMIT ? OFFSET ?');
 
   while ($count < $total) {
-    my @flags = ();
+    my @results = ();
 
-    $sth->execute($last_id);
+    $sth->execute(API_BLOCK_COUNT, $last_offset);
 
     while (my ($id, $mod_time) = $sth->fetchrow_array()) {
       print "Processing id $id with mod_time of $mod_time.\n" if $verbose;
@@ -386,284 +406,181 @@ sub process_flag_state_activity {
         store_cache($obj->id, $table_name, $obj->flag_when, $data);
       }
 
-      push @flags, $data;
+      push @results, $data;
 
       $count++;
-      $last_id = $id;
     }
 
+    $last_offset += API_BLOCK_COUNT;
+
     # Send the rows to the server
-    send_data('flags', \@flags, $count) if @flags;
+    send_data('flags', \@results, $count) if @results;
   }
 }
 
 sub process_tracking_flags {
-  my $table_name = 'tracking_flags';
-  my $rows       = $dbh->selectall_arrayref(
-    'SELECT tracking_flags.name AS name, tracking_flags_bugs.bug_id AS bug_id, tracking_flags_bugs.value AS value
-      FROM tracking_flags_bugs
+  my $table_name  = 'tracking_flags';
+  my $count       = 0;
+  my $last_offset = 0;
+
+  my $total = $dbh->selectrow_array(
+    'SELECT COUNT(*)
+       FROM tracking_flags_bugs
             JOIN tracking_flags
             ON tracking_flags_bugs.tracking_flag_id = tracking_flags.id
-      ORDER BY tracking_flags_bugs.bug_id', {Slice => {}}
+      ORDER BY tracking_flags_bugs.bug_id'
   );
-
-  my $total = scalar @{$rows};
-  my $count = 0;
-
   print "Processing $total $table_name.\n" if $verbose;
 
-  my @results = ();
-  foreach my $row (@{$rows}) {
-    next if $excluded_bugs{$row->{bug_id}};
+  my $sth = $dbh->prepare(
+    'SELECT tracking_flags.name, tracking_flags_bugs.bug_id, tracking_flags_bugs.value
+      FROM tracking_flags_bugs
+           JOIN tracking_flags
+           ON tracking_flags_bugs.tracking_flag_id = tracking_flags.id
+      ORDER BY tracking_flags_bugs.id LIMIT ? OFFSET ?'
+  );
 
-    # Standard fields
-    my $data = {bug_id => $row->{bug_id}};
+  while ($count < $total) {
+    my @results = ();
 
-    # Fields that require custom values based on other criteria
-    if (exists $private_bugs{$row->{bug_id}}) {
-      $data->{name}  = undef;
-      $data->{value} = undef;
+    $sth->execute(API_BLOCK_COUNT, $last_offset);
+
+    while (my ($name, $bug_id, $value) = $sth->fetchrow_array()) {
+      next if $excluded_bugs{$bug_id};
+
+      # Standard fields
+      my $data = {bug_id => $bug_id};
+
+      # Fields that require custom values based on other criteria
+      if (exists $private_bugs{$bug_id}) {
+        $data->{name}  = undef;
+        $data->{value} = undef;
+      }
+      else {
+        $data->{name}  = $name;
+        $data->{value} = $value;
+      }
+
+      push @results, $data;
+
+      $count++;
     }
-    else {
-      $data->{name}  = $row->{name};
-      $data->{value} = $row->{value};
-    }
 
-    push @results, $data;
+    $last_offset += API_BLOCK_COUNT;
 
-    $count++;
-
-    # Send the rows to the server if we have a specific sized block'
-    # or we are at the last row
-    if (scalar @results == API_BLOCK_COUNT || $total == $count) {
-      send_data($table_name, \@results, $count);
-      @results = ();
-    }
+    # Send the rows to the server
+    send_data($table_name, \@results, $count) if @results;
   }
 }
 
 sub process_keywords {
-  my $table_name = 'keywords';
-  my $rows       = $dbh->selectall_arrayref(
-    'SELECT bug_id, keyworddefs.name AS name
+  my $table_name  = 'keywords';
+  my $count       = 0;
+  my $last_offset = 0;
+
+  my $total = $dbh->selectrow_array('SELECT COUNT(*) FROM keywords');
+  print "Processing $total $table_name.\n" if $verbose;
+
+  my $sth = $dbh->prepare(
+    'SELECT bug_id, keyworddefs.name
         FROM keywords
               JOIN keyworddefs
               ON keywords.keywordid = keyworddefs.id
-        ORDER BY bug_id', {Slice => {}}
+        ORDER BY bug_id LIMIT ? OFFSET ?'
   );
 
-  my $total = scalar @{$rows};
-  my $count = 0;
+  while ($count < $total) {
+    my @results = ();
 
-  print "Processing $total $table_name.\n" if $verbose;
+    $sth->execute(API_BLOCK_COUNT, $last_offset);
 
-  my @results = ();
-  foreach my $row (@{$rows}) {
-    next if $excluded_bugs{$row->{bug_id}};
+    while (my ($bug_id, $keyword) = $sth->fetchrow_array()) {
+      next if $excluded_bugs{$bug_id};
 
-    # Standard fields
-    my $data = {bug_id => $row->{bug_id}};
+      # Standard fields
+      my $data = {bug_id => $bug_id};
 
-    # Fields that require custom values based on other criteria
-    $data->{keyword} = !exists $private_bugs{$row->{bug_id}} ? $row->{name} : undef;
+      # Fields that require custom values based on other criteria
+      $data->{keyword} = !exists $private_bugs{$bug_id} ? $keyword : undef;
 
-    push @results, $data;
+      push @results, $data;
 
-    $count++;
-
-    # Send the rows to the server if we have a specific sized block'
-    # or we are at the last row
-    if (scalar @results == API_BLOCK_COUNT || $total == $count) {
-      send_data($table_name, \@results, $count);
-      @results = ();
+      $count++;
     }
+
+    $last_offset += API_BLOCK_COUNT;
+
+    # Send the rows to the server
+    send_data($table_name, \@results, $count) if @results;
   }
 }
 
 sub process_see_also {
-  my $table_name = 'see_also';
-  my $rows
-    = $dbh->selectall_arrayref(
-    'SELECT bug_id, value, class FROM bug_see_also ORDER BY bug_id',
-    {Slice => {}});
+  my $table_name  = 'bug_see_also';
+  my $count       = 0;
+  my $last_offset = 0;
 
-  my $total = scalar @{$rows};
-  my $count = 0;
-
+  my $total = $dbh->selectrow_array('SELECT COUNT(*) FROM bug_see_also');
   print "Processing $total $table_name.\n" if $verbose;
 
-  my @results = ();
-  foreach my $row (@{$rows}) {
-    next if $excluded_bugs{$row->{bug_id}};
+  my $sth
+    = $dbh->prepare(
+    'SELECT bug_id, value, class FROM bug_see_also ORDER BY bug_id LIMIT ? OFFSET ?'
+    );
 
-    # Standard fields
-    my $data = {bug_id => $row->{bug_id},};
+  while ($count < $total) {
+    my @results = ();
 
-    # Fields that require custom values based on other criteria
-    if ($private_bugs{$row->{bug_id}}) {
-      $data->{url} = undef;
-    }
-    else {
-      if ($row->{class} =~ /::Local/) {
-        $data->{url}
-          = Bugzilla->localconfig->urlbase . 'show_bug.cgi?id=' . $row->{value};
+    $sth->execute(API_BLOCK_COUNT, $last_offset);
+
+    while (my ($bug_id, $value, $class) = $sth->fetchrow_array()) {
+      next if $excluded_bugs{$bug_id};
+
+      # Standard fields
+      my $data = {bug_id => $bug_id,};
+
+      # Fields that require custom values based on other criteria
+      if ($private_bugs{$bug_id}) {
+        $data->{url} = undef;
       }
       else {
-        $data->{url} = $row->{value};
+        if ($class =~ /::Local/) {
+          $data->{url} = Bugzilla->localconfig->urlbase . 'show_bug.cgi?id=' . $value;
+        }
+        else {
+          $data->{url} = $value;
+        }
       }
+
+      push @results, $data;
+
+      $count++;
     }
 
-    push @results, $data;
+    $last_offset += API_BLOCK_COUNT;
 
-    $count++;
-
-    # Send the rows to the server if we have a specific sized block'
-    # or we are at the last row
-    if (scalar @results == API_BLOCK_COUNT || $total == $count) {
-      send_data($table_name, \@results, $count);
-      @results = ();
-    }
-  }
-}
-
-sub process_mentors {
-  my $table_name = 'bug_mentors';
-  my $rows
-    = $dbh->selectall_arrayref(
-    'SELECT bug_id, user_id FROM bug_mentors ORDER BY bug_id',
-    {Slice => {}});
-
-  my $total = scalar @{$rows};
-  my $count = 0;
-
-  print "Processing $total $table_name.\n" if $verbose;
-
-  my @results = ();
-  foreach my $row (@{$rows}) {
-    next if $excluded_bugs{$row->{bug_id}};
-
-    my $data = {bug_id => $row->{bug_id}, user_id => $row->{user_id}};
-
-    push @results, $data;
-
-    $count++;
-
-    # Send the rows to the server if we have a specific sized block'
-    # or we are at the last row
-    if (scalar @results == API_BLOCK_COUNT || $total == $count) {
-      send_data($table_name, \@results, $count);
-      @results = ();
-    }
-  }
-}
-
-sub process_dependencies {
-  my $table_name = 'bug_dependencies';
-  my $rows
-    = $dbh->selectall_arrayref(
-    'SELECT blocked, dependson FROM dependencies ORDER BY blocked',
-    {Slice => {}});
-
-  my $total = scalar @{$rows};
-  my $count = 0;
-
-  print "Processing $total $table_name.\n" if $verbose;
-
-  my @results = ();
-  foreach my $row (@{$rows}) {
-    next if $excluded_bugs{$row->{blocked}};
-
-    my $data = {bug_id => $row->{blocked}, depends_on_id => $row->{dependson}};
-
-    push @results, $data;
-
-    $count++;
-
-    # Send the rows to the server if we have a specific sized block'
-    # or we are at the last row
-    if (scalar @results == API_BLOCK_COUNT || $total == $count) {
-      send_data($table_name, \@results, $count);
-      @results = ();
-    }
-  }
-}
-
-sub process_regressions {
-  my $table_name = 'bug_regressions';
-  my $rows
-    = $dbh->selectall_arrayref('SELECT regresses, regressed_by FROM regressions',
-    {Slice => {}});
-
-  my $total = scalar @{$rows};
-  my $count = 0;
-
-  print "Processing $total $table_name.\n" if $verbose;
-
-  my @results = ();
-  foreach my $row (@{$rows}) {
-    next if $excluded_bugs{$row->{regresses}};
-
-    my $data = {bug_id => $row->{regresses}, regresses_id => $row->{regressed_by},};
-
-    push @results, $data;
-
-    $count++;
-
-    # Send the rows to the server if we have a specific sized block
-    # or we are at the last row
-    if (scalar @results == API_BLOCK_COUNT || $total == $count) {
-      send_data($table_name, \@results, $count);
-      @results = ();
-    }
-  }
-}
-
-sub process_duplicates {
-  my $table_name = 'bug_duplicates';
-  my $rows = $dbh->selectall_arrayref('SELECT dupe, dupe_of FROM duplicates',
-    {Slice => {}});
-
-  my $total = scalar @{$rows};
-  my $count = 0;
-
-  print "Processing $total $table_name.\n" if $verbose;
-
-  my @results = ();
-  foreach my $row (@{$rows}) {
-    next if $excluded_bugs{$row->{dupe}};
-
-    my $data = {bug_id => $row->{dupe}, duplicate_of_id => $row->{dupe_of},};
-
-    push @results, $data;
-
-    $count++;
-
-    # Send the rows to the server if we have a specific sized block'
-    # or we are at the last row
-    if (scalar @results == API_BLOCK_COUNT || $total == $count) {
-      send_data($table_name, \@results, $count);
-      @results = ();
-    }
+    # Send the rows to the server
+    send_data($table_name, \@results, $count) if @results;
   }
 }
 
 sub process_users {
-  my $table_name = 'users';
-  my $count      = 0;
-  my $last_id    = 0;
+  my $table_name  = 'users';
+  my $count       = 0;
+  my $last_offset = 0;
 
   my $total = $dbh->selectrow_array('SELECT COUNT(*) FROM profiles');
   print "Processing $total $table_name.\n" if $verbose;
 
   my $sth
     = $dbh->prepare(
-    'SELECT userid, modification_ts FROM profiles WHERE userid > ? ORDER BY userid LIMIT '
-      . API_BLOCK_COUNT);
+    'SELECT userid, modification_ts FROM profiles ORDER BY userid LIMIT ? OFFSET ?'
+    );
 
   while ($count < $total) {
     my @users = ();
 
-    $sth->execute($last_id);
+    $sth->execute(API_BLOCK_COUNT, $last_offset);
 
     while (my ($id, $mod_time) = $sth->fetchrow_array()) {
       print "Processing id $id with mod_time of $mod_time.\n" if $verbose;
@@ -699,11 +616,48 @@ sub process_users {
       push @users, $data;
 
       $count++;
-      $last_id = $id;
     }
+
+    $last_offset += API_BLOCK_COUNT;
 
     # Send the rows to the server
     send_data($table_name, \@users, $count) if @users;
+  }
+}
+
+sub process_two_columns {
+  my ($table_name, $bq_name, $column_names, $data_names) = @_;
+  my $count       = 0;
+  my $last_offset = 0;
+
+  my $total = $dbh->selectrow_array('SELECT COUNT(*) FROM ' . $table_name);
+  print "Processing $total $table_name.\n" if $verbose;
+
+  my $columns_string = join ', ', @{$column_names};
+  my $order_by       = $column_names->[0];
+
+  my $sth = $dbh->prepare(
+    "SELECT $columns_string FROM $table_name ORDER BY $order_by LIMIT ? OFFSET ?");
+
+  while ($count < $total) {
+    my @results = ();
+
+    $sth->execute(API_BLOCK_COUNT, $last_offset);
+
+    while (my ($value1, $value2) = $sth->fetchrow_array()) {
+      next if $excluded_bugs{$value1};
+
+      my $data = {$data_names->[0] => $value1, $data_names->[1] => $value2,};
+
+      push @results, $data;
+
+      $count++;
+    }
+
+    $last_offset += API_BLOCK_COUNT;
+
+    # Send the rows to the server
+    send_data($bq_name, \@results, $count) if @results;
   }
 }
 
@@ -937,15 +891,15 @@ sub get_multi_group_value {
   my $smallest_group_count = 0;
 
   foreach my $group (@{$bug->groups_in}) {
-     my $user_count = 0;
-     my $member_data = $group->members_complete;
-     foreach my $type (keys %{$member_data}) {
-       $user_count += scalar @{$member_data->{$type}};
-     }
-     if ($user_count < $smallest_group_count) {
-       $smallest_group_count = $user_count;
-       $smallest_group_name = $group->name;
-     }
+    my $user_count  = 0;
+    my $member_data = $group->members_complete;
+    foreach my $type (keys %{$member_data}) {
+      $user_count += scalar @{$member_data->{$type}};
+    }
+    if ($user_count < $smallest_group_count) {
+      $smallest_group_count = $user_count;
+      $smallest_group_name  = $group->name;
+    }
   }
 
   return $smallest_group_name;
