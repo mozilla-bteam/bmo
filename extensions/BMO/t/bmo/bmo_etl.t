@@ -102,6 +102,7 @@ my @cmd = (
 );
 
 my ($output, $error, $rv) = capture { system @cmd; };
+print STDERR $output;
 ok(!$rv, 'Data exported to test files without error');
 ok(glob(bz_locations()->{'datadir'} . '/2000-01-01-bugs-*.json'),
   'Export test files exist');

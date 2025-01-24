@@ -89,14 +89,14 @@ our %private_bugs = ();
 check_for_duplicates();
 
 # Process each table to be sent to ETL
-#process_bugs();
-#process_attachments();
-#process_flags();
-#process_flag_state_activity();
-#process_tracking_flags();
-#process_keywords();
-#process_see_also();
-#process_users();
+process_bugs();
+process_attachments();
+process_flags();
+process_flag_state_activity();
+process_tracking_flags();
+process_keywords();
+process_see_also();
+process_users();
 
 process_two_columns(
   'bug_mentors', 'bug_mentors',
