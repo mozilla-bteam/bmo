@@ -516,7 +516,7 @@ sub process_keywords {
 }
 
 sub process_see_also {
-  my $table_name  = 'bug_see_also';
+  my $table_name  = 'see_also';
   my $count       = 0;
   my $last_offset = 0;
 
