@@ -56,6 +56,8 @@ sub _throw_error {
   my $template = Bugzilla->template;
   my $message;
 
+  use Bugzilla::Logging;
+  DEBUG('HEY1');
   # There are some tests that throw and catch a lot of errors,
   # and calling $template->process over and over for those errors
   # is too slow. So instead, we just "die" with a dump of the arguments.
@@ -66,11 +68,15 @@ sub _throw_error {
       || ThrowTemplateError($template->error());
   }
 
+  DEBUG('HEY2');
+
   # Let's call the hook first, so that extensions can override
   # or extend the default behavior, or add their own error codes.
   require Bugzilla::Hook;
   Bugzilla::Hook::process('error_catch',
     {error => $error, vars => $vars, message => \$message});
+
+  DEBUG('HEY3');
 
   if ($Bugzilla::Template::is_processing) {
     my ($type) = $name =~ /^global\/(user|code)-error/;
@@ -188,7 +194,7 @@ sub ThrowTemplateError {
   my $dbh = eval { Bugzilla->dbh };
 
   # Make sure the transaction is rolled back (if supported).
-  $dbh->bz_rollback_transaction() if $dbh && $dbh->bz_in_transaction();
+  # $dbh->bz_rollback_transaction() if $dbh && $dbh->bz_in_transaction();
 
   if (blessed($template_err) && $template_err->isa('Template::Exception')) {
     my $type = $template_err->type;

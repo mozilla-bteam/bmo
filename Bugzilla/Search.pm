@@ -833,9 +833,18 @@ sub data {
   my $start_time = [gettimeofday()];
   my $sql        = $self->_sql;
 
+  my $sth = $dbh->prepare($sql);
+  $dbh->bz_call_with_timeout($sth);
+  my $bug_ids = $sth->fetchall_arrayref();
+
+  # Simulate selectcol_arrayref
+  if (!$all_in_bugs_table) {
+    $bug_ids = [map { $_->[0] } @$bug_ids];
+  }
+
   # Do we just want bug IDs to pass to the 2nd query or all the data immediately?
-  my $func = $all_in_bugs_table ? 'selectall_arrayref' : 'selectcol_arrayref';
-  my $bug_ids = $dbh->$func($sql);
+  #my $func = $all_in_bugs_table ? 'selectall_arrayref' : 'selectcol_arrayref';
+  #my $bug_ids = $dbh->$func($sql);
   my @extra_data = ({sql => $sql, time => tv_interval($start_time)});
 
   # Restore the original 'fields' argument, just in case.
@@ -881,8 +890,10 @@ sub data {
     . Bugzilla->cgi->canonicalize_query() . ' */ ';
 
   $start_time = [gettimeofday()];
-  $sql        = $search->_sql;
-  my $unsorted_data = $dbh->selectall_arrayref($sql . $sql_user_info);    # Add extra info for logging purposes
+  $sql        = $search->_sql . $sql_user_info;
+  $sth        = $dbh->prepare($sql);
+  $dbh->bz_call_with_timeout($sth);
+  my $unsorted_data = $sth->fetchall_arrayref();
   push(@extra_data, {sql => $sql, time => tv_interval($start_time)});
 
   # Let's sort the data. We didn't do it in the query itself because
@@ -2217,7 +2228,15 @@ sub build_subselect {
   # large performance hits on MySql
   my $q    = "SELECT DISTINCT $inner FROM $table WHERE $cond";
   my $dbh  = Bugzilla->dbh;
-  my $list = $dbh->selectcol_arrayref($q);
+  my $list = [];
+
+  my $sth = $dbh->prepare($q);
+  $dbh->bz_call_with_timeout($sth);
+
+  while (my $row = $sth->fetch) {
+    push @{$list}, $row->[0];
+  }
+
   return $negate ? "1=1" : "1=2" unless @$list;
   return $dbh->sql_in($outer, $list, $negate);
 }

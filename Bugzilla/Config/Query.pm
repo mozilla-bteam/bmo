@@ -62,6 +62,20 @@ sub get_param_list {
       default => '10000',
       checker => \&check_numeric
     },
+
+    {
+      name    => 'max_query_timeout_auth',
+      type    => 't',
+      default => 0,
+      checker => \&check_numeric,
+    },
+
+    {
+      name    => 'max_query_timeout_noauth',
+      type    => 't',
+      default => 0,
+      checker => \&check_numeric,
+    },
   );
   return @param_list;
 }

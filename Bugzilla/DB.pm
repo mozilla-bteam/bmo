@@ -25,6 +25,8 @@ use Bugzilla::Error;
 use Bugzilla::DB::Schema;
 use Bugzilla::Version;
 
+use English qw(-no_match_vars) ;
+use File::Basename qw(basename);
 use List::Util qw(max);
 use Scalar::Util qw(weaken);
 use Storable qw(dclone);
@@ -197,32 +199,41 @@ sub _connect {
 }
 
 sub _handle_error {
-  require Carp;
+  my ($err) = @_;
 
-  # Cut down the error string to a reasonable size
-  $_[0] = substr($_[0], 0, 2000) . ' ... ' . substr($_[0], -2000)
-    if length($_[0]) > 4000;
+  return 0 if Bugzilla->localconfig->{db_driver} ne 'mysql';
 
-  # BMO: stracktrace disabled:
-  # $_[0] = Carp::longmess($_[0]);
-
-# BMO: catch long running query timeouts and translate into a sane message
-#if ($_[0] =~ /Lost connection to MySQL server during query/) {
-#    warn(Carp::longmess($_[0]));
-#    $_[0] = "The database query took too long to complete and has been canceled.\n"
-#            . "(Lost connection to MySQL server during query)";
-#}
-
-  #if (Bugzilla->usage_mode == USAGE_MODE_BROWSER) {
-  #    ThrowCodeError("db_error", { err_message => $_[0] });
-  #}
-
-  # keep tests happy
-  if (0) {
-    ThrowCodeError("db_error", {err_message => $_[0]});
+  if (Bugzilla->request_cache->{in_error}
+    && $err =~ /maximum statement execution time exceeded/)
+  {
+    Bugzilla->request_cache->{in_error} = 1;
+    ThrowUserError('query_timeout', {timeout => _query_timeout_seconds()});
   }
 
+  ## Cut down the error string to a reasonable size
+  #$err = substr($err, 0, 2000) . ' ... ' . substr($err, -2000)
+  #  if length($err) > 4000;
+  #if (Bugzilla->usage_mode == USAGE_MODE_BROWSER) {
+  #    ThrowCodeError("db_error", {err_message => $err});
+  #}
+
   return 0;    # Now let DBI handle raising the error
+}
+
+sub _query_timeout_seconds {
+  my $timeout = 0;
+  if (Bugzilla->user->id && Bugzilla->params->{max_query_timeout_auth}) {
+    $timeout = Bugzilla->params->{max_query_timeout_auth};
+  }
+  elsif (!Bugzilla->user->id && Bugzilla->params->{max_query_timeout_noauth}) {
+    $timeout = Bugzilla->params->{max_query_timeout_noauth};
+  }
+  return $timeout;
+}
+
+sub _query_timeout_ms {
+  my $timeout = _query_timeout_seconds();
+  return $timeout *= 1000;
 }
 
 sub bz_check_requirements {
@@ -1327,6 +1338,25 @@ sub bz_rollback_transaction {
     # the next line may fail if somehow we're connected but not in a txn
     $self->rollback() if $self->connector->connected;
   }
+}
+
+sub bz_call_with_timeout {
+  my ($self, $sth, @args) = @_;
+
+  return $sth->execute(@args) if Bugzilla->localconfig->{db_driver} ne 'mysql';
+
+  # If we are running from a script, don't do the timeout
+  my $script = basename($PROGRAM_NAME);
+  if (remote_ip() eq '127.0.0.1' && $script ne 'whine.pl') {
+    return $sth->execute(@args);
+  }
+
+  my $timeout = _query_timeout_ms();
+  $self->do("SET SESSION MAX_EXECUTION_TIME = $timeout");
+  my $ok = $sth->execute(@args);
+  $self->do('SET SESSION MAX_EXECUTION_TIME = 0');
+
+  return $ok;
 }
 
 #####################################################################

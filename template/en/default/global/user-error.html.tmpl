@@ -2003,7 +2003,7 @@
 
   [% ELSIF error == "reminders_invalid_bug_id" %]
     [% title = "Reminders Error" %]
-    The [% terms.bug %] ID entered is either invalid or you do 
+    The [% terms.bug %] ID entered is either invalid or you do
     not have permission to view it.
 
   [% ELSIF error == "reminders_invalid_date" %]
@@ -2012,21 +2012,33 @@
 
   [% ELSIF error == "component_graveyard_open_bugs" %]
     [% title = "Component Graveyard Open Bugs" %]
-    There are currently still 
+    There are currently still
     <a href="[% basepath FILTER none %]buglist.cgi?product=[% product FILTER uri %]&component=[% component FILTER uri %]&resolution=---">
-      [% count FILTER html %] open [% terms.bugs %]</a> 
-    for the product  '[% product FILTER html %]' and component 
-    '[% component FILTER html %]'  that will need be resolved 
+      [% count FILTER html %] open [% terms.bugs %]</a>
+    for the product  '[% product FILTER html %]' and component
+    '[% component FILTER html %]'  that will need be resolved
     before moving to graveyard.
 
   [% ELSIF error == "reminders_invalid_bug_id" %]
     [% title = "Reminders Error" %]
-    The [% terms.bug %] ID entered is either invalid or you do 
+    The [% terms.bug %] ID entered is either invalid or you do
     not have permission to view it.
 
   [% ELSIF error == "reminders_invalid_date" %]
     [% title = "Reminders Error" %]
     The reminder date entered is missing or the wrong format (YYYY-MM-DD).
+
+  [% ELSIF error == "query_timeout" %]
+    [% title = "Query Timeout" %]
+    Your query was taking longer than [% timeout FILTER html %] seconds and had
+    to be killed. Please back up and narrow your search criteria. If you feel your
+    results were expected and your search criteria was correct, please send email to
+    <a href="mailto:[% Param("maintainer") %]">[% Param("maintainer") %]</a>
+    describing what you were doing and we will try to correct the error.
+    <p>
+    Note that if you are searching for text content then the <em>content</em>
+    field uses the Full Text Search feature and is considerably faster than
+    searching on the <em>comments</em> field.
 
   [% ELSE %]
 
