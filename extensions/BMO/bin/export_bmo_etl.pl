@@ -596,9 +596,9 @@ sub process_users {
         # Standard fields
         $data = {
           id        => $obj->id,
-          last_seen => $obj->last_seen_date,
+          last_seen => ($obj->last_seen_date ? $obj->last_seen_date . ' 00:00:00' : undef),
           email     => $obj->email,
-          is_new    => $obj->is_new,
+          is_new    => ($obj->is_new ? true : false),
         };
 
         # Fields that require custom values based on criteria
@@ -646,6 +646,8 @@ sub process_two_columns {
 
     while (my ($value1, $value2) = $sth->fetchrow_array()) {
       next if $excluded_bugs{$value1};
+
+      print "Processing values $value1, $value2 for $table_name.\n" if $verbose;
 
       my $data = {$data_names->[0] => $value1, $data_names->[1] => $value2,};
 
