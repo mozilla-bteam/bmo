@@ -1,0 +1,185 @@
+projects:
+  - id: test
+    datasets:
+      - id: bugzilla
+        tables:
+          - id: bugs
+            columns:
+              - name: id
+                type: INTEGER
+              - name: assignee_id
+                type: INTEGER
+              - name: url
+                type: STRING
+              - name: severity
+                type: STRING
+              - name: status
+                type: STRING
+              - name: type
+                type: STRING
+              - name: crash_signature
+                type: STRING
+              - name: component
+                type: STRING
+              - name: creation_ts
+                type: TIMESTAMP
+              - name: updated_ts
+                type: TIMESTAMP
+              - name: op_sys
+                type: STRING
+              - name: priority
+                type: STRING
+              - name: product
+                type: STRING
+              - name: platform
+                type: STRING
+              - name: reporter_id
+                type: INTEGER
+              - name: resolution
+                type: STRING
+              - name: summary
+                type: STRING
+              - name: whiteboard
+                type: STRING
+              - name: milestone
+                type: STRING
+              - name: version
+                type: STRING
+              - name: team_name
+                type: STRING
+              - name: group
+                type: STRING
+              - name: classification
+                type: STRING
+              - name: is_public
+                type: BOOLEAN
+              - name: comment_count
+                type: INTEGER
+              - name: cc_count
+                type: INTEGER
+              - name: vote_count
+                type: INTEGER
+              - name: snapshot_date
+                type: DATE
+          - id: attachments
+            columns:
+              - name: id
+                type: INT64
+              - name: bug_id
+                type: INT64
+              - name: creation_ts
+                type: TIMESTAMP
+              - name: description
+                type: STRING
+              - name: filename
+                type: STRING
+              - name: is_obsolete
+                type: BOOL
+              - name: content_type
+                type: STRING
+              - name: updated_ts
+                type: TIMESTAMP
+              - name: submitter_id
+                type: INT64
+              - name: snapshot_date
+                type: DATE
+          - id: flags
+            columns:
+              - name: attachment_id
+                type: INT64
+              - name: bug_id
+                type: INT64
+              - name: creation_ts
+                type: TIMESTAMP
+              - name: updated_ts
+                type: TIMESTAMP
+              - name: requestee_id
+                type: INT64
+              - name: setter_id
+                type: INT64
+              - name: name
+                type: STRING
+              - name: value
+                type: STRING
+              - name: snapshot_date
+                type: DATE
+          - id: tracking_flags
+            columns:
+              - name: bug_id
+                type: INT64
+              - name: name
+                type: STRING
+              - name: value
+                type: STRING
+              - name: snapshot_date
+                type: DATE
+          - id: keywords
+            columns:
+              - name: bug_id
+                type: INT64
+              - name: keyword
+                type: STRING
+              - name: snapshot_date
+                type: DATE
+          - id: see_also
+            columns:
+              - name: bug_id
+                type: INT64
+              - name: url
+                type: STRING
+              - name: snapshot_date
+                type: DATE
+          - id: bug_mentors
+            columns:
+              - name: bug_id
+                type: INT64
+              - name: user_id
+                type: INT64
+              - name: snapshot_date
+                type: DATE
+          - id: bug_dependencies
+            columns:
+              - name: bug_id
+                type: INT64
+              - name: depends_on_id
+                type: INT64
+              - name: snapshot_date
+                type: DATE
+          - id: bug_regressions
+            columns:
+              - name: bug_id
+                type: INT64
+              - name: regresses_id
+                type: INT64
+              - name: snapshot_date
+                type: DATE
+          - id: bug_duplicates
+            columns:
+              - name: bug_id
+                type: INT64
+              - name: duplicate_of_id
+                type: INT64
+              - name: snapshot_date
+                type: DATE
+          - id: users
+            columns:
+              - name: id
+                type: INT64
+              - name: last_seen
+                type: TIMESTAMP
+              - name: email
+                type: STRING
+              - name: nick
+                type: STRING
+              - name: name
+                type: STRING
+              - name: is_staff
+                type: BOOL
+              - name: is_trusted
+                type: BOOL
+              - name: ldap_email
+                type: STRING
+              - name: is_new
+                type: BOOL
+              - name: snapshot_date
+                type: DATE

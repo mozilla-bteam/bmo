@@ -43,6 +43,7 @@ services:
       - s3
       - gcs
       - externalapi.test
+      - bq
     ports:
       - 8000:8000
 
@@ -143,6 +144,19 @@ services:
     ports:
       - 8001:8001
 
+  bq:
+    platform: linux/x86_64
+    build:
+      context: ./docker/bigquery
+      dockerfile: Dockerfile
+    ports:
+      - 9050:9050
+    volumes:
+      - bmo-bq-data:/work
+    working_dir: /work
+    command: |
+      --project=test --data-from-yaml=/data.yaml --log-level=debug
+
 volumes:
   bmo-mysql-db:
   bmo-data-dir:
@@ -150,3 +164,4 @@ volumes:
   bmo-gcs-attachments:
   bmo-gcs-sitemapindex:
   bmo-gcs-mining:
+  bmo-bq-data:
