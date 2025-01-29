@@ -84,7 +84,7 @@ our %excluded_bugs = ();
 # Bugs that are private to one or more groups
 our %private_bugs = ();
 
-# I order to avoid entering duplicate data, we will first query BigQuery
+# In order to avoid entering duplicate data, we will first query BigQuery
 # to make sure other entries with this date are not already present.
 check_for_duplicates();
 
@@ -543,13 +543,11 @@ sub process_see_also {
       if ($private_bugs{$bug_id}) {
         $data->{url} = undef;
       }
+      elsif ($class =~ /::Local/) {
+        $data->{url} = Bugzilla->localconfig->urlbase . 'show_bug.cgi?id=' . $value;
+      }
       else {
-        if ($class =~ /::Local/) {
-          $data->{url} = Bugzilla->localconfig->urlbase . 'show_bug.cgi?id=' . $value;
-        }
-        else {
-          $data->{url} = $value;
-        }
+        $data->{url} = $value;
       }
 
       push @results, $data;
