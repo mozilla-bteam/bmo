@@ -295,9 +295,10 @@ $payload = {
 };
 
 # Post the valid GitHub event to the rest/github/push_comment API endpoint
+# Also pass in the no-qe-verify option so that the qe-verify flag is not set
 $t->post_ok(
   $url
-    . 'rest/github/push_comment' => {
+    . 'rest/github/push_comment?no-qe-verify=1' => {
     'X-Hub-Signature-256' => generate_payload_signature($secret, $payload),
     'X-GitHub-Event'      => 'push'
     } => json => $payload
@@ -329,8 +330,7 @@ $t->get_ok($url
   ->json_is('/bugs/0/resolution',           'FIXED')
   ->json_is('/bugs/0/cf_status_firefox111', 'fixed')
   ->json_is('/bugs/0/target_milestone',     '111 Branch')
-  ->json_is('/bugs/0/flags/0/name',         'qe-verify')
-  ->json_is('/bugs/0/flags/0/status',       '+');
+  ->json_hasnt('/bugs/0/flags/0/name',      'qe-verify');
 
 # Change to make sure the flag change entry is recorded properly in the bug history
 $t->get_ok(
