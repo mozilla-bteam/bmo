@@ -139,7 +139,7 @@ $(function() {
     // restore edit mode after navigating back
     function restoreEditMode() {
         if (!$('#editing').val()) {
-            if (Bugzilla.Storage.get('modal-perm-edit-mode') === 'true') {
+            if (Bugzilla.Storage.get('modal-perm-edit-mode') === true) {
                 $('#mode-btn').click();
                 $('#action-enable-perm-edit').attr('aria-checked', 'true');
             }
