@@ -602,6 +602,10 @@ sub process_users {
     while (my ($id, $mod_time) = $sth->fetchrow_array()) {
       print "Processing id $id with mod_time of $mod_time.\n" if $verbose;
 
+      # Set the mod time to an arbitrary value for caching purposes if its
+      # real mod time is not yet been set to a real value.
+      $mod_time = '1970-01-01 12:00:00' if !$mod_time;
+
       # First check to see if we have a cached version with the same modification date
       my $data = get_cache($id, $table_name, $mod_time);
       if (!$data) {
