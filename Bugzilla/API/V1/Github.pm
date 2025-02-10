@@ -318,8 +318,8 @@ sub push_comment {
       $set_all->{resolution} = 'FIXED';
 
       # Update the qe-verify flag if not set and the bug was closed.
-      # Do not perform this change if Fenix or Focus product.
-      if ($bug->product ne 'Fenix' && $bug->product ne 'Focus') {
+      # Do not set the flag if the no-qe-verify parameter is true.
+      if (!$self->param('no-qe-verify')) {
         my $found_flag;
         foreach my $flag (@{$bug->flags}) {
 

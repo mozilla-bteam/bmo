@@ -84,7 +84,7 @@ our %excluded_bugs = ();
 # Bugs that are private to one or more groups
 our %private_bugs = ();
 
-# I order to avoid entering duplicate data, we will first query BigQuery
+# In order to avoid entering duplicate data, we will first query BigQuery
 # to make sure other entries with this date are not already present.
 check_for_duplicates();
 
@@ -157,6 +157,7 @@ sub process_bugs {
 
         if (any { $obj->product eq $_ } EXCLUDE_PRODUCTS) {
           $excluded_bugs{$obj->id} = 1;
+          $count++;
           next;
         }
 
@@ -262,7 +263,10 @@ sub process_attachments {
 
         my $obj = Bugzilla::Attachment->new($id);
 
-        next if $excluded_bugs{$obj->bug_id};
+        if ($excluded_bugs{$obj->bug_id}) {
+          $count++;
+          next;
+        }
 
         # Standard non-sensitive fields
         $data = {
@@ -323,7 +327,10 @@ sub process_flags {
 
         my $obj = Bugzilla::Flag->new($id);
 
-        next if $excluded_bugs{$obj->bug_id};
+        if ($excluded_bugs{$obj->bug_id}) {
+          $count++;
+          next;
+        }
 
         $data = {
           attachment_id => $obj->attach_id || undef,
@@ -389,7 +396,10 @@ sub process_flag_state_activity {
 
         my $obj = Bugzilla::Extension::Review::FlagStateActivity->new($id);
 
-        next if $excluded_bugs{$obj->bug_id};
+        if ($excluded_bugs{$obj->bug_id}) {
+          $count++;
+          next;
+        }
 
         $data = {
           attachment_id => $obj->attachment_id || undef,
@@ -446,7 +456,10 @@ sub process_tracking_flags {
     $sth->execute(API_BLOCK_COUNT, $last_offset);
 
     while (my ($name, $bug_id, $value) = $sth->fetchrow_array()) {
-      next if $excluded_bugs{$bug_id};
+      if ($excluded_bugs{$bug_id}) {
+        $count++;
+        next;
+      }
 
       # Standard fields
       my $data = {bug_id => $bug_id};
@@ -495,7 +508,10 @@ sub process_keywords {
     $sth->execute(API_BLOCK_COUNT, $last_offset);
 
     while (my ($bug_id, $keyword) = $sth->fetchrow_array()) {
-      next if $excluded_bugs{$bug_id};
+      if ($excluded_bugs{$bug_id}) {
+        $count++;
+        next;
+      }
 
       # Standard fields
       my $data = {bug_id => $bug_id};
@@ -534,7 +550,10 @@ sub process_see_also {
     $sth->execute(API_BLOCK_COUNT, $last_offset);
 
     while (my ($bug_id, $value, $class) = $sth->fetchrow_array()) {
-      next if $excluded_bugs{$bug_id};
+      if ($excluded_bugs{$bug_id}) {
+        $count++;
+        next;
+      }
 
       # Standard fields
       my $data = {bug_id => $bug_id,};
@@ -543,13 +562,11 @@ sub process_see_also {
       if ($private_bugs{$bug_id}) {
         $data->{url} = undef;
       }
+      elsif ($class =~ /::Local/) {
+        $data->{url} = Bugzilla->localconfig->urlbase . 'show_bug.cgi?id=' . $value;
+      }
       else {
-        if ($class =~ /::Local/) {
-          $data->{url} = Bugzilla->localconfig->urlbase . 'show_bug.cgi?id=' . $value;
-        }
-        else {
-          $data->{url} = $value;
-        }
+        $data->{url} = $value;
       }
 
       push @results, $data;
@@ -645,7 +662,10 @@ sub process_two_columns {
     $sth->execute(API_BLOCK_COUNT, $last_offset);
 
     while (my ($value1, $value2) = $sth->fetchrow_array()) {
-      next if $excluded_bugs{$value1};
+      if ($excluded_bugs{$value1}) {
+        $count++;
+        next;
+      }
 
       print "Processing values $value1, $value2 for $table_name.\n" if $verbose;
 

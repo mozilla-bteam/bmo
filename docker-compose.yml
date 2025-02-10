@@ -44,6 +44,7 @@ services:
       - gcs
       - bq
       - externalapi.test
+      - bq
     ports:
       - 8000:8000
 
