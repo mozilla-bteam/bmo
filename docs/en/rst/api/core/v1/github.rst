@@ -106,7 +106,8 @@ This API endpoint is for adding comments to a bug when a push is made to a linke
 Github repository. The comment will be short and specially formatted using pieces
 of information from the full JSON sent to Bugzilla by the push event. If the bug
 does not have the keyword ``leave-open`` set, the bug will be resolved as FIXED.
-Also, the ``qe-verify`` flag will be set to `+` for the bug. For some specific 
+Also, the ``qe-verify`` flag will be set to `+` for the bug unless the
+``?no-qe-verify=1`` query parameter is passed in the URL. For some specific
 repositories, a Firefox status flag may be set to FIXED.
 
 **Github Setup Instructions**
@@ -115,6 +116,7 @@ repositories, a Firefox status flag may be set to FIXED.
 * Click on Webhooks from the left side menu.
 * Click on the Add Webhook button near the top right.
 * For the payload url, enter ``https://bugzilla.mozilla.org/rest/github/push_comment``.
+* Add ``?no-qe-verify=1`` to the URL if you do not want the ``qe-verify`` flag set.
 * Choose ``application/json`` for the content type.
 * You will need to enter the signature secret obtained from a BMO admin (DO NOT SHARE).
 * Make sure Enable SSL is turned on.
