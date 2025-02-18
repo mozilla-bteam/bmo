@@ -1487,48 +1487,45 @@ sub _translate_join {
 # group security.
 sub _standard_where {
   my ($self) = @_;
-  return ('1=1') if $self->{_no_security_check};
+  my $userid = $self->_user->id;
 
-  # If replication lags badly between the shadow db and the main DB,
-  # it's possible for bugs to show up in searches before their group
-  # controls are properly set. To prevent this, when initially creating
-  # bugs we set their creation_ts to NULL, and don't give them a creation_ts
-  # until their group controls are set. So if a bug has a NULL creation_ts,
-  # it shouldn't show up in searches at all.
-  my @where = ('bugs.creation_ts IS NOT NULL');
-
-  my $security_term = 'security_map.group_id IS NULL';
-
-  my $user = $self->_user;
-  if ($user->id) {
-    my $userid = $user->id;
-
-    # This indentation makes the resulting SQL more readable.
-    $security_term .= <<END;
-
-        OR (bugs.reporter_accessible = 1 AND bugs.reporter = $userid)
-        OR (bugs.cclist_accessible = 1 AND security_cc.who IS NOT NULL)
-        OR bugs.assigned_to = $userid
-END
-    if (Bugzilla->params->{'useqacontact'}) {
-      $security_term .= "        OR bugs.qa_contact = $userid";
-    }
-    $security_term = "($security_term)";
+  if ($self->{_no_security_check}) {
+    # If security checks have already been performed, there's no need to repeat
+    # in sub-queries.
+    return "";
   }
 
-  push(@where, $security_term);
+  # Public bugs are always visible.
+  my $term = 'security_map.group_id IS NULL';
 
-  return @where;
+  if ($userid) {
+    # Authenticated; users directly associated with the bug have visibility.
+    my @involved = (
+        "bugs.reporter_accessible = 1 AND bugs.reporter = $userid",
+        'bugs.cclist_accessible = 1 AND security_cc.who IS NOT NULL',
+        "bugs.assigned_to = $userid",
+    );
+    if (Bugzilla->params->{'useqacontact'}) {
+      push @involved, ("bugs.qa_contact = $userid");
+    }
+    $term .= ' OR (' . join(') OR (', @involved) . ')';
+  }
+
+  return $term;
 }
 
 sub _sql_where {
   my ($self, $main_clause) = @_;
 
-  # The newline and this particular spacing makes the resulting
-  # SQL a bit more readable for debugging.
-  my $where = join("\n   AND ", $self->_standard_where);
+  my $where = "";
+  my $where_sql = $self->_standard_where();
+  $where .= '(' . $where_sql . ')' if $where_sql;
+
   my $clause_sql = $main_clause->as_string;
-  $where .= "\n   AND " . $clause_sql if $clause_sql;
+  if ($clause_sql) {
+    $where .= " AND " if $where_sql;
+    $where .= $clause_sql;
+  }
   return $where;
 }
 
