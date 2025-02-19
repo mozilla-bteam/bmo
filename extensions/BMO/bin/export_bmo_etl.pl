@@ -600,39 +600,30 @@ sub process_users {
     $sth->execute(API_BLOCK_COUNT, $last_offset);
 
     while (my ($id, $mod_time) = $sth->fetchrow_array()) {
-      print "Processing id $id with mod_time of $mod_time.\n" if $verbose;
-
       # Set the mod time to an arbitrary value for caching purposes if its
       # real mod time is not yet been set to a real value.
       $mod_time = '1970-01-01 12:00:00' if !$mod_time;
 
-      # First check to see if we have a cached version with the same modification date
-      my $data = get_cache($id, $table_name, $mod_time);
-      if (!$data) {
-        print "$table_name id $id with time $mod_time not found in cache.\n"
-          if $verbose;
+      print "Processing id $id with mod_time of $mod_time.\n" if $verbose;
 
-        my $obj = Bugzilla::User->new($id);
+      my $obj = Bugzilla::User->new($id);
 
-        # Standard fields
-        $data = {
-          id        => $obj->id,
-          last_seen => ($obj->last_seen_date ? $obj->last_seen_date . ' 00:00:00' : undef),
-          email     => $obj->email,
-          is_new    => ($obj->is_new ? true : false),
-        };
+      # Standard fields
+      my $data = {
+        id        => $obj->id,
+        last_seen =>
+          ($obj->last_seen_date ? $obj->last_seen_date . ' 00:00:00' : undef),
+        email  => $obj->email,
+        is_new => ($obj->is_new ? true : false),
+      };
 
-        # Fields that require custom values based on criteria
-        $data->{nick} = $obj->nick ? $obj->nick : undef;
-        $data->{name} = $obj->name ? $obj->name : undef;
-        $data->{is_staff}
-          = $obj->in_group('mozilla-employee-confidential') ? true : false;
-        $data->{is_trusted} = $obj->in_group('editbugs') ? true             : false;
-        $data->{ldap_email} = $obj->ldap_email           ? $obj->ldap_email : undef;
-
-        # Store a new copy of the data for use later
-        store_cache($obj->id, $table_name, $obj->modification_ts, $data);
-      }
+      # Fields that require custom values based on criteria
+      $data->{nick} = $obj->nick ? $obj->nick : undef;
+      $data->{name} = $obj->name ? $obj->name : undef;
+      $data->{is_staff}
+        = $obj->in_group('mozilla-employee-confidential') ? true : false;
+      $data->{is_trusted} = $obj->in_group('editbugs') ? true             : false;
+      $data->{ldap_email} = $obj->ldap_email           ? $obj->ldap_email : undef;
 
       push @users, $data;
 
