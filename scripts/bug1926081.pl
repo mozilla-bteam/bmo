@@ -28,8 +28,8 @@ my $sth = $dbh->prepare(
 my $now_when
   = $dbh->selectrow_array('SELECT UNIX_TIMESTAMP(LOCALTIMESTAMP(0))');
 
-my $user_ids
-  = $dbh->selectcol_arrayref('SELECT userid FROM profiles ORDER BY userid');
+my $user_ids = $dbh->selectcol_arrayref(
+  'SELECT userid FROM profiles WHERE modification_ts IS NULL ORDER BY userid');
 
 my $count = 1;
 my $total = scalar @{$user_ids};

@@ -841,6 +841,9 @@ sub update_table_definitions {
   # Bug 1926081 - dkl@mozilla.com
   _migrate_profiles_modification_ts();
 
+  # Bug 1949556 - dkl@mozilla.com
+  $dbh->bz_add_index('audit_log', 'audit_log_object_id_idx', ['object_id']);
+
   ################################################################
   # New --TABLE-- changes should go *** A B O V E *** this point #
   ################################################################
