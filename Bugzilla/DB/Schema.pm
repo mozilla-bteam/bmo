@@ -652,7 +652,10 @@ use constant ABSTRACT_SCHEMA => {
       added     => {TYPE => 'MEDIUMTEXT'},
       at_time   => {TYPE => 'DATETIME', NOTNULL => 1},
     ],
-    INDEXES => [audit_log_class_idx => ['class', 'at_time'],],
+    INDEXES => [
+      audit_log_class_idx     => ['class', 'at_time'],
+      audit_log_object_id_idx => ['object_id'],
+    ],
   },
 
   # Keywords
