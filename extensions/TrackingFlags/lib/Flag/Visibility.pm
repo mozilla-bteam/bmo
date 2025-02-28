@@ -92,14 +92,13 @@ sub match {
 
   my @criteria = ("1=1");
 
-  if ($params->{product_id}) {
-    push(@criteria, $dbh->sql_in('product_id', $params->{'product_id'}));
-    if ($params->{component_id}) {
-      my $component_id = $params->{component_id};
-      push(@criteria,
-            "("
-          . $dbh->sql_in('component_id', $params->{'component_id'})
-          . " OR component_id IS NULL)");
+  if (exists $params->{product_id} && @{$params->{product_id}}) {
+    push @criteria, $dbh->sql_in('product_id', $params->{product_id});
+    if (exists $params->{component_id} && @{$params->{component_id}}) {
+      push @criteria,
+          '('
+        . $dbh->sql_in('component_id', $params->{component_id})
+        . ' OR component_id IS NULL)';
     }
   }
 
