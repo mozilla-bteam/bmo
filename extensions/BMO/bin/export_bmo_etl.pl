@@ -842,7 +842,7 @@ sub check_and_set_lock {
 
   my $dbh_main = Bugzilla->dbh_main;
 
-  # Clear out any locks that are greater than 24
+  # Clear out any locks that are greater than 24h old
   $dbh_main->do('DELETE FROM bmo_etl_locked WHERE creation_ts < '
       . $dbh_main->sql_date_math('NOW()', '-', 24, 'HOUR'));
 
