@@ -841,11 +841,17 @@ sub check_and_set_lock {
   return if $test;    # No need if just dumping test files
 
   my $dbh_main = Bugzilla->dbh_main;
+
+  # Clear out any locks that are greater than 24
+  $dbh_main->do('DELETE FROM bmo_etl_locked WHERE creation_ts < '
+      . $dbh_main->sql_date_math('NOW()', '-', 24, 'HOUR'));
+
+  # Now check for any pre-existing locks and do not proceed if one found
   my $locked = $dbh_main->selectrow_array('SELECT COUNT(*) FROM bmo_etl_locked');
   if ($locked) {
     die "Another process has set a lock. Exiting\n";
   }
-  $dbh_main->do('INSERT INTO bmo_etl_locked VALUES (?)', undef, 'locked');
+  $dbh_main->do('INSERT INTO bmo_etl_locked (value, creation_ts) VALUES (?, NOW())', undef, 'locked');
 }
 
 # Delete lock from bmo_etl_locked
