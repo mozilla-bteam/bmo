@@ -1396,7 +1396,8 @@ sub db_schema_abstract_schema {
   };
   $args->{schema}->{bmo_etl_locked} = {
     FIELDS => [
-      value => {TYPE => 'VARCHAR(20)', NOTNULL => 1,},
+      value       => {TYPE => 'VARCHAR(20)', NOTNULL => 1,},
+      creation_ts => {TYPE => 'DATETIME',    NOTNULL => 1,},
     ],
   };
 }
@@ -1584,6 +1585,12 @@ sub install_update_db {
       description => 'Is Triaged',
       type        => FIELD_TYPE_BOOLEAN,
     });
+  }
+
+  # Add bmo_etl_locked.creation_ts column
+  if (!$dbh->bz_column_info('bmo_etl_locked', 'creation_ts')) {
+    $dbh->bz_add_column('bmo_etl_locked',
+      'creation_ts' => {TYPE => 'DATETIME', NOTNULL => 1});
   }
 }
 
