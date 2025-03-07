@@ -253,6 +253,7 @@ sub process_attachments {
     $sth->execute(API_BLOCK_COUNT, $last_offset);
 
     while (my ($id, $mod_time) = $sth->fetchrow_array()) {
+      next if $id > 8_388_607 && $id < 8_388_618;
       print "Processing id $id with mod_time of $mod_time.\n" if $verbose;
 
       # First check to see if we have a cached version with the same modification date
