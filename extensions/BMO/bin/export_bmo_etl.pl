@@ -41,7 +41,11 @@ Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 getopt
   't|test'            => \my $test,
   'v|verbose'         => \my $verbose,
-  's|snapshot-date=s' => \my $snapshot_date;
+  's|snapshot-date=s' => \my $snapshot_date,
+  'n|no-cache=s'      => \my @no_cache;
+
+# Create a hash for faster checking later
+my %no_cache = map { $_ => 1 } @no_cache;
 
 # Sanity checks
 Bugzilla->params->{bmo_etl_enabled} || die "BMO ETL not enabled.\n";
@@ -146,7 +150,11 @@ sub process_bugs {
       print "Processing id $id with mod_time of $mod_time.\n" if $verbose;
 
       # First check to see if we have a cached version with the same modification date
-      my $data = get_cache($id, $table_name, $mod_time);
+      my $data;
+      if (!$no_cache{$table_name}) {
+        $data = get_cache($id, $table_name, $mod_time);
+      }
+
       if (!$data) {
         print "$table_name id $id with time $mod_time not found in cache.\n"
           if $verbose;
@@ -219,7 +227,8 @@ sub process_bugs {
         }
 
         # Store a copy of the data for use in later executions
-        store_cache($obj->id, $table_name, $obj->delta_ts, $data);
+        store_cache($obj->id, $table_name, $obj->delta_ts, $data)
+          if !$no_cache{$table_name};
       }
 
       push @bugs, $data;
@@ -257,7 +266,11 @@ sub process_attachments {
       print "Processing id $id with mod_time of $mod_time.\n" if $verbose;
 
       # First check to see if we have a cached version with the same modification date
-      my $data = get_cache($id, $table_name, $mod_time);
+      my $data;
+      if (!$no_cache{$table_name}) {
+        $data = get_cache($id, $table_name, $mod_time);
+      }
+
       if (!$data) {
         print "$table_name id $id with time $mod_time not found in cache.\n"
           if $verbose;
@@ -286,7 +299,8 @@ sub process_attachments {
         $data->{filename}    = !$bug_is_private ? $obj->filename    : undef;
 
         # Store a new copy of the data for use later
-        store_cache($obj->id, $table_name, $obj->modification_time, $data);
+        store_cache($obj->id, $table_name, $obj->modification_time, $data)
+          if !$no_cache{$table_name};
       }
 
       push @results, $data;
@@ -321,7 +335,11 @@ sub process_flags {
       print "Processing id $id with mod_time of $mod_time.\n" if $verbose;
 
       # First check to see if we have a cached version with the same modification date
-      my $data = get_cache($id, $table_name, $mod_time);
+      my $data;
+      if (!$no_cache{$table_name}) {
+        $data = get_cache($id, $table_name, $mod_time);
+      }
+
       if (!$data) {
         print "$table_name id $id with time $mod_time not found in cache.\n"
           if $verbose;
@@ -345,7 +363,8 @@ sub process_flags {
         };
 
         # Store a new copy of the data for use later
-        store_cache($obj->id, $table_name, $obj->modification_date, $data);
+        store_cache($obj->id, $table_name, $obj->modification_date, $data)
+          if !$no_cache{$table_name};
       }
 
       push @results, $data;
@@ -390,7 +409,11 @@ sub process_flag_state_activity {
       print "Processing id $id with mod_time of $mod_time.\n" if $verbose;
 
       # First check to see if we have a cached version with the same modification date
-      my $data = get_cache($id, $table_name, $mod_time);
+      my $data;
+      if (!$no_cache{$table_name}) {
+        $data = get_cache($id, $table_name, $mod_time);
+      }
+
       if (!$data) {
         print "$table_name id $id with time $mod_time not found in cache.\n"
           if $verbose;
@@ -414,7 +437,8 @@ sub process_flag_state_activity {
         };
 
         # Store a new copy of the data for use later
-        store_cache($obj->id, $table_name, $obj->flag_when, $data);
+        store_cache($obj->id, $table_name, $obj->flag_when, $data)
+          if !$no_cache{$table_name};
       }
 
       push @results, $data;
@@ -608,7 +632,11 @@ sub process_users {
       $mod_time = '1970-01-01 12:00:00' if !$mod_time;
 
       # First check to see if we have a cached version with the same modification date
-      my $data = get_cache($id, $table_name, $mod_time);
+      my $data;
+      if (!$no_cache{$table_name}) {
+        $data = get_cache($id, $table_name, $mod_time);
+      }
+
       if (!$data) {
         print "$table_name id $id with time $mod_time not found in cache.\n"
           if $verbose;
@@ -632,7 +660,8 @@ sub process_users {
         $data->{ldap_email} = $obj->ldap_email           ? $obj->ldap_email : undef;
 
         # Store a new copy of the data for use later
-        store_cache($obj->id, $table_name, $obj->modification_ts, $data);
+        store_cache($obj->id, $table_name, $obj->modification_ts, $data)
+          if !$no_cache{$table_name};
       }
 
       push @users, $data;
