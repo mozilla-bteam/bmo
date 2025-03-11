@@ -41,7 +41,11 @@ Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 getopt
   't|test'            => \my $test,
   'v|verbose'         => \my $verbose,
-  's|snapshot-date=s' => \my $snapshot_date;
+  's|snapshot-date=s' => \my $snapshot_date,
+  'n|no-cache=s'      => \my @no_cache;
+
+# Create a hash for faster checking later
+my %no_cache = map { $_ => 1 } @no_cache;
 
 # Sanity checks
 Bugzilla->params->{bmo_etl_enabled} || die "BMO ETL not enabled.\n";
@@ -147,6 +151,7 @@ sub process_bugs {
 
       # First check to see if we have a cached version with the same modification date
       my $data = get_cache($id, $table_name, $mod_time);
+
       if (!$data) {
         print "$table_name id $id with time $mod_time not found in cache.\n"
           if $verbose;
@@ -257,6 +262,7 @@ sub process_attachments {
 
       # First check to see if we have a cached version with the same modification date
       my $data = get_cache($id, $table_name, $mod_time);
+
       if (!$data) {
         print "$table_name id $id with time $mod_time not found in cache.\n"
           if $verbose;
@@ -321,6 +327,7 @@ sub process_flags {
 
       # First check to see if we have a cached version with the same modification date
       my $data = get_cache($id, $table_name, $mod_time);
+
       if (!$data) {
         print "$table_name id $id with time $mod_time not found in cache.\n"
           if $verbose;
@@ -390,6 +397,7 @@ sub process_flag_state_activity {
 
       # First check to see if we have a cached version with the same modification date
       my $data = get_cache($id, $table_name, $mod_time);
+
       if (!$data) {
         print "$table_name id $id with time $mod_time not found in cache.\n"
           if $verbose;
@@ -608,6 +616,7 @@ sub process_users {
 
       # First check to see if we have a cached version with the same modification date
       my $data = get_cache($id, $table_name, $mod_time);
+
       if (!$data) {
         print "$table_name id $id with time $mod_time not found in cache.\n"
           if $verbose;
@@ -690,6 +699,11 @@ sub process_two_columns {
 sub get_cache {
   my ($id, $table, $timestamp) = @_;
 
+  if ($no_cache{$table}) {
+    print "Retrieving cached data is disabled for $table.\n" if $verbose;
+    return undef;
+  }
+
   print "Retreiving data from $table for $id with time $timestamp.\n" if $verbose;
 
   # Retrieve compressed JSON from cache table if it exists
@@ -710,6 +724,11 @@ sub get_cache {
 
 sub store_cache {
   my ($id, $table, $timestamp, $data) = @_;
+
+  if ($no_cache{$table}) {
+    print "Storing cached data is disabled for $table.\n" if $verbose;
+    return undef;
+  }
 
   print "Storing data into $table for $id with time $timestamp.\n" if $verbose;
 
