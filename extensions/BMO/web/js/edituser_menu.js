@@ -65,6 +65,20 @@ function show_usermenu(vcard) {
             }
         });
     }
+    if (email) {
+        items.push({
+            name: "Needinfo",
+            callback: function () {
+                $('#needinfo').prop('checked', true);
+                $('#needinfo_role').val('other');
+                $('#needinfo_from').val(email);
+                $('#needinfo_from_container', '#needinfo_container').removeClass('bz_default_hidden');
+                $.scrollTo($('#needinfo_container'), function() {
+                    $('#needinfo_from', '#needinfo_container').focus();
+                });
+            }
+        });
+    }
 
     /** @type {HTMLDialogElement | HTMLBodyElement} */
     const appendTo = vcard.closest('dialog, body');
