@@ -150,10 +150,7 @@ sub process_bugs {
       print "Processing id $id with mod_time of $mod_time.\n" if $verbose;
 
       # First check to see if we have a cached version with the same modification date
-      my $data;
-      if (!$no_cache{$table_name}) {
-        $data = get_cache($id, $table_name, $mod_time);
-      }
+      my $data = get_cache($id, $table_name, $mod_time);
 
       if (!$data) {
         print "$table_name id $id with time $mod_time not found in cache.\n"
@@ -266,10 +263,7 @@ sub process_attachments {
       print "Processing id $id with mod_time of $mod_time.\n" if $verbose;
 
       # First check to see if we have a cached version with the same modification date
-      my $data;
-      if (!$no_cache{$table_name}) {
-        $data = get_cache($id, $table_name, $mod_time);
-      }
+      my $data = get_cache($id, $table_name, $mod_time);
 
       if (!$data) {
         print "$table_name id $id with time $mod_time not found in cache.\n"
@@ -335,10 +329,7 @@ sub process_flags {
       print "Processing id $id with mod_time of $mod_time.\n" if $verbose;
 
       # First check to see if we have a cached version with the same modification date
-      my $data;
-      if (!$no_cache{$table_name}) {
-        $data = get_cache($id, $table_name, $mod_time);
-      }
+      my $data = get_cache($id, $table_name, $mod_time);
 
       if (!$data) {
         print "$table_name id $id with time $mod_time not found in cache.\n"
@@ -409,10 +400,7 @@ sub process_flag_state_activity {
       print "Processing id $id with mod_time of $mod_time.\n" if $verbose;
 
       # First check to see if we have a cached version with the same modification date
-      my $data;
-      if (!$no_cache{$table_name}) {
-        $data = get_cache($id, $table_name, $mod_time);
-      }
+      my $data = get_cache($id, $table_name, $mod_time);
 
       if (!$data) {
         print "$table_name id $id with time $mod_time not found in cache.\n"
@@ -632,10 +620,7 @@ sub process_users {
       $mod_time = '1970-01-01 12:00:00' if !$mod_time;
 
       # First check to see if we have a cached version with the same modification date
-      my $data;
-      if (!$no_cache{$table_name}) {
-        $data = get_cache($id, $table_name, $mod_time);
-      }
+      my $data = get_cache($id, $table_name, $mod_time);
 
       if (!$data) {
         print "$table_name id $id with time $mod_time not found in cache.\n"
@@ -720,6 +705,11 @@ sub process_two_columns {
 sub get_cache {
   my ($id, $table, $timestamp) = @_;
 
+  if ($no_cache{$table}) {
+    print "Retrieving cached data is disabled for $table.\n" if $verbose;
+    return undef;
+  }
+
   print "Retreiving data from $table for $id with time $timestamp.\n" if $verbose;
 
   # Retrieve compressed JSON from cache table if it exists
@@ -740,6 +730,11 @@ sub get_cache {
 
 sub store_cache {
   my ($id, $table, $timestamp, $data) = @_;
+
+  if ($no_cache{$table}) {
+    print "Storing cached data is disabled for $table.\n" if $verbose;
+    return undef;
+  }
 
   print "Storing data into $table for $id with time $timestamp.\n" if $verbose;
 
