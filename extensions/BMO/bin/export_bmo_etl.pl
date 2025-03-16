@@ -227,8 +227,7 @@ sub process_bugs {
         }
 
         # Store a copy of the data for use in later executions
-        store_cache($obj->id, $table_name, $obj->delta_ts, $data)
-          if !$no_cache{$table_name};
+        store_cache($obj->id, $table_name, $obj->delta_ts, $data);
       }
 
       push @bugs, $data;
@@ -262,14 +261,13 @@ sub process_attachments {
     $sth->execute(API_BLOCK_COUNT, $last_offset);
 
     while (my ($id, $mod_time) = $sth->fetchrow_array()) {
-      next if $id > 8_388_607 && $id < 8_388_618;
       logger("Processing id $id with mod_time of $mod_time.");
 
       # First check to see if we have a cached version with the same modification date
       my $data = get_cache($id, $table_name, $mod_time);
 
       if (!$data) {
-        logger("$table_name id $id with time $mod_time not found in cache.", DEBUG);
+        logger("$table_name id $id with time $mod_time not found in cache." , DEBUG);
 
         my $obj = Bugzilla::Attachment->new($id);
 
@@ -295,8 +293,7 @@ sub process_attachments {
         $data->{filename}    = !$bug_is_private ? $obj->filename    : undef;
 
         # Store a new copy of the data for use later
-        store_cache($obj->id, $table_name, $obj->modification_time, $data)
-          if !$no_cache{$table_name};
+        store_cache($obj->id, $table_name, $obj->modification_time, $data);
       }
 
       push @results, $data;
@@ -355,8 +352,7 @@ sub process_flags {
         };
 
         # Store a new copy of the data for use later
-        store_cache($obj->id, $table_name, $obj->modification_date, $data)
-          if !$no_cache{$table_name};
+        store_cache($obj->id, $table_name, $obj->modification_date, $data);
       }
 
       push @results, $data;
@@ -404,7 +400,7 @@ sub process_flag_state_activity {
       my $data = get_cache($id, $table_name, $mod_time);
 
       if (!$data) {
-        logger("$table_name id $id with time $mod_time not found in cache." , DEBUG);
+        logger("$table_name id $id with time $mod_time not found in cache.", DEBUG);
 
         my $obj = Bugzilla::Extension::Review::FlagStateActivity->new($id);
 
@@ -425,8 +421,7 @@ sub process_flag_state_activity {
         };
 
         # Store a new copy of the data for use later
-        store_cache($obj->id, $table_name, $obj->flag_when, $data)
-          if !$no_cache{$table_name};
+        store_cache($obj->id, $table_name, $obj->flag_when, $data);
       }
 
       push @results, $data;
@@ -644,8 +639,7 @@ sub process_users {
         $data->{ldap_email} = $obj->ldap_email           ? $obj->ldap_email : undef;
 
         # Store a new copy of the data for use later
-        store_cache($obj->id, $table_name, $obj->modification_ts, $data)
-          if !$no_cache{$table_name};
+        store_cache($obj->id, $table_name, $obj->modification_ts, $data);
       }
 
       push @users, $data;
@@ -991,7 +985,7 @@ sub logger {
   return if (defined $level && $level == DEBUG && !$debug);
 
   # Otherwise just print
-  print "$message\n";
+  print time() . ": $message\n";
 }
 
 1;
