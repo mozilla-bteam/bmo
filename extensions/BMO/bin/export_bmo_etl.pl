@@ -261,7 +261,7 @@ sub process_attachments {
     $sth->execute(API_BLOCK_COUNT, $last_offset);
 
     while (my ($id, $mod_time) = $sth->fetchrow_array()) {
-      next if $id > 8_388_607 && $id < 8_388_618; # HACK
+      next if $id == 8_388_607; # HACK
 
       logger("Processing id $id with mod_time of $mod_time.");
 
