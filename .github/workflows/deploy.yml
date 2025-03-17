@@ -4,7 +4,6 @@ on:
   push:
     tags:
       - release-**
-  workflow_dispatch: {}
 
 env:
   IMAGE_NAME: mozilla-bteam/bmo
