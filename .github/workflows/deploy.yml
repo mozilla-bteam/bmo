@@ -2,6 +2,8 @@ name: BMO Deployment
 
 on:
   push:
+    branches:
+      - development
     tags:
       - release-**
 
