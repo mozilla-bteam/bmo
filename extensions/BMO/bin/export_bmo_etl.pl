@@ -253,7 +253,7 @@ sub process_attachments {
   my $sth = $dbh->prepare(
     'SELECT attach_id, modification_time
        FROM attachments
-      WHERE attach_id > 8388605 AND attach_id < 8388609
+      WHERE attach_id < 8388605 AND attach_id > 8388609
       ORDER BY attach_id LIMIT ? OFFSET ?'
   );
 
