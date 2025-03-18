@@ -250,10 +250,12 @@ sub process_attachments {
   my $total = $dbh->selectrow_array('SELECT COUNT(*) FROM attachments');
   logger("Processing $total $table_name.");
 
-  my $sth
-    = $dbh->prepare(
-    'SELECT attach_id, modification_time FROM attachments ORDER BY attach_id LIMIT ? OFFSET ?'
-    );
+  my $sth = $dbh->prepare(
+    'SELECT attach_id, modification_time
+       FROM attachments
+      WHERE attach_id > 8388605 AND attach_id < 8388609
+      ORDER BY attach_id LIMIT ? OFFSET ?'
+  );
 
   while ($count < $total) {
     my @results = ();
@@ -261,8 +263,6 @@ sub process_attachments {
     $sth->execute(API_BLOCK_COUNT, $last_offset);
 
     while (my ($id, $mod_time) = $sth->fetchrow_array()) {
-      next if $id > 8388605 && $id < 8388609;
-
       logger("Processing id $id with mod_time of $mod_time.");
 
       # First check to see if we have a cached version with the same modification date
