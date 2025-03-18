@@ -261,7 +261,7 @@ sub process_attachments {
     $sth->execute(API_BLOCK_COUNT, $last_offset);
 
     while (my ($id, $mod_time) = $sth->fetchrow_array()) {
-      next if $id == 8_388_607; # HACK
+      next if $id > 8388605 && $id < 8388609;
 
       logger("Processing id $id with mod_time of $mod_time.");
 
@@ -269,7 +269,7 @@ sub process_attachments {
       my $data = get_cache($id, $table_name, $mod_time);
 
       if (!$data) {
-        logger("$table_name id $id with time $mod_time not found in cache." , DEBUG);
+        logger("$table_name id $id with time $mod_time not found in cache.", DEBUG);
 
         my $obj = Bugzilla::Attachment->new($id);
 
@@ -333,7 +333,7 @@ sub process_flags {
       my $data = get_cache($id, $table_name, $mod_time);
 
       if (!$data) {
-        logger("$table_name id $id with time $mod_time not found in cache." , DEBUG);
+        logger("$table_name id $id with time $mod_time not found in cache.", DEBUG);
 
         my $obj = Bugzilla::Flag->new($id);
 
@@ -627,9 +627,10 @@ sub process_users {
         # Standard fields
         $data = {
           id        => $obj->id,
-          last_seen => ($obj->last_seen_date ? $obj->last_seen_date . ' 00:00:00' : undef),
-          email     => $obj->email,
-          is_new    => ($obj->is_new ? true : false),
+          last_seen =>
+            ($obj->last_seen_date ? $obj->last_seen_date . ' 00:00:00' : undef),
+          email  => $obj->email,
+          is_new => ($obj->is_new ? true : false),
         };
 
         # Fields that require custom values based on criteria
@@ -760,7 +761,8 @@ sub store_cache {
 sub send_data {
   my ($table, $all_rows, $current_count) = @_;
 
-  logger('Sending ' . scalar @{$all_rows} . " rows to table $table using BigQuery API");
+  logger(
+    'Sending ' . scalar @{$all_rows} . " rows to table $table using BigQuery API");
 
   # Add the same snapshot date to every row sent
   foreach my $row (@{$all_rows}) {
@@ -844,10 +846,10 @@ sub _get_access_token {
     return $access_token;
   }
 
-  # Google Kubernetes allows for the use of Workload Identity. This allows
-  # us to link two service accounts together and give special access for applications
-  # running under Kubernetes. We use the special access to get an OAuth2 access_token
-  # that can then be used for accessing the the Google API such as BigQuery.
+# Google Kubernetes allows for the use of Workload Identity. This allows
+# us to link two service accounts together and give special access for applications
+# running under Kubernetes. We use the special access to get an OAuth2 access_token
+# that can then be used for accessing the the Google API such as BigQuery.
   my $url
     = sprintf
     'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/%s/token',
@@ -895,7 +897,9 @@ sub check_and_set_lock {
 
   logger('Previous lock not found. Setting new one.', DEBUG);
 
-  $dbh_main->do('INSERT INTO bmo_etl_locked (value, creation_ts) VALUES (?, NOW())', undef, 'locked');
+  $dbh_main->do(
+    'INSERT INTO bmo_etl_locked (value, creation_ts) VALUES (?, NOW())',
+    undef, 'locked');
 }
 
 # Delete lock from bmo_etl_locked
