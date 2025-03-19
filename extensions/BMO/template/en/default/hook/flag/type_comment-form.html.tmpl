@@ -238,3 +238,86 @@
     </table>
   </section>
 </template>
+
+<template class="approval-request" data-flags="approval-comm-beta approval-comm-release approval-comm-esr*">
+  <section>
+    <header>
+      <h3>Uplift Approval Request</h3>
+    </header>
+    <table>
+      <tr>
+        <th id="_ar_comm_i1_label">Please state case for uplift consideration and ensure [% terms.bug %] severity is set</th>
+        <td><textarea aria-labelledby="_ar_comm_i1_label"></textarea></td>
+      </tr>
+      <tr>
+        <th id="_ar_comm_i2_label">User impact if declined</th>
+        <td><textarea aria-labelledby="_ar_comm_i2_label"></textarea></td>
+      </tr>
+      <tr>
+        <th id="_ar_comm_i3_label">Is this code covered by automated tests?</th>
+        <td>
+          <div role="radiogroup" class="buttons toggle" aria-labelledby="_ar_comm_i3_label">
+            <div class="item"><input id="_ar_comm_i3_r1" type="radio" name="_ar_comm_i3_radio" value="Yes"><label for="_ar_comm_i3_r1">Yes</label></div>
+            <div class="item"><input id="_ar_comm_i3_r2" type="radio" name="_ar_comm_i3_radio" value="No"><label for="_ar_comm_i3_r2">No</label></div>
+            <div class="item"><input id="_ar_comm_i3_r3" type="radio" name="_ar_comm_i3_radio" value="Unknown"><label for="_ar_comm_i3_r3">Unknown</label></div>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <th id="_ar_comm_i4_label">Has the fix been verified in Daily?</th>
+        <td>
+          <div role="radiogroup" class="buttons toggle" aria-labelledby="_ar_comm_i4_label">
+            <div class="item"><input id="_ar_comm_i4_r1" type="radio" name="_ar_comm_i4_radio" value="Yes"><label for="_ar_comm_i4_r1">Yes</label></div>
+            <div class="item"><input id="_ar_comm_i4_r2" type="radio" name="_ar_comm_i4_radio" value="No"><label for="_ar_comm_i4_r2">No</label></div>
+            <div class="item"><input id="_ar_comm_i4_r3" type="radio" name="_ar_comm_i4_radio" value="N/A"><label for="_ar_comm_i4_r3">N/A</label></div>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <th id="_ar_comm_i5_label">Has the fix been verified in Beta?</th>
+        <td>
+          <div role="radiogroup" class="buttons toggle" aria-labelledby="_ar_comm_i5_label">
+            <div class="item"><input id="_ar_comm_i5_r1" type="radio" name="_ar_comm_i5_radio" value="Yes"><label for="_ar_comm_i5_r1">Yes</label></div>
+            <div class="item"><input id="_ar_comm_i5_r2" type="radio" name="_ar_comm_i5_radio" value="No"><label for="_ar_comm_i5_r2">No</label></div>
+            <div class="item"><input id="_ar_comm_i5_r3" type="radio" name="_ar_comm_i5_radio" value="N/A"><label for="_ar_comm_i5_r3">N/A</label></div>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <th id="_ar_comm_i6_label">Needs manual test from QA?</th>
+        <td>
+          <div role="radiogroup" class="buttons toggle" aria-labelledby="_ar_comm_i6_label">
+            <div class="item"><input id="_ar_comm_i6_r1" type="radio" name="_ar_comm_i6_radio" value="Yes" data-bug-flag="qa-verify"><label for="_ar_comm_i6_r1">Yes</label></div>
+            <div class="item"><input id="_ar_comm_i6_r2" type="radio" name="_ar_comm_i6_radio" value="No"><label for="_ar_comm_i6_r2">No</label></div>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <th id="_ar_comm_i7_label">If yes, steps to reproduce</th>
+        <td><textarea aria-labelledby="_ar_comm_i7_label"></textarea></td>
+      </tr>
+      <tr>
+        <th id="_ar_comm_i8_label">List of other uplifts needed</th>
+        <td><input type="text" placeholder="[% terms.Bug %] IDs" aria-labelledby="_ar_comm_i8_label" data-type="b[% %]ugs"></td>
+      </tr>
+      <tr>
+        <th id="_ar_comm_i9_label">Risk to taking this patch</th>
+        <td>
+          <div role="radiogroup" class="buttons toggle" aria-labelledby="_ar_comm_i9_label">
+            <div class="item"><input id="_ar_comm_i9_r1" type="radio" name="_ar_comm_i9_radio" value="Low"><label for="_ar_comm_i9_r1">Low</label></div>
+            <div class="item"><input id="_ar_comm_i9_r2" type="radio" name="_ar_comm_i9_radio" value="Medium"><label for="_ar_comm_i9_r2">Medium</label></div>
+            <div class="item"><input id="_ar_comm_i9_r3" type="radio" name="_ar_comm_i9_radio" value="High"><label for="_ar_comm_i9_r3">High</label></div>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <th id="_ar_comm_i10_label">Why is the change risky/not risky?<br>(and alternatives if risky)</th>
+        <td><textarea aria-labelledby="_ar_comm_i10_label"></textarea></td>
+      </tr>
+      <tr>
+        <th id="_ar_comm_i11_label">String changes made/needed</th>
+        <td><input type="text" class="long" aria-labelledby="_ar_comm_i11_label"></td>
+      </tr>
+    </table>
+  </section>
+</template>

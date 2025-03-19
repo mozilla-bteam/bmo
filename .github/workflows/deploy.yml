@@ -2,6 +2,8 @@ name: BMO Deployment
 
 on:
   push:
+    branches:
+      - development
     tags:
       - release-**
 
@@ -15,7 +17,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Create directory for artifacts
         run: mkdir build_info
       - name: Install docker-compose
@@ -25,16 +27,16 @@ jobs:
       - name: Copy version.json and build push data
         run: |
           docker-compose -f docker-compose.test.yml run --no-deps --name push_data bmo.test push_data
-          docker cp push_data:/app/build_info/blog.push.txt build_info/blog.push.txt
-          docker cp push_data:/app/build_info/markdown.push.txt build_info/markdown.push.txt
-          docker cp push_data:/app/build_info/bug.push.txt build_info/bug.push.txt
-          docker cp push_data:/app/build_info/email.push.txt build_info/email.push.txt
-          docker cp push_data:/app/build_info/tag.txt build_info/tag.txt
-          docker cp push_data:/app/build_info/wiki.push.txt build_info/wiki.push.txt
+          docker cp push_data:/app/push_data/blog.push.txt build_info/blog.push.txt
+          docker cp push_data:/app/push_data/markdown.push.txt build_info/markdown.push.txt
+          docker cp push_data:/app/push_data/bug.push.txt build_info/bug.push.txt
+          docker cp push_data:/app/push_data/email.push.txt build_info/email.push.txt
+          docker cp push_data:/app/push_data/tag.txt build_info/tag.txt
+          docker cp push_data:/app/push_data/wiki.push.txt build_info/wiki.push.txt
           docker cp push_data:/app/version.json build_info/version.json
           docker rm push_data
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Build Info
           path: build_info
@@ -47,7 +49,7 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v2
       - id: gcp-auth
         name: Google authentication
