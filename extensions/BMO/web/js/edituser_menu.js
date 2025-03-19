@@ -65,17 +65,25 @@ function show_usermenu(vcard) {
             }
         });
     }
-    if (email) {
+    if (id && $('#needinfo_role').is(':visible')) {
         items.push({
             name: "Needinfo",
             callback: function () {
-                $('#needinfo').prop('checked', true);
-                $('#needinfo_role').val('other');
-                $('#needinfo_from').val(email);
-                $('#needinfo_from_container', '#needinfo_container').removeClass('bz_default_hidden');
-                $.scrollTo($('#needinfo_container'), function() {
-                    $('#needinfo_from', '#needinfo_container').focus();
+                let role = "other";
+                $('#needinfo_role option').each(function() {
+                    if ($(this).data('userid') === parseInt(id)) {
+                        role = $(this).val();
+                        return false;
+                    }
                 });
+                $('#needinfo').prop('checked', true);
+                $('#needinfo_role').val(role);
+                $('#needinfo_role').trigger('change');
+                if (role == 'other') {
+                    $('#needinfo_from').val(email);
+                    $('#needinfo_from').focus();
+                }
+                $.scrollTo($('#needinfo_container'));
             }
         });
     }

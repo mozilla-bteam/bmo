@@ -200,32 +200,39 @@ $(function() {
             <option value="other">other</option>
             [% IF NOT bug.reporter.needinfo_blocked %]
               <option
+                  data-userid="[% bug.reporter.id FILTER html %]"
                   data-identity="[% bug.reporter.name_or_login FILTER html %]"
                   value="reporter">reporter</option>
             [% END %]
             [% IF NOT bug.assigned_to.needinfo_blocked %]
               <option
+                  data-userid="[% bug.assigned_to.id FILTER html %]"
                   data-identity="[% bug.assigned_to.name_or_login FILTER html %]"
                   value="assigned_to">assignee</option>
             [% END %]
             [% IF Param('useqacontact') && bug.qa_contact.login != "" && !bug.qa_contact.needinfo_blocked %]
               <option
+                  data-userid="[% bug.qa_contact.id FILTER html %]"
                   data-identity="[% bug.qa_contact.name_or_login FILTER html %]"
                   value="qa_contact">qa contact</option>
             [% END %]
             [% IF !is_redirect && NOT user.needinfo_blocked %]
               <option
+                  data-userid="[% user.id FILTER html %]"
                   data-identity="[% user.name_or_login FILTER html %]"
                   value="user">myself</option>
             [% END %]
             [% FOREACH mentor = available_mentors %]
-              <option data-identity="[% mentor.name_or_login FILTER html %][% IF available_mentors.size > 1 %][% END %]"
+              <option
+                  data-userid="[% bug.mentor.id FILTER html %]"
+                  data-identity="[% mentor.name_or_login FILTER html %][% IF available_mentors.size > 1 %][% END %]"
                   value="[% mentor.login FILTER html %]">
                   [% available_mentors.size == 1 ? "mentor" : mentor.login FILTER html %][% " (mentor)" IF available_mentors.size > 1 %]
               </option>
             [% END %]
             [% IF bug.component_obj.triage_owner_id %]
               <option
+                  data-userid="[% bug.component_obj.triage_owner.id FILTER html %]"
                   data-identity="[% bug.component_obj.triage_owner.name_or_login FILTER html %]"
                   value="triage_owner">triage owner</option>
             [% END %]
