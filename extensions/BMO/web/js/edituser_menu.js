@@ -65,6 +65,28 @@ function show_usermenu(vcard) {
             }
         });
     }
+    if (id && $('#needinfo_role').is(':visible')) {
+        items.push({
+            name: "Needinfo",
+            callback: function () {
+                let role = "other";
+                $('#needinfo_role option').each(function() {
+                    if ($(this).data('userid') === parseInt(id)) {
+                        role = $(this).val();
+                        return false;
+                    }
+                });
+                $('#needinfo').prop('checked', true);
+                $('#needinfo_role').val(role);
+                $('#needinfo_role').trigger('change');
+                if (role == 'other') {
+                    $('#needinfo_from').val(email);
+                    $('#needinfo_from').focus();
+                }
+                $.scrollTo($('#needinfo_container'));
+            }
+        });
+    }
 
     /** @type {HTMLDialogElement | HTMLBodyElement} */
     const appendTo = vcard.closest('dialog, body');
