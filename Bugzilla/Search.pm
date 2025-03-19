@@ -107,7 +107,7 @@ use Time::HiRes qw(gettimeofday tv_interval);
 # Constants #
 #############
 
-# BMO - product aliases for searchi`ng
+# BMO - product aliases for searching
 use constant PRODUCT_ALIASES => {
   'Fenix' => 'Firefox for Android',
 };
