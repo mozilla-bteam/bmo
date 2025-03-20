@@ -108,7 +108,9 @@ use Time::HiRes qw(gettimeofday tv_interval);
 #############
 
 # BMO - product aliases for searching
-use constant PRODUCT_ALIASES => {};
+use constant PRODUCT_ALIASES => {
+  'Fenix' => 'Firefox for Android',
+};
 
 # When doing searches, NULL datetimes are treated as this date.
 use constant EMPTY_DATETIME => '1970-01-01 00:00:00';
