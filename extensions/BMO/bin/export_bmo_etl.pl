@@ -97,35 +97,35 @@ our %private_bugs = ();
 check_for_duplicates();
 
 # Process each table to be sent to ETL
-process_bugs();
+#process_bugs();
 process_attachments();
-process_flags();
-process_flag_state_activity();
-process_tracking_flags();
-process_keywords();
-process_see_also();
-process_users();
+#process_flags();
+#process_flag_state_activity();
+#process_tracking_flags();
+#process_keywords();
+#process_see_also();
+#process_users();
 
-process_two_columns(
-  'bug_mentors', 'bug_mentors',
-  ['bug_id', 'user_id'],
-  ['bug_id', 'user_id']
-);
-process_two_columns(
-  'dependencies', 'bug_dependencies',
-  ['blocked', 'dependson'],
-  ['bug_id',  'depends_on_id']
-);
-process_two_columns(
-  'regressions', 'bug_regressions',
-  ['regresses', 'regressed_by'],
-  ['bug_id',    'regresses_id']
-);
-process_two_columns(
-  'duplicates', 'bug_duplicates',
-  ['dupe',   'dupe_of'],
-  ['bug_id', 'duplicate_of_id']
-);
+#process_two_columns(
+#  'bug_mentors', 'bug_mentors',
+#  ['bug_id', 'user_id'],
+#  ['bug_id', 'user_id']
+#);
+#process_two_columns(
+#  'dependencies', 'bug_dependencies',
+#  ['blocked', 'dependson'],
+#  ['bug_id',  'depends_on_id']
+#);
+#process_two_columns(
+#  'regressions', 'bug_regressions',
+#  ['regresses', 'regressed_by'],
+#  ['bug_id',    'regresses_id']
+#);
+#process_two_columns(
+#  'duplicates', 'bug_duplicates',
+#  ['dupe',   'dupe_of'],
+#  ['bug_id', 'duplicate_of_id']
+#);
 
 # If we are done, remove the lock
 delete_lock();
@@ -261,7 +261,6 @@ sub process_attachments {
     $sth->execute(API_BLOCK_COUNT, $last_offset);
 
     while (my ($id, $mod_time) = $sth->fetchrow_array()) {
-      next if $id > 8_388_605 && $id < 8_388_610; # FIXME
       logger("Processing id $id with mod_time of $mod_time.");
 
       # First check to see if we have a cached version with the same modification date
