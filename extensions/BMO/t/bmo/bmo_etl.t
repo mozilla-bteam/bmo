@@ -120,7 +120,7 @@ my ($attach_id) = keys %{$t->tx->res->json->{attachments}};
 
 my @cmd = (
   './extensions/BMO/bin/export_bmo_etl.pl',
-  '--verbose', '--test', '--snapshot-date', $snapshot_date,
+  '--test', '--snapshot-date', $snapshot_date,
 );
 
 my ($output, $error, $rv) = capture { system @cmd; };
@@ -132,7 +132,7 @@ ok(glob(bz_locations()->{'datadir'} . '/' . $snapshot_date . '-bugs-*.json'),
 
 @cmd = (
   './extensions/BMO/bin/export_bmo_etl.pl',
-  '--verbose', '--snapshot-date', $snapshot_date,
+  '--snapshot-date', $snapshot_date,
 );
 
 ($output, $error, $rv) = capture { system @cmd; };
@@ -203,7 +203,7 @@ $t->post_ok(
 
 @cmd = (
   './extensions/BMO/bin/export_bmo_etl.pl',
-  '--verbose', '--snapshot-date', $snapshot_date,
+  '--debug', '--snapshot-date', $snapshot_date,
 );
 
 ($output, $error, $rv) = capture { system @cmd; };
