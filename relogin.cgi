@@ -88,20 +88,20 @@ elsif ($action eq 'begin-sudo') {
   my $reason           = $cgi->param('reason') || '';
   my $token            = $cgi->param('token');
   my $current_password = $cgi->param('current_password');
-  my $mfa_token        = $cgi->param('mfa_token');
+  my $mfa_token        = $cgi->cookie('mfa_token');
 
-  # must provide a password
-  $current_password
-    || ThrowUserError('sudo_password_required',
-    {target_login => $target_login, reason => $reason});
-
-  # validate entered password
-  my $crypt_password = $user->cryptpassword;
-  unless (($user->mfa && $mfa_token)
-    || bz_crypt($current_password, $crypt_password) eq $crypt_password)
-  {
-    ThrowUserError('sudo_password_required',
+  unless ($user->mfa && $mfa_token) {
+    # must provide a password
+    $current_password
+      || ThrowUserError('sudo_password_required',
       {target_login => $target_login, reason => $reason});
+
+    # validate entered password
+    my $crypt_password = $user->cryptpassword;
+    unless (bz_crypt($current_password, $crypt_password) eq $crypt_password) {
+      ThrowUserError('sudo_password_required',
+        {target_login => $target_login, reason => $reason});
+    }
   }
 
   # Check for MFA
