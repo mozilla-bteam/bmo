@@ -93,7 +93,6 @@ tie(
     "Directory"                                     => [],
     "External Software Affecting Firefox"           => [],
     "External Software Affecting Firefox Graveyard" => [],
-    "Fenix"                                         => [],
     "Firefox"                                       => [],
     "Firefox Build System"                          => [],
     "Firefox for Android"                           => [],
@@ -149,7 +148,6 @@ tie(
   qr/^cf_machine_state$/   => {"Release Engineering"     => ["Buildduty"],},
   qr/^cf_rank$/            => {
     "Core"                => [],
-    "Fenix"               => [],
     "Firefox for Android" => [],
     "Firefox for iOS"     => [],
     "Firefox"             => [],
@@ -188,7 +186,6 @@ our @triage_keyword_products = (
     'Core',
     'DevTools',
     'External Software Affecting Firefox',
-    'Fenix',
     'Firefox Build System',
     'Firefox for Android',
     'Firefox for iOS',
