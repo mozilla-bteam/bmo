@@ -88,7 +88,9 @@ elsif ($action eq 'begin-sudo') {
   my $reason           = $cgi->param('reason') || '';
   my $token            = $cgi->param('token');
   my $current_password = $cgi->param('current_password');
-  my $mfa_token        = $cgi->cookie('mfa_token');
+
+  my $mfa_token = $cgi->cookie('mfa_verification_token');
+  $cgi->remove_cookie('mfa_verification_token');
 
   unless ($user->mfa && $mfa_token) {
     # must provide a password
