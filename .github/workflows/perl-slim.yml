@@ -3,6 +3,11 @@ name: BMO Perl Slim
 on:
   workflow_dispatch
 
+env:
+  GAR_LOCATION: us
+  GCP_PROJECT_ID: moz-fx-bugzilla-prod
+  GAR_REPOSITORY: bugzilla-prod
+
 jobs:
   main:
     runs-on: ubuntu-latest
