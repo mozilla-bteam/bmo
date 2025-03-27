@@ -24,7 +24,9 @@ jobs:
     - name: Generate new cpanfile and cpanfile.snapshot
       run: docker build -t bmo-cpanfile -f Dockerfile.cpanfile .
     - name: Copy the new cpanfile and cpanfile.snapshot from image
-      run: docker run -it -v $(pwd)/build_info:/app/result bmo-cpanfile cp cpanfile cpanfile.snapshot /app/result
+      run: |
+        docker run -v $(pwd):/app/result bmo-cpanfile cp cpanfile cpanfile.snapshot /app/result
+        cp cpanfile cpanfile.snapshot build_info
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
