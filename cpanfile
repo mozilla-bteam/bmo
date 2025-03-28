@@ -104,6 +104,7 @@ requires 'SQL::Tokenizer';
 requires 'Scope::Guard', '0.21';
 requires 'Sereal', '4.004';
 requires 'Set::Object';
+requires 'Sub::Identify';
 requires 'Sub::Quote', '2.005000';
 requires 'Sys::Syslog';
 requires 'Template', '2.24';

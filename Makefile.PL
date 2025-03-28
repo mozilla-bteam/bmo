@@ -96,6 +96,7 @@ my %requires = (
   'Scope::Guard'                        => '0.21',
   'Sereal'                              => '4.004',
   'Set::Object'                         => 0,
+  'Sub::Identify'                       => 0,
   'Sub::Quote'                          => '2.005000',
   'Template'                            => '2.24',
   'Text::CSV_XS'                        => '1.26',
