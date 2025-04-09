@@ -17,6 +17,7 @@ use Bugzilla::Bug;
 use Bugzilla::Constants;
 use Bugzilla::Flag;
 use Bugzilla::Group;
+use Bugzilla::Logging;
 use Bugzilla::User;
 use Bugzilla::Extension::Review::FlagStateActivity;
 
