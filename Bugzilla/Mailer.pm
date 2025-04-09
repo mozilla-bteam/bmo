@@ -51,6 +51,19 @@ sub MessageToMTA {
 
   my $email = ref $msg ? $msg : Email::MIME->new($msg);
 
+  # Gets/sets the current C<encode_check> setting (default: I<FB_CROAK>).
+  # This is the parameter passed to L<Encode/"decode"> and L<Encode/"encode">
+  # when C<body_str()>, C<body_str_set()>, and C<create()> are called.
+  #
+  # With the default setting, Email::MIME may crash if the claimed charset
+  # of a body does not match its contents (for example - utf8 data in a
+  # text/plain; charset=us-ascii message).
+  #
+  # With an C<encode_check> of 0, the unrecognized bytes will instead be
+  # replaced with the C<REPLACEMENT CHARACTER> (U+0FFFD), and may end up
+  # as either that or question marks (?).
+  $email->encode_check_set(0);
+
   # Ensure that we are not sending emails too quickly to recipients.
   if (Bugzilla->get_param_with_override('use_mailer_queue')
     && (EMAIL_LIMIT_PER_MINUTE || EMAIL_LIMIT_PER_HOUR))
