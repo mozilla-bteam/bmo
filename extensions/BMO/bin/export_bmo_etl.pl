@@ -17,6 +17,7 @@ use Bugzilla::Bug;
 use Bugzilla::Constants;
 use Bugzilla::Flag;
 use Bugzilla::Group;
+use Bugzilla::Logging;
 use Bugzilla::User;
 use Bugzilla::Extension::Review::FlagStateActivity;
 
@@ -29,6 +30,7 @@ use LWP::UserAgent::Determined;
 use Mojo::File qw(path);
 use Mojo::JSON qw(decode_json encode_json false true);
 use Mojo::Util qw(getopt);
+use Try::Tiny;
 
 # BigQuery API cannot handle payloads larger than 10MB so
 # we will send data in blocks.
@@ -705,6 +707,7 @@ sub get_cache {
 
   logger("Retreiving data from $table for $id with time $timestamp.", DEBUG);
 
+  try {
   # Retrieve compressed JSON from cache table if it exists
   my $gzipped_data = $dbh->selectrow_array(
     'SELECT data FROM bmo_etl_cache WHERE id = ? AND table_name = ? AND snapshot_date = ?',
@@ -719,6 +722,12 @@ sub get_cache {
     die "gunzip failed: $GunzipError\n";
   }
   return decode_json($data);
+  }
+  catch {
+    # Log the failure and return undef
+    WARN("ERROR: Unable to retrieve cached data from database: $_");
+    return undef;
+  }
 }
 
 sub store_cache {
@@ -744,15 +753,21 @@ sub store_cache {
   # We need to use the main DB for write operations
   my $main_dbh = Bugzilla->dbh_main;
 
-  # Clean out outdated JSON
-  $main_dbh->do('DELETE FROM bmo_etl_cache WHERE id = ? AND table_name = ?',
-    undef, $id, $table);
+  try {
+    # Clean out outdated JSON
+    $main_dbh->do('DELETE FROM bmo_etl_cache WHERE id = ? AND table_name = ?',
+      undef, $id, $table);
 
-  # Enter new cached JSON
-  $main_dbh->do(
-    'INSERT INTO bmo_etl_cache (id, table_name, snapshot_date, data) VALUES (?, ?, ?, ?)',
-    undef, $id, $table, $timestamp, $gzipped_data
-  );
+    # Enter new cached JSON
+    $main_dbh->do(
+      'INSERT INTO bmo_etl_cache (id, table_name, snapshot_date, data) VALUES (?, ?, ?, ?)',
+      undef, $id, $table, $timestamp, $gzipped_data
+    );
+  }
+  catch {
+    # Log the failure
+    WARN("ERROR: Unable to store cache data in database: $_");
+  }
 }
 
 sub send_data {
