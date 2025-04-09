@@ -21,3 +21,4 @@ template_cache
 .vstags
 .vscode
 .pls_cache
+gha-creds-*.json
