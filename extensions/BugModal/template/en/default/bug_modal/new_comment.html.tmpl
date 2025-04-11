@@ -11,7 +11,7 @@
   # bug: bug object
   # id_prefix: (string) prefix for some element IDs (default: empty)
   # add_extras: (boolean) whether to show extra controls (default: true)
-  # add_self_cc: (boolean) whether to show the add self to cc (default: false)
+  # add_self_cc: (boolean) whether to show the add self to cc (default: true)
   #%]
 
 [%
@@ -22,7 +22,7 @@
     add_extras = 1;
   END;
   IF !add_self_cc.defined;
-    add_self_cc = 0;
+    add_self_cc = 1;
   END
 %]
 
