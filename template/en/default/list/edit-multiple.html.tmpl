@@ -63,8 +63,12 @@
 
     <th><label for="component">Component:</label></th>
     <td>
-      [% PROCESS selectmenu menuname = "component"
-                            menuitems = components %]
+      [% IF NOT components.size %]
+        More than one product in query results.
+      [% ELSE %]
+        [% PROCESS selectmenu menuname = "component"
+                              menuitems = components %]
+      [% END %]
     </td>
 
     <th>
