@@ -46,7 +46,7 @@ $(function() {
     }
 
     function displayCount(count) {
-        $('#orange-count').text(count + ' failures on trunk in the past week');
+        $('#orange-count').text(count + ' failures in the past week');
     }
 
     function orangify() {
