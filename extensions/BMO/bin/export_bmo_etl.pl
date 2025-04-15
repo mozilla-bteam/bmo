@@ -40,7 +40,7 @@ use constant API_BLOCK_COUNT => 1000;
 use constant EXCLUDE_PRODUCTS => ('Legal',);
 
 # Log levels
-use constant DEBUG => 1;
+use constant DEBUG_OUTPUT => 1;
 
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 getopt
@@ -159,7 +159,7 @@ sub process_bugs {
       my $data = get_cache($id, $table_name, $mod_time);
 
       if (!$data) {
-        logger("$table_name id $id with time $mod_time not found in cache.", DEBUG);
+        logger("$table_name id $id with time $mod_time not found in cache.", DEBUG_OUTPUT);
 
         my $obj = Bugzilla::Bug->new($id);
 
@@ -269,7 +269,7 @@ sub process_attachments {
       my $data = get_cache($id, $table_name, $mod_time);
 
       if (!$data) {
-        logger("$table_name id $id with time $mod_time not found in cache." , DEBUG);
+        logger("$table_name id $id with time $mod_time not found in cache." , DEBUG_OUTPUT);
 
         my $obj = Bugzilla::Attachment->new($id);
 
@@ -333,7 +333,7 @@ sub process_flags {
       my $data = get_cache($id, $table_name, $mod_time);
 
       if (!$data) {
-        logger("$table_name id $id with time $mod_time not found in cache." , DEBUG);
+        logger("$table_name id $id with time $mod_time not found in cache." , DEBUG_OUTPUT);
 
         my $obj = Bugzilla::Flag->new($id);
 
@@ -402,7 +402,7 @@ sub process_flag_state_activity {
       my $data = get_cache($id, $table_name, $mod_time);
 
       if (!$data) {
-        logger("$table_name id $id with time $mod_time not found in cache.", DEBUG);
+        logger("$table_name id $id with time $mod_time not found in cache.", DEBUG_OUTPUT);
 
         my $obj = Bugzilla::Extension::Review::FlagStateActivity->new($id);
 
@@ -620,7 +620,7 @@ sub process_users {
       my $data = get_cache($id, $table_name, $mod_time);
 
       if (!$data) {
-        logger("$table_name id $id with time $mod_time not found in cache.", DEBUG);
+        logger("$table_name id $id with time $mod_time not found in cache.", DEBUG_OUTPUT);
 
         my $obj = Bugzilla::User->new($id);
 
@@ -705,7 +705,7 @@ sub get_cache {
     return undef;
   }
 
-  logger("Retreiving data from $table for $id with time $timestamp.", DEBUG);
+  logger("Retreiving data from $table for $id with time $timestamp.", DEBUG_OUTPUT);
 
   try {
   # Retrieve compressed JSON from cache table if it exists
@@ -738,7 +738,7 @@ sub store_cache {
     return undef;
   }
 
-  logger("Storing data into $table for $id with time $timestamp.", DEBUG);
+  logger("Storing data into $table for $id with time $timestamp.", DEBUG_OUTPUT);
 
   # Encode the perl data into JSON
   $data = encode_json($data);
@@ -817,20 +817,20 @@ sub send_data {
   my $full_path = sprintf 'projects/%s/datasets/%s/tables/%s/insertAll',
     $project_id, $dataset_id, $table;
 
-  logger("Sending to $base_url/$full_path", DEBUG);
+  logger("Sending to $base_url/$full_path", DEBUG_OUTPUT);
 
   my $request = HTTP::Request->new('POST', "$base_url/$full_path", $http_headers);
   $request->header('Content-Type' => 'application/json');
 
-  logger('Encoding content into JSON.', DEBUG);
+  logger('Encoding content into JSON.', DEBUG_OUTPUT);
 
   $request->content(encode_json($big_query));
 
-  logger('Sending request', DEBUG);
+  logger('Sending request', DEBUG_OUTPUT);
 
   my $response = $ua->request($request);
 
-  logger($response->content, DEBUG);
+  logger($response->content, DEBUG_OUTPUT);
 
   my $result = decode_json($response->content);
 
@@ -849,11 +849,11 @@ sub _get_access_token {
   state $access_token;    # We should only need to get this once
   state $token_expiry;
 
-  logger('Checking for acess token', DEBUG);
+  logger('Checking for acess token', DEBUG_OUTPUT);
 
   # If we already have a token and it has not expired yet, just return it
   if ($access_token && time < $token_expiry) {
-    logger('Previous access token found', DEBUG);
+    logger('Previous access token found', DEBUG_OUTPUT);
     return $access_token;
   }
 
@@ -882,7 +882,7 @@ sub _get_access_token {
   $access_token = $result->{access_token};
   $token_expiry = time + $result->{expires_in};
 
-  logger('New access token returned', DEBUG);
+  logger('New access token returned', DEBUG_OUTPUT);
 
   return $access_token;
 }
@@ -892,7 +892,7 @@ sub _get_access_token {
 sub check_and_set_lock {
   return if $test;    # No need if just dumping test files
 
-  logger('Checking for previous lock or setting new one', DEBUG);
+  logger('Checking for previous lock or setting new one', DEBUG_OUTPUT);
 
   my $dbh_main = Bugzilla->dbh_main;
 
@@ -906,7 +906,7 @@ sub check_and_set_lock {
     die "Another process has set a lock. Exiting\n";
   }
 
-  logger('Previous lock not found. Setting new one.', DEBUG);
+  logger('Previous lock not found. Setting new one.', DEBUG_OUTPUT);
 
   $dbh_main->do('INSERT INTO bmo_etl_locked (value, creation_ts) VALUES (?, NOW())', undef, 'locked');
 }
@@ -932,7 +932,7 @@ sub check_for_duplicates {
 
   my $full_path = "projects/$project_id/queries";
 
-  logger("Querying $base_url/$full_path", DEBUG);
+  logger("Querying $base_url/$full_path", DEBUG_OUTPUT);
 
   my $query = {
     query =>
@@ -944,7 +944,7 @@ sub check_for_duplicates {
   $request->header('Content-Type' => 'application/json');
   $request->content(encode_json($query));
 
-  logger(encode_json($query), DEBUG);
+  logger(encode_json($query), DEBUG_OUTPUT);
 
   my $res = $ua->request($request);
   if (!$res->is_success) {
@@ -952,7 +952,7 @@ sub check_for_duplicates {
     die 'Google Big Query query failure: ' . $res->content . "\n";
   }
 
-  logger($res->content, DEBUG);
+  logger($res->content, DEBUG_OUTPUT);
 
   my $result = decode_json($res->content);
 
@@ -968,7 +968,7 @@ sub check_for_duplicates {
 sub get_multi_group_value {
   my ($bug) = @_;
 
-  logger('Checking for multi group values.', DEBUG);
+  logger('Checking for multi group values.', DEBUG_OUTPUT);
 
   my $smallest_group_name  = undef;
   my $smallest_group_count = 0;
@@ -997,7 +997,7 @@ sub logger {
   return if $quiet;
 
   # Skip if --debug was not specified and this is a DEBUG level entry
-  return if (defined $level && $level == DEBUG && !$debug);
+  return if (defined $level && $level == DEBUG_OUTPUT && !$debug);
 
   # Otherwise just print
   print time() . ": $message\n";
