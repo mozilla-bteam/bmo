@@ -11,6 +11,7 @@
   # bug: bug object
   # id_prefix: (string) prefix for some element IDs (default: empty)
   # add_extras: (boolean) whether to show extra controls (default: true)
+  # add_self_cc: (boolean) whether to show the add self to cc (default: true)
   #%]
 
 [%
@@ -20,6 +21,9 @@
   IF !add_extras.defined;
     add_extras = 1;
   END;
+  IF !add_self_cc.defined;
+    add_self_cc = 1;
+  END
 %]
 
 <div id="add-comment">
@@ -73,32 +77,36 @@
         check_add_self = 0;
       END;
     %]
-    [% IF bug.id && add_extras %]
-      <table id="add-self-cc-container" [%= 'style="display:none"' IF hide_add_self %]>
-        <tr>
-          <td>
-            <input type="checkbox" name="addselfcc" id="add-self-cc"
-                   [%= "disabled" IF hide_add_self %] [%= "checked" IF check_add_self %]>
-          </td>
-          <td>
-            <label for="add-self-cc">Add me to CC list (follow this [% terms.bug %])</label>
-          </td>
-        </tr>
-      </table>
-      <table class="edit-show">
-        <tr>
-          <td>
-            <input type="checkbox" name="bug_ignored" id="bug-ignored"
-                   [%= "checked" IF user.is_bug_ignored(bug.id) %]>
-            <input type="hidden" name="defined_bug_ignored" value="1">
-          </td>
-          <td>
-            <label for="bug-ignored" title="You will still receive emails for flag requests directed at you">
-              Never email me about this [% terms.bug %]
-            </label>
-          </td>
-        </tr>
-      </table>
+    [% IF bug.id %]
+      [% IF add_self_cc %]
+        <table id="add-self-cc-container" [%= 'style="display:none"' IF hide_add_self %]>
+          <tr>
+            <td>
+              <input type="checkbox" name="addselfcc" id="add-self-cc"
+                    [%= "disabled" IF hide_add_self %] [%= "checked" IF check_add_self %]>
+            </td>
+            <td>
+              <label for="add-self-cc">Add me to CC list (follow this [% terms.bug %])</label>
+            </td>
+          </tr>
+        </table>
+      [% END %]
+      [% IF add_extras %]
+        <table class="edit-show">
+          <tr>
+            <td>
+              <input type="checkbox" name="bug_ignored" id="bug-ignored"
+                    [%= "checked" IF user.is_bug_ignored(bug.id) %]>
+              <input type="hidden" name="defined_bug_ignored" value="1">
+            </td>
+            <td>
+              <label for="bug-ignored" title="You will still receive emails for flag requests directed at you">
+                Never email me about this [% terms.bug %]
+              </label>
+            </td>
+          </tr>
+        </table>
+      [% END %]
     [% END %]
   </div>
 </div>
