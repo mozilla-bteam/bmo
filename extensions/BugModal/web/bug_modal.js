@@ -994,6 +994,7 @@ $(function() {
                 } else {
                     if ($("#bottom-dup_id").is(":visible")) {
                         $('#bottom-dup_id').focus();
+                        window.setTimeout(() => { $('#bottom-dup_id')[0].scrollIntoView() }, 0);
                     }
                 }
             }
@@ -1015,6 +1016,7 @@ $(function() {
             } else {
                 if ($("#bottom-dup_id").is(":visible")) {
                     $('#bottom-dup_id').focus();
+                    window.setTimeout(() => { $('#bottom-dup_id')[0].scrollIntoView() }, 0);
                 }
             }
         });
@@ -1174,6 +1176,7 @@ $(function() {
             $('#bottom-status').show();
             if ($('#bottom-dup_id').is(":visible")) {
                 $('#bottom-dup_id').focus();
+                window.setTimeout(() => { $('#bottom-dup_id')[0].scrollIntoView() }, 0);
             }
         });
     $('.status-btn')
@@ -1187,6 +1190,7 @@ $(function() {
             $('#bottom-status').show();
             if ($('#bottom-dup_id').is(":visible")) {
                 $('#bottom-dup_id').focus();
+                window.setTimeout(() => { $('#bottom-dup_id')[0].scrollIntoView() }, 0);
             }
         });
 
