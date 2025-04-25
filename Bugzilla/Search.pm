@@ -961,7 +961,7 @@ sub _sql {
   # slow running queries originate and help to refine the searches.
   my $user_id = Bugzilla->user->id;
   my $remote_ip = remote_ip();
-  my $user_agent = Bugzilla->cgi->user_agent;
+  my $user_agent = Bugzilla->cgi->user_agent || 'None';
   my $query_string = Bugzilla->cgi->canonicalize_query();
   my $query = <<END;
 SELECT $select
