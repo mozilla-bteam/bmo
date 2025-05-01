@@ -43,6 +43,14 @@ our @EXPORT = qw(
   set_phab_user
 );
 
+use constant LEGACY_APPROVAL_MAPPING => {
+  'firefox-beta'    => 'beta',
+  'firefox-release' => 'release',
+  'firefox-esr115'  => 'esr115',
+  'firefox-esr128'  => 'esr128',
+  'firefox-esr140'  => 'esr140',
+};
+
 # Set approval flags on Phabricator revision bug attachments.
 sub set_attachment_approval_flags {
   my ($attachment, $revision, $flag_setter, $phab_user) = @_;
@@ -67,6 +75,12 @@ sub set_attachment_approval_flags {
 
   # The repo short name is the appropriate value that aligns with flag names.
   my $repo_name          = $revision->repository->short_name;
+
+  # With the move to git some repository short names in Phabricator changed but
+  # we want to use the old approval flags so we map the new names to the old if
+  # they exist
+  $repo_name = LEGACY_APPROVAL_MAPPING->{$repo_name} || $repo_name;
+
   my $approval_flag_name = "approval-mozilla-$repo_name";
 
   my @old_flags;
