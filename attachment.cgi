@@ -648,6 +648,12 @@ sub insert {
     $owner = $bug->assigned_to->login;
     $bug->set_assigned_to($user);
   }
+
+  # Add user to CC if requested
+  if ($cgi->param('addselfcc')) {
+    $bug->add_cc(Bugzilla->user);
+  }
+
   $bug->update($timestamp);
 
   # We have to update the attachment after updating the bug, to ensure new
@@ -822,6 +828,11 @@ sub update {
 
   # Figure out when the changes were made.
   my $timestamp = $dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
+
+  # Add user to CC if requested
+  if ($cgi->param('addselfcc')) {
+    $bug->add_cc(Bugzilla->user);
+  }
 
   # Commit the comment, if any.
   # This has to happen before updating the attachment, to ensure new comments

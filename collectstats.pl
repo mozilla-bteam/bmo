@@ -513,11 +513,17 @@ sub CollectSeriesData {
     # We set up the user for Search.pm's permission checking - each series
     # runs with the permissions of its creator.
     my $user = new Bugzilla::User($serieses->{$series_id}->{'creator'});
-    my $cgi  = new Bugzilla::CGI($serieses->{$series_id}->{'query'});
-    my $data;
+
+    # Load the params from the stored query into the current CGI instance
+    my $cgi = Bugzilla->cgi;
+    $cgi->parse_params($serieses->{$series_id}->{'query'});
+
+    # This will be used as user_agent in Search.pm
+    $cgi->script_name('collectstats.pl');
 
     # Do not die if Search->new() detects invalid data, such as an obsolete
     # login name or a renamed product or component, etc.
+    my $data;
     eval {
       my $search = new Bugzilla::Search(
         'params'          => scalar $cgi->Vars,

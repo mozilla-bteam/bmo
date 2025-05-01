@@ -970,11 +970,12 @@ sub _sql {
 
   # Add some user information to the SQL so we can pinpoint where some
   # slow running queries originate and help to refine the searches.
-  my $user_id = Bugzilla->user->id;
-  my $remote_ip = remote_ip();
-  my $user_agent = Bugzilla->cgi->user_agent;
-  my $query_string = Bugzilla->cgi->canonicalize_query();
-  my $query = <<END;
+  my $cgi          = Bugzilla->cgi;
+  my $user_id      = $self->{user}->id;
+  my $remote_ip    = remote_ip();
+  my $user_agent   = $cgi->user_agent || $cgi->script_name;
+  my $query_string = $cgi->canonicalize_query();
+  my $query        = <<END;
 SELECT $select
   FROM $from
  WHERE $where
