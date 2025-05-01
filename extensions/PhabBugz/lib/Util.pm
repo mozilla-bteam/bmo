@@ -76,7 +76,7 @@ sub set_attachment_approval_flags {
   # The repo short name is the appropriate value that aligns with flag names.
   my $repo_name          = $revision->repository->short_name;
 
-  # With the move to git some repository short names in Phabricator hanged but
+  # With the move to git some repository short names in Phabricator changed but
   # we want to use the old approval flags so we map the new names to the old if
   # they exist
   $repo_name = LEGACY_APPROVAL_MAPPING->{$repo_name} || $repo_name;
