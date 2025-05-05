@@ -85,6 +85,8 @@ projects:
                 type: DATE
           - id: flags
             columns:
+              - name: id
+                type: INT64
               - name: attachment_id
                 type: INT64
               - name: bug_id
@@ -105,6 +107,8 @@ projects:
                 type: DATE
           - id: tracking_flags
             columns:
+              - name: id
+                type: INT64
               - name: bug_id
                 type: INT64
               - name: name
