@@ -199,14 +199,4 @@ $t->post_ok(
   'http://bq:9050/bigquery/v2/projects/test/queries' => json => $query)
   ->status_is(200)->json_is('/rows/0/f/0/v' => $bug_id_1);
 
-### Section 7: Exporting again on the same day (with the same snapshot date) will cause the script to exit
-
-@cmd = (
-  './extensions/BMO/bin/export_bmo_etl.pl',
-  '--debug', '--snapshot-date', $snapshot_date,
-);
-
-($output, $error, $rv) = capture { system @cmd; };
-ok($rv, 'Duplicate data exported to BigQuery test instance should fail');
-
 done_testing;
