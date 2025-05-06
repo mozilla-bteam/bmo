@@ -34,7 +34,7 @@ use Try::Tiny;
 
 # BigQuery API cannot handle payloads larger than 10MB so
 # we will send data in blocks.
-use constant API_BLOCK_COUNT => 1;
+use constant API_BLOCK_COUNT => 1000;
 
 # Products which we should not send data to ETL such as Legal, etc.
 use constant EXCLUDE_PRODUCTS => ('Legal',);
@@ -69,7 +69,11 @@ $dataset_id || die "Invalid BigQuery dataset ID.\n";
 check_and_set_lock();
 
 # Use replica if available
-my $dbh = Bugzilla->switch_to_shadow_db();
+my $dbh      = Bugzilla->switch_to_shadow_db();
+my $dbh_main = Bugzilla->dbh_main;
+
+$dbh_main->bz_start_transaction;
+$dbh->bz_start_transaction;
 
 my $ua = LWP::UserAgent::Determined->new(
   agent                 => 'Bugzilla',
@@ -782,16 +786,13 @@ sub store_cache {
     die "gzip failed: $GzipError\n";
   }
 
-  # We need to use the main DB for write operations
-  my $main_dbh = Bugzilla->dbh_main;
-
   try {
     # Clean out outdated JSON
-    $main_dbh->do('DELETE FROM bmo_etl_cache WHERE id = ? AND table_name = ?',
+    $dbh_main->do('DELETE FROM bmo_etl_cache WHERE id = ? AND table_name = ?',
       undef, $id, $table);
 
     # Enter new cached JSON
-    $main_dbh->do(
+    $dbh_main->do(
       'INSERT INTO bmo_etl_cache (id, table_name, snapshot_date, data) VALUES (?, ?, ?, ?)',
       undef, $id, $table, $timestamp, $gzipped_data
     );
@@ -899,8 +900,6 @@ sub check_and_set_lock {
 
   logger('Checking for previous lock or setting new one', DEBUG_OUTPUT);
 
-  my $dbh_main = Bugzilla->dbh_main;
-
   # Clear out any locks that are greater than 24h old
   $dbh_main->do('DELETE FROM bmo_etl_locked WHERE creation_ts < '
       . $dbh_main->sql_date_math('NOW()', '-', 24, 'HOUR'));
@@ -921,7 +920,9 @@ sub check_and_set_lock {
 # Delete lock from bmo_etl_locked
 sub delete_lock {
   logger("Deleting lock in database.");
-  Bugzilla->dbh_main->do('DELETE FROM bmo_etl_locked');
+  $dbh_main->do('DELETE FROM bmo_etl_locked');
+  $dbh_main->bz_commit_transaction;
+  $dbh->bz_commit_transaction;
 }
 
 sub call_big_query {
