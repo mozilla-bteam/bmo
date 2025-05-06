@@ -24,7 +24,7 @@ use QA::Util     qw(get_config);
 use MIME::Base64 qw(encode_base64 decode_base64);
 use Mojo::JSON   qw(false);
 use Test::Mojo;
-use Test::More skip_all => 'Temporarily disabled';
+use Test::More;
 
 my $config           = get_config();
 my $admin_login      = $config->{admin_user_login};
