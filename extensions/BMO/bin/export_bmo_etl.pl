@@ -343,6 +343,7 @@ sub process_flags {
         }
 
         $data = {
+          id            => $obj->id,
           attachment_id => $obj->attach_id || undef,
           bug_id        => $obj->bug_id,
           creation_ts   => $obj->creation_date,
@@ -453,7 +454,7 @@ sub process_tracking_flags {
   logger("Processing $total $table_name.");
 
   my $sth = $dbh->prepare(
-    'SELECT tracking_flags.name, tracking_flags_bugs.bug_id, tracking_flags_bugs.value
+    'SELECT tracking_flags_bugs.id, tracking_flags.name, tracking_flags_bugs.bug_id, tracking_flags_bugs.value
       FROM tracking_flags_bugs
            JOIN tracking_flags
            ON tracking_flags_bugs.tracking_flag_id = tracking_flags.id
@@ -465,14 +466,14 @@ sub process_tracking_flags {
 
     $sth->execute(API_BLOCK_COUNT, $last_offset);
 
-    while (my ($name, $bug_id, $value) = $sth->fetchrow_array()) {
+    while (my ($id, $name, $bug_id, $value) = $sth->fetchrow_array()) {
       if ($excluded_bugs{$bug_id}) {
         $count++;
         next;
       }
 
       # Standard fields
-      my $data = {bug_id => $bug_id};
+      my $data = {id => $id, bug_id => $bug_id};
 
       # Fields that require custom values based on other criteria
       if (exists $private_bugs{$bug_id}) {
