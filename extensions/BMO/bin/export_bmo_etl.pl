@@ -68,10 +68,6 @@ $dataset_id || die "Invalid BigQuery dataset ID.\n";
 # Use replica if available
 my $dbh      = Bugzilla->switch_to_shadow_db();
 my $dbh_main = Bugzilla->dbh_main;
-
-$dbh->do('SET TRANSACTION ISOLATION LEVEL READ COMMITTED');
-$dbh_main->do('SET TRANSACTION ISOLATION LEVEL READ COMMITTED');
-
 $dbh_main->bz_start_transaction;
 $dbh->bz_start_transaction;
 
