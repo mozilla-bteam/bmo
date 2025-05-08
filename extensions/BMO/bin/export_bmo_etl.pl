@@ -65,14 +65,15 @@ $project_id || die "Invalid BigQuery product ID.\n";
 my $dataset_id = Bugzilla->params->{bmo_etl_dataset_id};
 $dataset_id || die "Invalid BigQuery dataset ID.\n";
 
+# Check to make sure another instance is not currently running
+check_and_set_lock();
+
 # Use replica if available
 my $dbh      = Bugzilla->switch_to_shadow_db();
 my $dbh_main = Bugzilla->dbh_main;
+
 $dbh_main->bz_start_transaction;
 $dbh->bz_start_transaction;
-
-# Check to make sure another instance is not currently running
-check_and_set_lock();
 
 my $ua = LWP::UserAgent::Determined->new(
   agent                 => 'Bugzilla',
