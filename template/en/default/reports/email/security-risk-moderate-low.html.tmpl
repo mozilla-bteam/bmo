@@ -27,7 +27,7 @@
     <th style="padding: 0px 15px 10px 0px; text-align: right; border-right: 1px solid grey;">Added<br />Last Week</th>
     [% FOREACH result IN results_moderate.reverse %]
       [% NEXT IF loop.count < 2 %]
-      [% LAST IF loop.count > 4 %]
+      [% LAST IF loop.count > 2 %]
       <th>
         Open<br>[% result.date.strftime('%b-%d') FILTER html %]
       </th>
@@ -67,7 +67,7 @@
       </td>
       [% FOREACH result IN results_moderate.reverse %]
         [% NEXT IF loop.count < 2 %]
-        [% LAST IF loop.count > 4 %]
+        [% LAST IF loop.count > 2 %]
         <td>
           [% IF result.bugs_by_team.$team.open.size %]
             <a style="text-decoration: none;" href="[% build_bugs_link(result.bugs_by_team.$team.open) FILTER html %]">
@@ -94,7 +94,7 @@
     <th style="padding: 0px 15px 10px 0px; text-align: right; border-right: 1px solid grey;">Added<br />Last Week</th>
     [% FOREACH result IN results_low.reverse %]
       [% NEXT IF loop.count < 2 %]
-      [% LAST IF loop.count > 4 %]
+      [% LAST IF loop.count > 2 %]
       <th>
         Open<br>[% result.date.strftime('%b-%d') FILTER html %]
       </th>
@@ -134,7 +134,7 @@
       </td>
       [% FOREACH result IN results_low.reverse %]
         [% NEXT IF loop.count < 2 %]
-        [% LAST IF loop.count > 4 %]
+        [% LAST IF loop.count > 2 %]
         <td>
           [% IF result.bugs_by_team.$team.open.size %]
             <a style="text-decoration: none;" href="[% build_bugs_link(result.bugs_by_team.$team.open) FILTER html %]">
@@ -164,7 +164,7 @@
     </th>
     [% FOREACH result IN results_moderate.reverse %]
       [% NEXT IF loop.count < 2 %]
-      [% LAST IF loop.count > 4 %]
+      [% LAST IF loop.count > 2 %]
       <th>
         Open<br>[% result.date.strftime('%b-%d') FILTER html %]
       </th>
@@ -216,7 +216,7 @@
       </td>
       [% FOREACH result IN results.reverse %]
         [% NEXT IF loop.count < 2 %]
-        [% LAST IF loop.count > 4 %]
+        [% LAST IF loop.count > 2 %]
         <td>
           [% IF result.bugs_by_sec_keyword.$keyword.open.size %]
             <a style="text-decoration: none;" href="[% build_bugs_link(result.bugs_by_sec_keyword.$keyword.open) FILTER html %]">
