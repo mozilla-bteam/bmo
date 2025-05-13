@@ -19,6 +19,7 @@ use Bugzilla::Flag;
 use Bugzilla::Group;
 use Bugzilla::Logging;
 use Bugzilla::User;
+use Bugzilla::Util qw(with_writable_database);
 use Bugzilla::Extension::Review::FlagStateActivity;
 
 use HTTP::Headers;
@@ -65,11 +66,9 @@ $project_id || die "Invalid BigQuery product ID.\n";
 my $dataset_id = Bugzilla->params->{bmo_etl_dataset_id};
 $dataset_id || die "Invalid BigQuery dataset ID.\n";
 
-# Check to make sure another instance is not currently running
-check_and_set_lock();
-
 # Use replica if available
 my $dbh = Bugzilla->switch_to_shadow_db();
+$dbh->bz_start_transaction();
 
 my $ua = LWP::UserAgent::Determined->new(
   agent                 => 'Bugzilla',
@@ -125,8 +124,7 @@ process_two_columns(
   ['bug_id', 'duplicate_of_id']
 );
 
-# If we are done, remove the lock
-delete_lock();
+$dbh->bz_commit_transaction();
 
 ### Functions
 
@@ -135,16 +133,17 @@ sub process_bugs {
   my $count       = 0;
   my $last_offset = 0;
 
-  my $total = $dbh->selectrow_array('SELECT COUNT(*) FROM bugs');
+  # Retrieve the max ID from BQ in case we didn'complete last time
+  my $max_id = get_max_id($table_name);
+
+  my $total = $dbh->selectrow_array('SELECT COUNT(*) FROM bugs WHERE bug_id > ?',
+    undef, $max_id);
   logger("Processing $total $table_name");
 
   my $sth
     = $dbh->prepare(
     'SELECT bug_id AS id, delta_ts AS modification_time FROM bugs WHERE bug_id > ? ORDER BY bug_id LIMIT ? OFFSET ?'
     );
-
-  # Retrieve the max ID from BQ in case we didn'complete last time
-  my $max_id = get_max_id($table_name);
 
   while ($count < $total) {
     my @bugs = ();
@@ -249,16 +248,19 @@ sub process_attachments {
   my $count       = 0;
   my $last_offset = 0;
 
-  my $total = $dbh->selectrow_array('SELECT COUNT(*) FROM attachments');
+  # Retrieve the max ID from BQ in case we didn'complete last time
+  my $max_id = get_max_id($table_name);
+
+  my $total
+    = $dbh->selectrow_array(
+    'SELECT COUNT(*) FROM attachments WHERE attach_id > ?',
+    undef, $max_id);
   logger("Processing $total $table_name.");
 
   my $sth
     = $dbh->prepare(
     'SELECT attach_id, modification_time FROM attachments WHERE attach_id > ? ORDER BY attach_id LIMIT ? OFFSET ?'
     );
-
-  # Retrieve the max ID from BQ in case we didn'complete last time
-  my $max_id = get_max_id($table_name);
 
   while ($count < $total) {
     my @results = ();
@@ -319,10 +321,12 @@ sub process_flags {
   my $count       = 0;
   my $last_offset = 0;
 
-  my $total = $dbh->selectrow_array('SELECT COUNT(*) FROM flags');
-  logger("Processing $total $table_name.");
-
+  # Retrieve the max ID from BQ in case we didn'complete last time
   my $max_id = get_max_id($table_name);
+
+  my $total = $dbh->selectrow_array('SELECT COUNT(*) FROM flags WHERE id > ?',
+    undef, $max_id);
+  logger("Processing $total $table_name.");
 
   my $sth
     = $dbh->prepare(
@@ -454,16 +458,19 @@ sub process_tracking_flags {
   my $count       = 0;
   my $last_offset = 0;
 
+  # Retrieve the max ID from BQ in case we didn'complete last time
+  my $max_id = get_max_id($table_name);
+
   my $total = $dbh->selectrow_array(
     'SELECT COUNT(*)
        FROM tracking_flags_bugs
             JOIN tracking_flags
             ON tracking_flags_bugs.tracking_flag_id = tracking_flags.id
-      ORDER BY tracking_flags_bugs.bug_id'
+      WHERE tracking_flags_bugs.id > ?
+      ORDER BY tracking_flags_bugs.bug_id', undef, $max_id
   );
-  logger("Processing $total $table_name.");
 
-  my $max_id = get_max_id($table_name);
+  logger("Processing $total $table_name.");
 
   my $sth = $dbh->prepare(
     'SELECT tracking_flags_bugs.id, tracking_flags.name, tracking_flags_bugs.bug_id, tracking_flags_bugs.value
@@ -615,15 +622,18 @@ sub process_users {
   my $count       = 0;
   my $last_offset = 0;
 
-  my $total = $dbh->selectrow_array('SELECT COUNT(*) FROM profiles');
+  # Retrieve the max ID from BQ in case we didn'complete last time
+  my $max_id = get_max_id($table_name);
+
+  my $total
+    = $dbh->selectrow_array('SELECT COUNT(*) FROM profiles WHERE userid > ?',
+    undef, $max_id);
   logger("Processing $total $table_name.");
 
   my $sth
     = $dbh->prepare(
     'SELECT userid, modification_ts FROM profiles WHERE userid > ? ORDER BY userid LIMIT ? OFFSET ?'
     );
-
-  my $max_id = get_max_id($table_name);
 
   logger("max id: $max_id", DEBUG_OUTPUT);
 
@@ -751,7 +761,6 @@ sub get_cache {
     # First uncompress the JSON and then decode it back to Perl data
     my $data;
     unless (gunzip \$gzipped_data => \$data) {
-      delete_lock();
       die "gunzip failed: $GunzipError\n";
     }
     return decode_json($data);
@@ -779,27 +788,20 @@ sub store_cache {
   # Compress the JSON to save space in the DB
   my $gzipped_data;
   unless (gzip \$data => \$gzipped_data) {
-    delete_lock();
     die "gzip failed: $GzipError\n";
   }
 
   # We need to use the main DB for write operations
-  my $main_dbh = Bugzilla->dbh_main;
-
-  try {
+  with_writable_database {
     # Clean out outdated JSON
-    $main_dbh->do('DELETE FROM bmo_etl_cache WHERE id = ? AND table_name = ?',
+    Bugzilla->dbh->do('DELETE FROM bmo_etl_cache WHERE id = ? AND table_name = ?',
       undef, $id, $table);
 
     # Enter new cached JSON
-    $main_dbh->do(
+    Bugzilla->dbh->do(
       'INSERT INTO bmo_etl_cache (id, table_name, snapshot_date, data) VALUES (?, ?, ?, ?)',
       undef, $id, $table, $timestamp, $gzipped_data
     );
-  }
-  catch {
-    # Log the failure
-    WARN("ERROR: Unable to store cache data in database: $_");
   }
 }
 
@@ -833,20 +835,18 @@ sub send_data {
     my $fh = path($filename)->open('>>');
     print $fh encode_json($query) . "\n";
     unless (close $fh) {
-      delete_lock();
       die "Could not close $filename: $!\n";
     }
 
     return;
   }
 
-  my $path = sprintf 'projects/%s/datasets/%s/tables/%s/insertAll',
-    $project_id, $dataset_id, $table;
+  my $path = sprintf 'projects/%s/datasets/%s/tables/%s/insertAll', $project_id,
+    $dataset_id, $table;
 
   my $result = call_big_query('POST', $path, $query);
 
   if (exists $result->{insertErrors} && @{$result->{insertErrors}}) {
-    delete_lock();
     die "Google Big Query insert failure: " . encode_json($result);
   }
 }
@@ -863,10 +863,10 @@ sub get_access_token {
     return $access_token;
   }
 
-  # Google Kubernetes allows for the use of Workload Identity. This allows
-  # us to link two service accounts together and give special access for applications
-  # running under Kubernetes. We use the special access to get an OAuth2 access_token
-  # that can then be used for accessing the the Google API such as BigQuery.
+# Google Kubernetes allows for the use of Workload Identity. This allows
+# us to link two service accounts together and give special access for applications
+# running under Kubernetes. We use the special access to get an OAuth2 access_token
+# that can then be used for accessing the the Google API such as BigQuery.
   my $url
     = sprintf
     'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/%s/token',
@@ -880,7 +880,6 @@ sub get_access_token {
   my $res = $ua->request($request);
 
   if (!$res->is_success) {
-    delete_lock();
     die 'Google access token failure: ' . $res->content . "\n";
   }
 
@@ -891,38 +890,6 @@ sub get_access_token {
   logger('New access token returned', DEBUG_OUTPUT);
 
   return $access_token;
-}
-
-# If a previous process is performing an export to BigQuery, then
-# we must check the lock table and exit if true.
-sub check_and_set_lock {
-  return if $test;    # No need if just dumping test files
-
-  logger('Checking for previous lock or setting new one', DEBUG_OUTPUT);
-
-  my $dbh_main = Bugzilla->dbh_main;
-
-  # Clear out any locks that are greater than 24h old
-  $dbh_main->do('DELETE FROM bmo_etl_locked WHERE creation_ts < '
-      . $dbh_main->sql_date_math('NOW()', '-', 24, 'HOUR'));
-
-  # Now check for any pre-existing locks and do not proceed if one found
-  my $locked = $dbh_main->selectrow_array('SELECT COUNT(*) FROM bmo_etl_locked');
-  if ($locked) {
-    die "Another process has set a lock. Exiting\n";
-  }
-
-  logger('Previous lock not found. Setting new one.', DEBUG_OUTPUT);
-
-  $dbh_main->do(
-    'INSERT INTO bmo_etl_locked (value, creation_ts) VALUES (?, NOW())',
-    undef, 'locked');
-}
-
-# Delete lock from bmo_etl_locked
-sub delete_lock {
-  logger("Deleting lock in database.");
-  Bugzilla->dbh_main->do('DELETE FROM bmo_etl_locked');
 }
 
 sub call_big_query {
@@ -949,7 +916,6 @@ sub call_big_query {
   logger($res->content, DEBUG_OUTPUT);
 
   if (!$res->is_success) {
-    delete_lock();
     die 'Google Big Query query failure: ' . $res->content . "\n";
   }
 
@@ -959,7 +925,7 @@ sub call_big_query {
 sub get_max_id {
   my ($table) = @_;
 
-  return 0 if $test; # no need if just dumping test files
+  return 0 if $test;    # no need if just dumping test files
 
   logger("Retrieving max id for table $table for snapshot date $snapshot_date.");
 
@@ -977,9 +943,10 @@ sub get_max_id {
 sub check_duplicate_data {
   my ($table) = @_;
 
-  return 0 if $test; # no need if just dumping test files
+  return 0 if $test;    # no need if just dumping test files
 
-  logger("Checking duplicate data for table $table for snapshot date $snapshot_date.");
+  logger(
+    "Checking duplicate data for table $table for snapshot date $snapshot_date.");
 
   my $query = {
     query =>
