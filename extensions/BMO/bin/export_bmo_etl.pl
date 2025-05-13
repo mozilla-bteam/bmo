@@ -792,17 +792,29 @@ sub store_cache {
   }
 
   # We need to use the main DB for write operations
-  with_writable_database {
+  my $dbh_main = Bugzilla->dbh_main;
+  try {
+    $dbh_main->bz_start_transaction;
+
     # Clean out outdated JSON
-    Bugzilla->dbh->do('DELETE FROM bmo_etl_cache WHERE id = ? AND table_name = ?',
+    $dbh_main->do('DELETE FROM bmo_etl_cache WHERE id = ? AND table_name = ?',
       undef, $id, $table);
 
     # Enter new cached JSON
-    Bugzilla->dbh->do(
+    $dbh_main->do(
       'INSERT INTO bmo_etl_cache (id, table_name, snapshot_date, data) VALUES (?, ?, ?, ?)',
       undef, $id, $table, $timestamp, $gzipped_data
     );
+
+    $dbh->bz_commit_transaction;
   }
+  catch {
+    $dbh->bz_rollback_transaction;
+
+    # Log the failure and return undef
+    WARN("ERROR: Unable to store cached data into database: $_");
+    return undef;
+  };
 }
 
 sub send_data {
