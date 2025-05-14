@@ -806,10 +806,10 @@ sub store_cache {
       undef, $id, $table, $timestamp, $gzipped_data
     );
 
-    $dbh->bz_commit_transaction;
+    $dbh_main->bz_commit_transaction;
   }
   catch {
-    $dbh->bz_rollback_transaction;
+    $dbh_main->bz_rollback_transaction;
 
     # Log the failure and return undef
     WARN("ERROR: Unable to store cached data into database: $_");
