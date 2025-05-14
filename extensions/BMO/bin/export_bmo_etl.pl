@@ -35,7 +35,7 @@ use Try::Tiny;
 
 # BigQuery API cannot handle payloads larger than 10MB so
 # we will send data in blocks.
-use constant API_BLOCK_COUNT => 1;
+use constant API_BLOCK_COUNT => 1000;
 
 # Products which we should not send data to ETL such as Legal, etc.
 use constant EXCLUDE_PRODUCTS => ('Legal',);
@@ -792,17 +792,29 @@ sub store_cache {
   }
 
   # We need to use the main DB for write operations
-  with_writable_database {
+  my $dbh_main = Bugzilla->dbh_main;
+  try {
+    $dbh_main->bz_start_transaction;
+
     # Clean out outdated JSON
-    Bugzilla->dbh->do('DELETE FROM bmo_etl_cache WHERE id = ? AND table_name = ?',
+    $dbh_main->do('DELETE FROM bmo_etl_cache WHERE id = ? AND table_name = ?',
       undef, $id, $table);
 
     # Enter new cached JSON
-    Bugzilla->dbh->do(
+    $dbh_main->do(
       'INSERT INTO bmo_etl_cache (id, table_name, snapshot_date, data) VALUES (?, ?, ?, ?)',
       undef, $id, $table, $timestamp, $gzipped_data
     );
+
+    $dbh_main->bz_commit_transaction;
   }
+  catch {
+    $dbh_main->bz_rollback_transaction;
+
+    # Log the failure and return undef
+    WARN("ERROR: Unable to store cached data into database: $_");
+    return undef;
+  };
 }
 
 sub send_data {
@@ -955,9 +967,6 @@ sub check_duplicate_data {
   };
 
   my $result = call_big_query('POST', "projects/$project_id/queries", $query);
-
-  use Mojo::Util qw(dumper);
-  print STDERR dumper $result;
 
   return $result->{rows}->[0]->{f}->[0]->{v} || 0;
 }
