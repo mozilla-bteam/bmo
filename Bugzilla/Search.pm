@@ -928,6 +928,7 @@ sub _sql {
   my ($self) = @_;
   return $self->{sql} if $self->{sql};
   my $dbh = Bugzilla->dbh;
+  my $user_id = $self->{user}->id;
 
   my ($joins, $clause) = $self->_charts_to_conditions();
 
@@ -957,15 +958,25 @@ sub _sql {
     $limit    = '';
   }
 
+  my $timeout_comment = '';
+  my $sec;
+  if (($sec = Bugzilla->params->{db_search_timeout_auth}) && $user_id) {
+    my $ms = $sec * 1000;
+    $timeout_comment = "/*+ MAX_EXECUTION_TIME($ms) */";
+  }
+  elsif (($sec = Bugzilla->params->{db_search_timeout_anon}) && !$user_id) {
+    my $ms = $sec * 1000;
+    $timeout_comment = "/*+ MAX_EXECUTION_TIME($ms) */";
+  }
+
   # Add some user information to the SQL so we can pinpoint where some
   # slow running queries originate and help to refine the searches.
   my $cgi          = Bugzilla->cgi;
-  my $user_id      = $self->{user}->id;
   my $remote_ip    = remote_ip();
   my $user_agent   = $cgi->user_agent || $cgi->script_name;
   my $query_string = $cgi->canonicalize_query();
   my $query        = <<END;
-SELECT $select
+SELECT $timeout_comment $select
   FROM $from
  WHERE $where
 $group_by$order_by$limit
