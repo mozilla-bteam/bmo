@@ -74,7 +74,7 @@ sub set_attachment_approval_flags {
   }
 
   # The repo short name is the appropriate value that aligns with flag names.
-  my $repo_name          = $revision->repository->short_name;
+  my $repo_name = $revision->repository->short_name;
 
   # With the move to git some repository short names in Phabricator changed but
   # we want to use the old approval flags so we map the new names to the old if
@@ -94,6 +94,13 @@ sub set_attachment_approval_flags {
       . $approval_flag_name
       . $status);
 
+  # Set value if the revision has been accepted by member of release managers
+  my $relman_accepted = 0;
+  foreach my $reviewer (@{$revision->reviews}) {
+    next if $reviewer->status ne 'accepted';
+    $relman_accepted = 1 if $reviewer->is_release_manager;
+  }
+
   # Find the current approval flag state if it exists.
   foreach my $flag (@{$attachment->flags}) {
 
@@ -110,8 +117,16 @@ sub set_attachment_approval_flags {
       return;
     }
 
-    # If setting to + or - then user needs to be a release manager in Phab.
-    if (($status eq '+' || $status eq '-') && !$phab_user->is_release_manager) {
+    # If setting to + then at least one accepted reviewer needs to a release manager.
+    if ($status eq '+' && !$relman_accepted) {
+      INFO(
+        "Unable to set existing `$approval_flag_name` flag to `$status` due to not being accepted by a release manager."
+      );
+      return;
+    }
+
+    # If setting to -, then changer needs to be a release manager
+    if ($status eq '-' && !$phab_user->is_release_manager) {
       INFO(
         "Unable to set existing `$approval_flag_name` flag to `$status` due to not being a release manager."
       );
@@ -128,6 +143,14 @@ sub set_attachment_approval_flags {
   if (!@old_flags && $status ne 'X') {
     my $approval_flag = Bugzilla::FlagType->new({name => $approval_flag_name});
     if ($approval_flag) {
+      # If setting to + then at least one accepted reviewer needs to a release manager.
+      if ($status eq '+' && !$relman_accepted) {
+        INFO(
+          "Unable to create new `$approval_flag_name` flag with status `$status` due to not being accepted by a release manager."
+        );
+        return;
+      }
+
       if ($flag_setter->can_change_flag($approval_flag, 'X', $status)) {
         INFO("Creating new `$approval_flag_name` flag with status `$status`");
         push @new_flags,
