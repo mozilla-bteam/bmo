@@ -32,6 +32,19 @@ use constant get_param_list => (
   {name => 'use_markdown', type => 'b', default => 0},
 
   {name => 'use_comment_reactions', type => 'b', default => 1},
+
+  {
+    name    => 'db_search_timeout_auth',
+    type    => 't',
+    default => '180',
+    checker => \&check_numeric,
+  },
+  {
+    name    => 'db_search_timeout_anon',
+    type    => 't',
+    default => '60',
+    checker => \&check_numeric,
+  }
 );
 
 1;

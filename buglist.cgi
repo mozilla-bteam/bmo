@@ -730,6 +730,9 @@ do {
   # failures log it and return an empty list of bugs.
   if (my $search_err = $@) {
     return if ref $search_err eq 'ARRAY' && $search_err->[0] eq "EXIT\n";
+    if (!ref $search_err && $search_err =~ /maximum statement execution time exceeded/) {
+      ThrowUserError('db_search_timeout');
+    }
     use Data::Dumper;
     ERROR 'buglist.cgi?' . $cgi->query_string . " " . Dumper($search_err);
   }
