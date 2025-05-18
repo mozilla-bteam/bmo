@@ -335,6 +335,9 @@ sub set_phab_user {
 
 sub set_reviewer_rotation {
   my ($revision) = @_;
+  my $rev_identifier = 'D' . $revision->id;
+
+  INFO("$rev_identifier: Setting reviewer rotation.");
 
   # Load a fresh version of the revision with Heralds changes.
   $revision = Bugzilla::Extension::PhabBugz::Revision->new_from_query(
@@ -359,7 +362,14 @@ sub set_reviewer_rotation {
     }
   }
 
-  return if !$blocking_project;
+  if (!$blocking_project) {
+    INFO("$rev_identifier: Blocking reviewer project not found.");
+    return;
+  }
+
+  INFO( "$rev_identifier: Blocking reviewer project "
+      . $blocking_project->name
+      . ' found.');
 
   # 2. Once the blocking reviewer group is determined, query Phabricator for
   # list of group members and match up the BMO user account. Sort them by user
@@ -371,6 +381,9 @@ sub set_reviewer_rotation {
   # set as a blocking reviewer. If so, then remove the blocking group and return.
   foreach my $member (@{$project_members}) {
     if (any { $_->id == $member->id } @blocking_users) {
+      INFO(
+        "$rev_identifier: Member of blocking reviewer project already set as a reviewer. Removing blocking reviewer project."
+      );
       $revision->remove_reviewer($blocking_project->phid);
       $revision->update;
       return;
@@ -384,19 +397,25 @@ sub set_reviewer_rotation {
   my $found_reviewer;
   foreach my $member (@{$project_members}) {
 
-    # 5. If the user has a revison they are reviewing currently, load the revision
-    # details and check if it is closed. If it is, then clear the row from the table.
+   # 5. If the user has a revison they are reviewing currently, load the revision
+   # details and check if it is closed. If it is, then clear the row from the table.
     my $rev_phid = $dbh->selectrow_array(
-      'SELECT revision_id FROM phab_reviewer_rotation WHERE project_id = ? AND user_phid = ?',
+      'SELECT revision_phid FROM phab_reviewer_rotation WHERE project_phid = ? AND user_phid = ?',
       undef, $blocking_project->phid, $member->phid
     );
 
     if ($rev_phid) {
-      my $rev_obj = Bugzilla::Extension::PhabBugz::Revision->new_from_query();
+      INFO("$rev_identifier: Previous review found for " . $member->id);
 
-      # 6. If the user is already a reviewer or they were but their revision is now closed, skip to the next
-      # user in the list.
-      if ($rev_obj->status eq 'closed') {
+      my $rev_obj = Bugzilla::Extension::PhabBugz::Revision->new_from_query(
+        {phids => [$rev_phid]});
+
+# 6. If the user is already a reviewer or they were but their revision is now closed, skip to the next
+# user in the list.
+      if ($rev_obj->status eq 'closed' || $rev_obj->status eq 'abandoned') {
+        INFO(
+          "$rev_identifier: Previous reviewers revision is closed or abandoned. Removing reviewer from database and skipping."
+        );
         $dbh->do(
           'DELETE FROM phab_reviewer_rotation WHERE revision_phid = ? AND project_phid = ? AND user_phid = ?',
           undef, $rev_phid, $blocking_project->phid, $member->phid
@@ -406,12 +425,13 @@ sub set_reviewer_rotation {
       next;
     }
 
-    # 7. Once a potential reviewer has been found, look to see if they can see the bug,
-    # and they are not set to away (not accepting reviews). If both are are negative,
-    # we choose the next person in the list.
-    if ($member->bugzilla_user->can_see_bug($revision->bug->id)
-        && $member->bugzilla_user->settings->{block_reviews}->{value} ne "on")
+ # 7. Once a potential reviewer has been found, look to see if they can see the bug,
+ # and they are not set to away (not accepting reviews). If both are are negative,
+ # we choose the next person in the list.
+    if ( $member->bugzilla_user->can_see_bug($revision->bug->id)
+      && $member->bugzilla_user->settings->{block_reviews}->{value} ne "on")
     {
+      INFO("$rev_identifier: Found new reviewer " . $member->id);
       $found_reviewer = $member;
       last;
     }
@@ -420,16 +440,24 @@ sub set_reviewer_rotation {
   if ($found_reviewer) {
 
     # 8. Set the user as a blocking reviewer on the revision.
-    $revision->add_reviewer($found_reviewer->pid);
+    INFO("$rev_identifier: Adding new blocking reviewer " . $found_reviewer->id);
+    $revision->add_reviewer('blocking(' . $found_reviewer->phid . ')');
 
     # 9. Remove the blocking reviewer group.
+    INFO("$rev_identifier: Removing blocking reviewer project.");
     $revision->remove_reviewer($blocking_project->phid);
 
     # 10. Store the data in the phab_reviewer_rotation table so they will be
     # next time.
+    INFO("$rev_identifier: Adding new blocking reviewer to database.");
     $dbh->do(
-      'INSERT INTO phab_reviewer_rotation (revision_phid, project_phid, user_phid',
-      undef, $revision->phid, $blocking_project->phid, $found_reviewer->phid);
+      'INSERT INTO phab_reviewer_rotation (revision_phid, project_phid, user_phid, user_id) VALUES (?, ?, ?, ?)',
+      undef,
+      $revision->phid,
+      $blocking_project->phid,
+      $found_reviewer->phid,
+      $found_reviewer->bugzilla_user->id
+    );
 
     # 11. Save changes to the revision and return.
     $revision->update;
