@@ -489,6 +489,12 @@
     The custom field '[% name FILTER html %]' cannot be deleted because
     at least one [% terms.bug %] has a non empty value for this field.
 
+  [% ELSIF error == "db_search_timeout" %]
+    [% title = "Request Timed Out" %]
+     Sorry, it’s taking too long to get the information you asked for. Please
+     try again in a moment. If it still doesn’t work, try using a simpler
+     search or narrowing down your request.
+
   [% ELSIF error == "dependency_loop_multi" %]
     [% title = "Dependency Loop Detected" %]
     The following [% IF deps.size > 1; terms.bugs; ELSE; terms.bug; END %]
