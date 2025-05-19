@@ -123,7 +123,6 @@ sub IssueEmailChangeToken {
   my $template = Bugzilla->template_inner($user->setting('lang'));
   my $vars     = {};
 
-  $vars->{'oldemailaddress'} = $old_email . $email_suffix;
   $vars->{'newemailaddress'} = $new_email . $email_suffix;
   $vars->{'expiration_ts'}   = ctime($token_ts + MAX_TOKEN_AGE * 86400);
   $vars->{'token'}           = $token;
