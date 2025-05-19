@@ -19,7 +19,6 @@ use Bugzilla::Flag;
 use Bugzilla::Group;
 use Bugzilla::Logging;
 use Bugzilla::User;
-use Bugzilla::Util qw(with_writable_database);
 use Bugzilla::Extension::Review::FlagStateActivity;
 
 use HTTP::Headers;
@@ -66,6 +65,9 @@ $project_id || die "Invalid BigQuery product ID.\n";
 my $dataset_id = Bugzilla->params->{bmo_etl_dataset_id};
 $dataset_id || die "Invalid BigQuery dataset ID.\n";
 
+# Check to make sure another instance is not currently running
+check_and_set_lock();
+
 # Use replica if available
 my $dbh = Bugzilla->switch_to_shadow_db();
 $dbh->bz_start_transaction();
@@ -92,6 +94,10 @@ our %excluded_bugs = ();
 
 # Bugs that are private to one or more groups
 our %private_bugs = ();
+
+# In order to avoid entering duplicate data, we will first query BigQuery
+# to make sure other entries with this date are not already present.
+check_for_duplicates();
 
 # Process each table to be sent to ETL
 process_bugs();
@@ -126,6 +132,9 @@ process_two_columns(
 
 $dbh->bz_commit_transaction();
 
+# If we are done, remove the lock
+delete_lock();
+
 ### Functions
 
 sub process_bugs {
@@ -133,22 +142,20 @@ sub process_bugs {
   my $count       = 0;
   my $last_offset = 0;
 
-  # Retrieve the max ID from BQ in case we didn'complete last time
-  my $max_id = get_max_id($table_name);
-
-  my $total = $dbh->selectrow_array('SELECT COUNT(*) FROM bugs WHERE bug_id > ?',
-    undef, $max_id);
+  my $total = $dbh->selectrow_array('SELECT COUNT(*) FROM bugs');
   logger("Processing $total $table_name");
 
   my $sth
     = $dbh->prepare(
-    'SELECT bug_id AS id, delta_ts AS modification_time FROM bugs WHERE bug_id > ? ORDER BY bug_id LIMIT ? OFFSET ?'
+    'SELECT bug_id AS id, delta_ts AS modification_time FROM bugs ORDER BY bug_id LIMIT ? OFFSET ?'
     );
 
   while ($count < $total) {
     my @bugs = ();
 
-    $sth->execute($max_id, API_BLOCK_COUNT, $last_offset);
+    logger("total: $total, count: $count, last offset: $last_offset", DEBUG_OUTPUT);
+
+    $sth->execute(API_BLOCK_COUNT, $last_offset);
 
     while (my ($id, $mod_time) = $sth->fetchrow_array()) {
       logger("Processing id $id with mod_time of $mod_time.");
@@ -157,10 +164,16 @@ sub process_bugs {
       my $data = get_cache($id, $table_name, $mod_time);
 
       if (!$data) {
-        logger("$table_name id $id with time $mod_time not found in cache.",
-          DEBUG_OUTPUT);
+        logger("$table_name id $id with time $mod_time not found in cache.", DEBUG_OUTPUT);
 
         my $obj = Bugzilla::Bug->new($id);
+
+        if (!$obj) {
+          logger("Object $id not loaded from database or no longer exists");
+          next;
+        }
+
+        logger("Object $id loaded from database", DEBUG_OUTPUT);
 
         my $bug_is_private = scalar @{$obj->groups_in};
 
@@ -248,24 +261,20 @@ sub process_attachments {
   my $count       = 0;
   my $last_offset = 0;
 
-  # Retrieve the max ID from BQ in case we didn'complete last time
-  my $max_id = get_max_id($table_name);
-
-  my $total
-    = $dbh->selectrow_array(
-    'SELECT COUNT(*) FROM attachments WHERE attach_id > ?',
-    undef, $max_id);
+  my $total = $dbh->selectrow_array('SELECT COUNT(*) FROM attachments');
   logger("Processing $total $table_name.");
 
   my $sth
     = $dbh->prepare(
-    'SELECT attach_id, modification_time FROM attachments WHERE attach_id > ? ORDER BY attach_id LIMIT ? OFFSET ?'
+    'SELECT attach_id, modification_time FROM attachments ORDER BY attach_id LIMIT ? OFFSET ?'
     );
 
   while ($count < $total) {
     my @results = ();
 
-    $sth->execute($max_id, API_BLOCK_COUNT, $last_offset);
+    logger("total: $total, count: $count, last offset: $last_offset", DEBUG_OUTPUT);
+
+    $sth->execute(API_BLOCK_COUNT, $last_offset);
 
     while (my ($id, $mod_time) = $sth->fetchrow_array()) {
       logger("Processing id $id with mod_time of $mod_time.");
@@ -274,10 +283,16 @@ sub process_attachments {
       my $data = get_cache($id, $table_name, $mod_time);
 
       if (!$data) {
-        logger("$table_name id $id with time $mod_time not found in cache.",
-          DEBUG_OUTPUT);
+        logger("$table_name id $id with time $mod_time not found in cache." , DEBUG_OUTPUT);
 
         my $obj = Bugzilla::Attachment->new($id);
+
+        if (!$obj) {
+          logger("Object $id not loaded from database or no longer exists");
+          next;
+        }
+
+        logger("Object $id loaded from database", DEBUG_OUTPUT);
 
         if ($excluded_bugs{$obj->bug_id}) {
           $count++;
@@ -321,22 +336,18 @@ sub process_flags {
   my $count       = 0;
   my $last_offset = 0;
 
-  # Retrieve the max ID from BQ in case we didn'complete last time
-  my $max_id = get_max_id($table_name);
-
-  my $total = $dbh->selectrow_array('SELECT COUNT(*) FROM flags WHERE id > ?',
-    undef, $max_id);
+  my $total = $dbh->selectrow_array('SELECT COUNT(*) FROM flags');
   logger("Processing $total $table_name.");
 
-  my $sth
-    = $dbh->prepare(
-    'SELECT id, modification_date FROM flags WHERE id > ? ORDER BY id LIMIT ? OFFSET ?'
-    );
+  my $sth = $dbh->prepare(
+    'SELECT id, modification_date FROM flags ORDER BY id LIMIT ? OFFSET ?');
 
   while ($count < $total) {
     my @results = ();
 
-    $sth->execute($max_id, API_BLOCK_COUNT, $last_offset);
+    logger("total: $total, count: $count, last offset: $last_offset", DEBUG_OUTPUT);
+
+    $sth->execute(API_BLOCK_COUNT, $last_offset);
 
     while (my ($id, $mod_time) = $sth->fetchrow_array()) {
       logger("Processing id $id with mod_time of $mod_time.");
@@ -345,10 +356,16 @@ sub process_flags {
       my $data = get_cache($id, $table_name, $mod_time);
 
       if (!$data) {
-        logger("$table_name id $id with time $mod_time not found in cache.",
-          DEBUG_OUTPUT);
+        logger("$table_name id $id with time $mod_time not found in cache." , DEBUG_OUTPUT);
 
         my $obj = Bugzilla::Flag->new($id);
+
+        if (!$obj) {
+          logger("Object $id not loaded from database or no longer exists");
+          next;
+        }
+
+        logger("Object $id loaded from database", DEBUG_OUTPUT);
 
         if ($excluded_bugs{$obj->bug_id}) {
           $count++;
@@ -407,6 +424,8 @@ sub process_flag_state_activity {
   while ($count < $total) {
     my @results = ();
 
+    logger("total: $total, count: $count, last offset: $last_offset", DEBUG_OUTPUT);
+
     $sth->execute(API_BLOCK_COUNT, $last_offset);
 
     while (my ($id, $mod_time) = $sth->fetchrow_array()) {
@@ -416,10 +435,16 @@ sub process_flag_state_activity {
       my $data = get_cache($id, $table_name, $mod_time);
 
       if (!$data) {
-        logger("$table_name id $id with time $mod_time not found in cache.",
-          DEBUG_OUTPUT);
+        logger("$table_name id $id with time $mod_time not found in cache.", DEBUG_OUTPUT);
 
         my $obj = Bugzilla::Extension::Review::FlagStateActivity->new($id);
+
+        if (!$obj) {
+          logger("Object $id not loaded from database or no longer exists");
+          next;
+        }
+
+        logger("Object $id loaded from database", DEBUG_OUTPUT);
 
         if ($excluded_bugs{$obj->bug_id}) {
           $count++;
@@ -458,18 +483,13 @@ sub process_tracking_flags {
   my $count       = 0;
   my $last_offset = 0;
 
-  # Retrieve the max ID from BQ in case we didn'complete last time
-  my $max_id = get_max_id($table_name);
-
   my $total = $dbh->selectrow_array(
     'SELECT COUNT(*)
        FROM tracking_flags_bugs
             JOIN tracking_flags
             ON tracking_flags_bugs.tracking_flag_id = tracking_flags.id
-      WHERE tracking_flags_bugs.id > ?
-      ORDER BY tracking_flags_bugs.bug_id', undef, $max_id
+      ORDER BY tracking_flags_bugs.bug_id'
   );
-
   logger("Processing $total $table_name.");
 
   my $sth = $dbh->prepare(
@@ -477,14 +497,15 @@ sub process_tracking_flags {
       FROM tracking_flags_bugs
            JOIN tracking_flags
            ON tracking_flags_bugs.tracking_flag_id = tracking_flags.id
-     WHERE tracking_flags_bugs.id > ?
-     ORDER BY tracking_flags_bugs.id LIMIT ? OFFSET ?'
+      ORDER BY tracking_flags_bugs.id LIMIT ? OFFSET ?'
   );
 
   while ($count < $total) {
     my @results = ();
 
-    $sth->execute($max_id, API_BLOCK_COUNT, $last_offset);
+    logger("total: $total, count: $count, last offset: $last_offset", DEBUG_OUTPUT);
+
+    $sth->execute(API_BLOCK_COUNT, $last_offset);
 
     while (my ($id, $name, $bug_id, $value) = $sth->fetchrow_array()) {
       if ($excluded_bugs{$bug_id}) {
@@ -522,11 +543,6 @@ sub process_keywords {
   my $count       = 0;
   my $last_offset = 0;
 
-  if (check_duplicate_data($table_name)) {
-    logger("Skipping $table_name due to duplicate data");
-    return;
-  }
-
   my $total = $dbh->selectrow_array('SELECT COUNT(*) FROM keywords');
   logger("Processing $total $table_name.");
 
@@ -540,6 +556,8 @@ sub process_keywords {
 
   while ($count < $total) {
     my @results = ();
+
+    logger("total: $total, count: $count, last offset: $last_offset", DEBUG_OUTPUT);
 
     $sth->execute(API_BLOCK_COUNT, $last_offset);
 
@@ -583,6 +601,8 @@ sub process_see_also {
   while ($count < $total) {
     my @results = ();
 
+    logger("total: $total, count: $count, last offset: $last_offset", DEBUG_OUTPUT);
+
     $sth->execute(API_BLOCK_COUNT, $last_offset);
 
     while (my ($bug_id, $value, $class) = $sth->fetchrow_array()) {
@@ -622,27 +642,20 @@ sub process_users {
   my $count       = 0;
   my $last_offset = 0;
 
-  # Retrieve the max ID from BQ in case we didn'complete last time
-  my $max_id = get_max_id($table_name);
-
-  my $total
-    = $dbh->selectrow_array('SELECT COUNT(*) FROM profiles WHERE userid > ?',
-    undef, $max_id);
+  my $total = $dbh->selectrow_array('SELECT COUNT(*) FROM profiles');
   logger("Processing $total $table_name.");
 
   my $sth
     = $dbh->prepare(
-    'SELECT userid, modification_ts FROM profiles WHERE userid > ? ORDER BY userid LIMIT ? OFFSET ?'
+    'SELECT userid, modification_ts FROM profiles ORDER BY userid LIMIT ? OFFSET ?'
     );
-
-  logger("max id: $max_id", DEBUG_OUTPUT);
 
   while ($count < $total) {
     my @users = ();
 
-    logger("last offset: $last_offset", DEBUG_OUTPUT);
+    logger("total: $total, count: $count, last offset: $last_offset", DEBUG_OUTPUT);
 
-    $sth->execute($max_id, API_BLOCK_COUNT, $last_offset);
+    $sth->execute(API_BLOCK_COUNT, $last_offset);
 
     while (my ($id, $mod_time) = $sth->fetchrow_array()) {
       logger("Processing id $id with mod_time of $mod_time.");
@@ -655,18 +668,23 @@ sub process_users {
       my $data = get_cache($id, $table_name, $mod_time);
 
       if (!$data) {
-        logger("$table_name id $id with time $mod_time not found in cache.",
-          DEBUG_OUTPUT);
+        logger("$table_name id $id with time $mod_time not found in cache.", DEBUG_OUTPUT);
 
         my $obj = Bugzilla::User->new($id);
+
+        if (!$obj) {
+          logger("Object $id not loaded from database or no longer exists");
+          next;
+        }
+
+        logger("Object $id loaded from database", DEBUG_OUTPUT);
 
         # Standard fields
         $data = {
           id        => $obj->id,
-          last_seen =>
-            ($obj->last_seen_date ? $obj->last_seen_date . ' 00:00:00' : undef),
-          email  => $obj->email,
-          is_new => ($obj->is_new ? true : false),
+          last_seen => ($obj->last_seen_date ? $obj->last_seen_date . ' 00:00:00' : undef),
+          email     => $obj->email,
+          is_new    => ($obj->is_new ? true : false),
         };
 
         # Fields that require custom values based on criteria
@@ -703,11 +721,6 @@ sub process_two_columns {
 
   my $columns_string = join ', ', @{$column_names};
   my $order_by       = $column_names->[0];
-
-  if (check_duplicate_data($bq_name)) {
-    logger("Skipping $table_name due to duplicate data");
-    return;
-  }
 
   my $sth = $dbh->prepare(
     "SELECT $columns_string FROM $table_name ORDER BY $order_by LIMIT ? OFFSET ?");
@@ -747,23 +760,23 @@ sub get_cache {
     return undef;
   }
 
-  logger("Retreiving data from $table for $id with time $timestamp.",
-    DEBUG_OUTPUT);
+  logger("Retreiving data from $table for $id with time $timestamp.", DEBUG_OUTPUT);
 
   try {
-    # Retrieve compressed JSON from cache table if it exists
-    my $gzipped_data = $dbh->selectrow_array(
-      'SELECT data FROM bmo_etl_cache WHERE id = ? AND table_name = ? AND snapshot_date = ?',
-      undef, $id, $table, $timestamp
-    );
-    return undef if !$gzipped_data;
+  # Retrieve compressed JSON from cache table if it exists
+  my $gzipped_data = $dbh->selectrow_array(
+    'SELECT data FROM bmo_etl_cache WHERE id = ? AND table_name = ? AND snapshot_date = ?',
+    undef, $id, $table, $timestamp
+  );
+  return undef if !$gzipped_data;
 
-    # First uncompress the JSON and then decode it back to Perl data
-    my $data;
-    unless (gunzip \$gzipped_data => \$data) {
-      die "gunzip failed: $GunzipError\n";
-    }
-    return decode_json($data);
+  # First uncompress the JSON and then decode it back to Perl data
+  my $data;
+  unless (gunzip \$gzipped_data => \$data) {
+    delete_lock();
+    die "gunzip failed: $GunzipError\n";
+  }
+  return decode_json($data);
   }
   catch {
     # Log the failure and return undef
@@ -788,6 +801,7 @@ sub store_cache {
   # Compress the JSON to save space in the DB
   my $gzipped_data;
   unless (gzip \$data => \$gzipped_data) {
+    delete_lock();
     die "gzip failed: $GzipError\n";
   }
 
@@ -820,8 +834,7 @@ sub store_cache {
 sub send_data {
   my ($table, $all_rows, $current_count) = @_;
 
-  logger(
-    'Sending ' . scalar @{$all_rows} . " rows to table $table using BigQuery API");
+  logger('Sending ' . scalar @{$all_rows} . " rows to table $table using BigQuery API");
 
   # Add the same snapshot date to every row sent
   foreach my $row (@{$all_rows}) {
@@ -833,7 +846,7 @@ sub send_data {
     push @json_rows, {json => $row};
   }
 
-  my $query = {rows => \@json_rows};
+  my $big_query = {rows => \@json_rows};
 
   if ($test) {
     my $filename
@@ -845,25 +858,55 @@ sub send_data {
     logger("Writing data to $filename.");
 
     my $fh = path($filename)->open('>>');
-    print $fh encode_json($query) . "\n";
+    print $fh encode_json($big_query) . "\n";
     unless (close $fh) {
+      delete_lock();
       die "Could not close $filename: $!\n";
     }
 
     return;
   }
 
-  my $path = sprintf 'projects/%s/datasets/%s/tables/%s/insertAll', $project_id,
-    $dataset_id, $table;
+  my $http_headers = HTTP::Headers->new;
 
-  my $result = call_big_query('POST', $path, $query);
+  # Do not attempt to get access token if running in test environment
+  if ($base_url !~ /^http:\/\/[^\/]+:9050/) {
+    my $access_token = _get_access_token();
+    $http_headers->header(Authorization => 'Bearer ' . $access_token);
+  }
 
-  if (exists $result->{insertErrors} && @{$result->{insertErrors}}) {
-    die "Google Big Query insert failure: " . encode_json($result);
+  my $full_path = sprintf 'projects/%s/datasets/%s/tables/%s/insertAll',
+    $project_id, $dataset_id, $table;
+
+  logger("Sending to $base_url/$full_path", DEBUG_OUTPUT);
+
+  my $request = HTTP::Request->new('POST', "$base_url/$full_path", $http_headers);
+  $request->header('Content-Type' => 'application/json');
+
+  logger('Encoding content into JSON.', DEBUG_OUTPUT);
+
+  $request->content(encode_json($big_query));
+
+  logger('Sending request', DEBUG_OUTPUT);
+
+  my $response = $ua->request($request);
+
+  logger($response->content, DEBUG_OUTPUT);
+
+  my $result = decode_json($response->content);
+
+  if (!$response->is_success
+    || (exists $result->{insertErrors} && @{$result->{insertErrors}}))
+  {
+    delete_lock();
+    die "Google Big Query insert failure:\nRequest:\n"
+      . $request->content
+      . "\n\nResponse:\n"
+      . $response->content . "\n";
   }
 }
 
-sub get_access_token {
+sub _get_access_token {
   state $access_token;    # We should only need to get this once
   state $token_expiry;
 
@@ -875,10 +918,10 @@ sub get_access_token {
     return $access_token;
   }
 
-# Google Kubernetes allows for the use of Workload Identity. This allows
-# us to link two service accounts together and give special access for applications
-# running under Kubernetes. We use the special access to get an OAuth2 access_token
-# that can then be used for accessing the the Google API such as BigQuery.
+  # Google Kubernetes allows for the use of Workload Identity. This allows
+  # us to link two service accounts together and give special access for applications
+  # running under Kubernetes. We use the special access to get an OAuth2 access_token
+  # that can then be used for accessing the the Google API such as BigQuery.
   my $url
     = sprintf
     'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/%s/token',
@@ -892,6 +935,7 @@ sub get_access_token {
   my $res = $ua->request($request);
 
   if (!$res->is_success) {
+    delete_lock();
     die 'Google access token failure: ' . $res->content . "\n";
   }
 
@@ -904,71 +948,111 @@ sub get_access_token {
   return $access_token;
 }
 
-sub call_big_query {
-  my ($method, $path, $data) = @_;
+# If a previous process is performing an export to BigQuery, then
+# we must check the lock table and exit if true.
+sub check_and_set_lock {
+  return if $test;    # No need if just dumping test files
 
-  logger("BigQuery request - method: $method, path: $path", DEBUG_OUTPUT);
+  logger('Checking for previous lock or setting new one', DEBUG_OUTPUT);
+
+  # We need to use the main DB for write operations
+  my $dbh_main = Bugzilla->dbh_main;
+  try {
+    $dbh_main->bz_start_transaction;
+
+    # Clear out any locks that are greater than 24h old
+    $dbh_main->do('DELETE FROM bmo_etl_locked WHERE creation_ts < '
+      . $dbh_main->sql_date_math('NOW()', '-', 24, 'HOUR'));
+
+    # Now check for any pre-existing locks and do not proceed if one found
+    my $locked = $dbh_main->selectrow_array('SELECT COUNT(*) FROM bmo_etl_locked');
+    if ($locked) {
+      die "Another process has set a lock. Exiting\n";
+    }
+
+    logger('Previous lock not found. Setting new one.', DEBUG_OUTPUT);
+
+    $dbh_main->do('INSERT INTO bmo_etl_locked (value, creation_ts) VALUES (?, NOW())', undef, 'locked');
+
+    $dbh_main->bz_commit_transaction;
+  }
+  catch {
+    $dbh_main->bz_rollback_transaction;
+
+    # Log the failure and return undef
+    WARN("ERROR: Unable to create lock in database: $_");
+    return undef;
+  };
+ }
+
+# Delete lock from bmo_etl_locked
+sub delete_lock {
+  logger("Deleting lock in database.");
+
+  # We need to use the main DB for write operations
+  my $dbh_main = Bugzilla->dbh_main;
+  try {
+    $dbh_main->bz_start_transaction;
+
+    $dbh_main->do('DELETE FROM bmo_etl_locked');
+
+    $dbh_main->bz_commit_transaction;
+  }
+  catch {
+    $dbh_main->bz_rollback_transaction;
+
+    # Log the failure and return undef
+    WARN("ERROR: Unable to delete lock in database: $_");
+    return undef;
+  };
+}
+
+sub check_for_duplicates {
+  return if $test;    # no need if just dumping test files
+
+  logger("Checking for duplicate data for snapshot date $snapshot_date.");
 
   my $http_headers = HTTP::Headers->new;
 
   # Do not attempt to get access token if running in test environment
   if ($base_url !~ /^http:\/\/[^\/]+:9050/) {
-    my $access_token = get_access_token();
+    my $access_token = _get_access_token();
     $http_headers->header(Authorization => 'Bearer ' . $access_token);
   }
 
-  my $request = HTTP::Request->new($method, "$base_url/$path", $http_headers);
-  $request->header('Content-Type' => 'application/json');
+  my $full_path = "projects/$project_id/queries";
 
-  logger('Encoding content into JSON.', DEBUG_OUTPUT);
-  logger(encode_json($data),            DEBUG_OUTPUT);
-  $request->content(encode_json($data));
+  logger("Querying $base_url/$full_path", DEBUG_OUTPUT);
+
+  my $query = {
+    query =>
+      "SELECT count(*) FROM ${project_id}.${dataset_id}.bugs WHERE snapshot_date = '$snapshot_date';",
+    useLegacySql => false,
+  };
+
+  my $request = HTTP::Request->new('POST', "$base_url/$full_path", $http_headers);
+  $request->header('Content-Type' => 'application/json');
+  $request->content(encode_json($query));
+
+  logger(encode_json($query), DEBUG_OUTPUT);
 
   my $res = $ua->request($request);
-  logger($res->content, DEBUG_OUTPUT);
-
   if (!$res->is_success) {
+    delete_lock();
     die 'Google Big Query query failure: ' . $res->content . "\n";
   }
 
+  logger($res->content, DEBUG_OUTPUT);
+
   my $result = decode_json($res->content);
-}
 
-sub get_max_id {
-  my ($table) = @_;
+  my $row_count = $result->{rows}->[0]->{f}->[0]->{v};
 
-  return 0 if $test;    # no need if just dumping test files
-
-  logger("Retrieving max id for table $table for snapshot date $snapshot_date.");
-
-  my $query = {
-    query =>
-      "SELECT max(id) FROM ${project_id}.${dataset_id}.${table} WHERE snapshot_date = '$snapshot_date';",
-    useLegacySql => false
-  };
-
-  my $result = call_big_query('POST', "projects/$project_id/queries", $query);
-
-  return $result->{rows}->[0]->{f}->[0]->{v} || 0;
-}
-
-sub check_duplicate_data {
-  my ($table) = @_;
-
-  return 0 if $test;    # no need if just dumping test files
-
-  logger(
-    "Checking duplicate data for table $table for snapshot date $snapshot_date.");
-
-  my $query = {
-    query =>
-      "SELECT count(*) FROM ${project_id}.${dataset_id}.${table} WHERE snapshot_date = '$snapshot_date';",
-    useLegacySql => false
-  };
-
-  my $result = call_big_query('POST', "projects/$project_id/queries", $query);
-
-  return $result->{rows}->[0]->{f}->[0]->{v} || 0;
+  # Do not export if we have any rows with this snapshot date.
+  if ($row_count) {
+    delete_lock();
+    die "Duplicate data found for snapshot date $snapshot_date\n";
+  }
 }
 
 sub get_multi_group_value {
