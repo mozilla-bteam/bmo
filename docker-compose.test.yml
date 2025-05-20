@@ -46,8 +46,12 @@ services:
     ports:
       - 8001:8001
 
+  # Update to the same version of MySQL as what is in Terraform if changed
+  # https://github.com/mozilla-it/webservices-infra/blob/main/bugzilla/tf/dev/mysql.tf
+  # https://github.com/mozilla-it/webservices-infra/blob/main/bugzilla/tf/prod/locals.tf
+  # https://github.com/mozilla-it/webservices-infra/blob/main/bugzilla/tf/stage/mysql.tf
   bmo.db:
-    image: mysql:8
+    image: mysql:8.0.42
     tmpfs:
       - /tmp
     logging:
