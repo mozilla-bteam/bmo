@@ -1500,6 +1500,13 @@ input[type="radio"]:checked {
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  /* The user prefers reduced motion */
+  #menu-drawer {
+    transition: all 0ms;
+  }
+}
+
 /**
  * Banner message
  */
