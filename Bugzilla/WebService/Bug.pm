@@ -18,6 +18,7 @@ use Bugzilla::Comment::TagWeights;
 use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Field;
+use Bugzilla::Logging;
 use Bugzilla::WebService::Constants;
 use Bugzilla::WebService::Util
   qw(extract_flags filter filter_wants validate translate);
@@ -35,6 +36,7 @@ use Bugzilla::Search::Quicksearch;
 
 use List::Util qw(max);
 use List::MoreUtils qw(uniq);
+use Mojo::Util qw(dumper);
 use Storable qw(dclone);
 use Types::Standard -all;
 use Type::Utils;
@@ -689,7 +691,23 @@ sub search {
   $options{params} = $match_params;
 
   my $search = new Bugzilla::Search(%options);
-  my ($data) = $search->data;
+
+  # Execute the query.
+  my $data = [];
+  do {
+    local $SIG{__DIE__}  = undef;
+    local $SIG{__WARN__} = undef;
+    ($data) = eval { $search->data };
+    # If the search query failed, handle Throw*Error correctly, or for all other
+    # failures log it and return an empty list of bugs.
+    if (my $search_err = $@) {
+      return if ref $search_err eq 'ARRAY' && $search_err->[0] eq "EXIT\n";
+      if (!ref $search_err && $search_err =~ /maximum statement execution time exceeded/) {
+        ThrowUserError('db_search_timeout');
+      }
+      ERROR('REST error: ' . dumper \%options . " " . dumper $search_err);
+    }
+  };
 
   # BMO if the caller only wants the count, that's all we need to return
   if ($params->{count_only}) {
