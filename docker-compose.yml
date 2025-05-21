@@ -102,9 +102,13 @@ services:
       - bmo.db
       - memcached
 
+  # Update to the same version of MySQL as what is in Terraform if changed
+  # https://github.com/mozilla-it/webservices-infra/blob/main/bugzilla/tf/dev/mysql.tf
+  # https://github.com/mozilla-it/webservices-infra/blob/main/bugzilla/tf/prod/locals.tf
+  # https://github.com/mozilla-it/webservices-infra/blob/main/bugzilla/tf/stage/mysql.tf
   bmo.db:
     platform: linux/x86_64
-    image: mysql:8
+    image: mysql:8.0.42
     volumes:
       - bmo-mysql-db:/var/lib/mysql
       - ./docker/mysql:/etc/mysql/conf.d
