@@ -70,7 +70,6 @@ check_and_set_lock();
 
 # Use replica if available
 my $dbh = Bugzilla->switch_to_shadow_db();
-$dbh->bz_start_transaction();
 
 my $ua = LWP::UserAgent::Determined->new(
   agent                 => 'Bugzilla',
@@ -130,8 +129,6 @@ process_two_columns(
   ['bug_id', 'duplicate_of_id']
 );
 
-$dbh->bz_commit_transaction();
-
 # If we are done, remove the lock
 delete_lock();
 
@@ -153,8 +150,6 @@ sub process_bugs {
   while ($count < $total) {
     my @bugs = ();
 
-    logger("total: $total, count: $count, last offset: $last_offset", DEBUG_OUTPUT);
-
     $sth->execute(API_BLOCK_COUNT, $last_offset);
 
     while (my ($id, $mod_time) = $sth->fetchrow_array()) {
@@ -167,13 +162,6 @@ sub process_bugs {
         logger("$table_name id $id with time $mod_time not found in cache.", DEBUG_OUTPUT);
 
         my $obj = Bugzilla::Bug->new($id);
-
-        if (!$obj) {
-          logger("Object $id not loaded from database or no longer exists");
-          next;
-        }
-
-        logger("Object $id loaded from database", DEBUG_OUTPUT);
 
         my $bug_is_private = scalar @{$obj->groups_in};
 
@@ -272,8 +260,6 @@ sub process_attachments {
   while ($count < $total) {
     my @results = ();
 
-    logger("total: $total, count: $count, last offset: $last_offset", DEBUG_OUTPUT);
-
     $sth->execute(API_BLOCK_COUNT, $last_offset);
 
     while (my ($id, $mod_time) = $sth->fetchrow_array()) {
@@ -286,13 +272,6 @@ sub process_attachments {
         logger("$table_name id $id with time $mod_time not found in cache." , DEBUG_OUTPUT);
 
         my $obj = Bugzilla::Attachment->new($id);
-
-        if (!$obj) {
-          logger("Object $id not loaded from database or no longer exists");
-          next;
-        }
-
-        logger("Object $id loaded from database", DEBUG_OUTPUT);
 
         if ($excluded_bugs{$obj->bug_id}) {
           $count++;
@@ -345,8 +324,6 @@ sub process_flags {
   while ($count < $total) {
     my @results = ();
 
-    logger("total: $total, count: $count, last offset: $last_offset", DEBUG_OUTPUT);
-
     $sth->execute(API_BLOCK_COUNT, $last_offset);
 
     while (my ($id, $mod_time) = $sth->fetchrow_array()) {
@@ -359,13 +336,6 @@ sub process_flags {
         logger("$table_name id $id with time $mod_time not found in cache." , DEBUG_OUTPUT);
 
         my $obj = Bugzilla::Flag->new($id);
-
-        if (!$obj) {
-          logger("Object $id not loaded from database or no longer exists");
-          next;
-        }
-
-        logger("Object $id loaded from database", DEBUG_OUTPUT);
 
         if ($excluded_bugs{$obj->bug_id}) {
           $count++;
@@ -424,8 +394,6 @@ sub process_flag_state_activity {
   while ($count < $total) {
     my @results = ();
 
-    logger("total: $total, count: $count, last offset: $last_offset", DEBUG_OUTPUT);
-
     $sth->execute(API_BLOCK_COUNT, $last_offset);
 
     while (my ($id, $mod_time) = $sth->fetchrow_array()) {
@@ -438,13 +406,6 @@ sub process_flag_state_activity {
         logger("$table_name id $id with time $mod_time not found in cache.", DEBUG_OUTPUT);
 
         my $obj = Bugzilla::Extension::Review::FlagStateActivity->new($id);
-
-        if (!$obj) {
-          logger("Object $id not loaded from database or no longer exists");
-          next;
-        }
-
-        logger("Object $id loaded from database", DEBUG_OUTPUT);
 
         if ($excluded_bugs{$obj->bug_id}) {
           $count++;
@@ -503,8 +464,6 @@ sub process_tracking_flags {
   while ($count < $total) {
     my @results = ();
 
-    logger("total: $total, count: $count, last offset: $last_offset", DEBUG_OUTPUT);
-
     $sth->execute(API_BLOCK_COUNT, $last_offset);
 
     while (my ($id, $name, $bug_id, $value) = $sth->fetchrow_array()) {
@@ -557,8 +516,6 @@ sub process_keywords {
   while ($count < $total) {
     my @results = ();
 
-    logger("total: $total, count: $count, last offset: $last_offset", DEBUG_OUTPUT);
-
     $sth->execute(API_BLOCK_COUNT, $last_offset);
 
     while (my ($bug_id, $keyword) = $sth->fetchrow_array()) {
@@ -600,8 +557,6 @@ sub process_see_also {
 
   while ($count < $total) {
     my @results = ();
-
-    logger("total: $total, count: $count, last offset: $last_offset", DEBUG_OUTPUT);
 
     $sth->execute(API_BLOCK_COUNT, $last_offset);
 
@@ -653,8 +608,6 @@ sub process_users {
   while ($count < $total) {
     my @users = ();
 
-    logger("total: $total, count: $count, last offset: $last_offset", DEBUG_OUTPUT);
-
     $sth->execute(API_BLOCK_COUNT, $last_offset);
 
     while (my ($id, $mod_time) = $sth->fetchrow_array()) {
@@ -671,13 +624,6 @@ sub process_users {
         logger("$table_name id $id with time $mod_time not found in cache.", DEBUG_OUTPUT);
 
         my $obj = Bugzilla::User->new($id);
-
-        if (!$obj) {
-          logger("Object $id not loaded from database or no longer exists");
-          next;
-        }
-
-        logger("Object $id loaded from database", DEBUG_OUTPUT);
 
         # Standard fields
         $data = {
@@ -806,29 +752,23 @@ sub store_cache {
   }
 
   # We need to use the main DB for write operations
-  my $dbh_main = Bugzilla->dbh_main;
-  try {
-    $dbh_main->bz_start_transaction;
+  my $main_dbh = Bugzilla->dbh_main;
 
+  try {
     # Clean out outdated JSON
-    $dbh_main->do('DELETE FROM bmo_etl_cache WHERE id = ? AND table_name = ?',
+    $main_dbh->do('DELETE FROM bmo_etl_cache WHERE id = ? AND table_name = ?',
       undef, $id, $table);
 
     # Enter new cached JSON
-    $dbh_main->do(
+    $main_dbh->do(
       'INSERT INTO bmo_etl_cache (id, table_name, snapshot_date, data) VALUES (?, ?, ?, ?)',
       undef, $id, $table, $timestamp, $gzipped_data
     );
-
-    $dbh_main->bz_commit_transaction;
   }
   catch {
-    $dbh_main->bz_rollback_transaction;
-
-    # Log the failure and return undef
-    WARN("ERROR: Unable to store cached data into database: $_");
-    return undef;
-  };
+    # Log the failure
+    WARN("ERROR: Unable to store cache data in database: $_");
+  }
 }
 
 sub send_data {
@@ -955,56 +895,27 @@ sub check_and_set_lock {
 
   logger('Checking for previous lock or setting new one', DEBUG_OUTPUT);
 
-  # We need to use the main DB for write operations
   my $dbh_main = Bugzilla->dbh_main;
-  try {
-    $dbh_main->bz_start_transaction;
 
-    # Clear out any locks that are greater than 24h old
-    $dbh_main->do('DELETE FROM bmo_etl_locked WHERE creation_ts < '
+  # Clear out any locks that are greater than 24h old
+  $dbh_main->do('DELETE FROM bmo_etl_locked WHERE creation_ts < '
       . $dbh_main->sql_date_math('NOW()', '-', 24, 'HOUR'));
 
-    # Now check for any pre-existing locks and do not proceed if one found
-    my $locked = $dbh_main->selectrow_array('SELECT COUNT(*) FROM bmo_etl_locked');
-    if ($locked) {
-      die "Another process has set a lock. Exiting\n";
-    }
-
-    logger('Previous lock not found. Setting new one.', DEBUG_OUTPUT);
-
-    $dbh_main->do('INSERT INTO bmo_etl_locked (value, creation_ts) VALUES (?, NOW())', undef, 'locked');
-
-    $dbh_main->bz_commit_transaction;
+  # Now check for any pre-existing locks and do not proceed if one found
+  my $locked = $dbh_main->selectrow_array('SELECT COUNT(*) FROM bmo_etl_locked');
+  if ($locked) {
+    die "Another process has set a lock. Exiting\n";
   }
-  catch {
-    $dbh_main->bz_rollback_transaction;
 
-    # Log the failure and return undef
-    WARN("ERROR: Unable to create lock in database: $_");
-    return undef;
-  };
- }
+  logger('Previous lock not found. Setting new one.', DEBUG_OUTPUT);
+
+  $dbh_main->do('INSERT INTO bmo_etl_locked (value, creation_ts) VALUES (?, NOW())', undef, 'locked');
+}
 
 # Delete lock from bmo_etl_locked
 sub delete_lock {
   logger("Deleting lock in database.");
-
-  # We need to use the main DB for write operations
-  my $dbh_main = Bugzilla->dbh_main;
-  try {
-    $dbh_main->bz_start_transaction;
-
-    $dbh_main->do('DELETE FROM bmo_etl_locked');
-
-    $dbh_main->bz_commit_transaction;
-  }
-  catch {
-    $dbh_main->bz_rollback_transaction;
-
-    # Log the failure and return undef
-    WARN("ERROR: Unable to delete lock in database: $_");
-    return undef;
-  };
+  Bugzilla->dbh_main->do('DELETE FROM bmo_etl_locked');
 }
 
 sub check_for_duplicates {
