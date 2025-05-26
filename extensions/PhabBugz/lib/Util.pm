@@ -59,6 +59,7 @@ sub set_attachment_approval_flags {
   my $revision_status_flag_map = {
     'abandoned'       => '-',
     'accepted'        => '+',
+    'accepted-prior'  => '+',
     'changes-planned' => 'X',
     'draft'           => '?',
     'needs-review'    => '?',
@@ -117,7 +118,7 @@ sub set_attachment_approval_flags {
       return;
     }
 
-    # If setting to + or - then user needs to a release manager.
+    # If setting to + or - then user needs to be a release manager.
     if (($status eq '+' || $status eq '-') && !$phab_user->is_release_manager) {
       INFO(
         "Unable to set existing `$approval_flag_name` flag to `$status` due to not being a release manager."
@@ -135,7 +136,7 @@ sub set_attachment_approval_flags {
   if (!@old_flags && $status ne 'X') {
     my $approval_flag = Bugzilla::FlagType->new({name => $approval_flag_name});
     if ($approval_flag) {
-      # If setting to + then at least one accepted reviewer needs to a release manager.
+      # If setting to + then at least one accepted reviewer needs to be a release manager.
       if ($status eq '+' && !$phab_user->is_release_manager) {
         INFO(
           "Unable to create new `$approval_flag_name` flag with status `$status` due to not being accepted by a release manager."
