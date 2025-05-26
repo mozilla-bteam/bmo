@@ -136,7 +136,7 @@ delete_lock();
 
 sub process_bugs {
   my $table_name  = 'bugs';
-  my $count       = 0;
+  my $total_count = 0;
   my $last_offset = 0;
   my @results     = ();
 
@@ -172,7 +172,7 @@ sub process_bugs {
 
       if (any { $obj->product eq $_ } EXCLUDE_PRODUCTS) {
         $excluded_bugs{$obj->id} = 1;
-        $count++;
+        $total_count++;
         next;
       }
 
@@ -239,14 +239,14 @@ sub process_bugs {
 
     push @results, $data;
 
-    $count++;
+    $total_count++;
 
   # Send a batch of data, reset counts and then run query for the next batch of rows
-    if ($count % API_BLOCK_COUNT == 0) {
-      logger("count: $count, last offset: $last_offset", DEBUG_OUTPUT);
+    if (scalar @results >= API_BLOCK_COUNT) {
+      logger("total count: $total_count, last offset: $last_offset", DEBUG_OUTPUT);
 
       # Send the rows to the server
-      send_data($table_name, \@results, $count);
+      send_data($table_name, \@results, $total_count);
 
       @results = ();
       $last_offset += API_BLOCK_COUNT;
@@ -255,12 +255,12 @@ sub process_bugs {
   }
 
   # Send the final rows to the server
-  send_data($table_name, \@results, $count) if @results;
+  send_data($table_name, \@results, $total_count) if @results;
 }
 
 sub process_attachments {
   my $table_name  = 'attachments';
-  my $count       = 0;
+  my $total_count = 0;
   my $last_offset = 0;
   my @results     = ();
 
@@ -293,7 +293,7 @@ sub process_attachments {
       logger("Object $id loaded from database", DEBUG_OUTPUT);
 
       if ($excluded_bugs{$obj->bug_id}) {
-        $count++;
+        $total_count++;
         next;
       }
 
@@ -319,14 +319,14 @@ sub process_attachments {
 
     push @results, $data;
 
-    $count++;
+    $total_count++;
 
   # Send a batch of data, reset counts and then run query for the next batch of rows
-    if ($count % API_BLOCK_COUNT == 0) {
-      logger("count: $count, last offset: $last_offset", DEBUG_OUTPUT);
+    if (scalar @results >= API_BLOCK_COUNT) {
+      logger("total count: $total_count, last offset: $last_offset", DEBUG_OUTPUT);
 
       # Send the rows to the server
-      send_data($table_name, \@results, $count);
+      send_data($table_name, \@results, $total_count);
 
       @results = ();
       $last_offset += API_BLOCK_COUNT;
@@ -335,12 +335,12 @@ sub process_attachments {
   }
 
   # Send the final rows to the server
-  send_data($table_name, \@results, $count) if @results;
+  send_data($table_name, \@results, $total_count) if @results;
 }
 
 sub process_flags {
   my $table_name  = 'flags';
-  my $count       = 0;
+  my $total_count = 0;
   my $last_offset = 0;
   my @results     = ();
 
@@ -371,7 +371,7 @@ sub process_flags {
       logger("Object $id loaded from database", DEBUG_OUTPUT);
 
       if ($excluded_bugs{$obj->bug_id}) {
-        $count++;
+        $total_count++;
         next;
       }
 
@@ -393,14 +393,14 @@ sub process_flags {
 
     push @results, $data;
 
-    $count++;
+    $total_count++;
 
   # Send a batch of data, reset counts and then run query for the next batch of rows
-    if ($count % API_BLOCK_COUNT == 0) {
-      logger("count: $count, last offset: $last_offset", DEBUG_OUTPUT);
+    if (scalar @results >= API_BLOCK_COUNT) {
+      logger("total count: $total_count, last offset: $last_offset", DEBUG_OUTPUT);
 
       # Send the rows to the server
-      send_data($table_name, \@results, $count);
+      send_data($table_name, \@results, $total_count);
 
       @results = ();
       $last_offset += API_BLOCK_COUNT;
@@ -409,14 +409,14 @@ sub process_flags {
   }
 
   # Send the rows to the server
-  send_data($table_name, \@results, $count) if @results;
+  send_data($table_name, \@results, $total_count) if @results;
 }
 
 # Process flags that were removed today using the flag_state_activity table
 # These entries will also go into the flags table in BigQuery.
 sub process_flag_state_activity {
   my $table_name  = 'flag_state_activity';
-  my $count       = 0;
+  my $total_count = 0;
   my $last_offset = 0;
   my @results     = ();
 
@@ -450,7 +450,7 @@ sub process_flag_state_activity {
       logger("Object $id loaded from database", DEBUG_OUTPUT);
 
       if ($excluded_bugs{$obj->bug_id}) {
-        $count++;
+        $total_count++;
         next;
       }
 
@@ -471,14 +471,14 @@ sub process_flag_state_activity {
 
     push @results, $data;
 
-    $count++;
+    $total_count++;
 
   # Send a batch of data, reset counts and then run query for the next batch of rows
-    if ($count % API_BLOCK_COUNT == 0) {
-      logger("count: $count, last offset: $last_offset", DEBUG_OUTPUT);
+    if (scalar @results >= API_BLOCK_COUNT) {
+      logger("total count: $total_count, last offset: $last_offset", DEBUG_OUTPUT);
 
       # Send the rows to the server
-      send_data('flags', \@results, $count);
+      send_data('flags', \@results, $total_count);
 
       @results = ();
       $last_offset += API_BLOCK_COUNT;
@@ -487,12 +487,12 @@ sub process_flag_state_activity {
   }
 
   # Send the rows to the server
-  send_data('flags', \@results, $count) if @results;
+  send_data('flags', \@results, $total_count) if @results;
 }
 
 sub process_tracking_flags {
   my $table_name  = 'tracking_flags';
-  my $count       = 0;
+  my $total_count = 0;
   my $last_offset = 0;
   my @results     = ();
 
@@ -510,7 +510,7 @@ sub process_tracking_flags {
 
   while (my ($id, $name, $bug_id, $value) = $sth->fetchrow_array()) {
     if ($excluded_bugs{$bug_id}) {
-      $count++;
+      $total_count++;
       next;
     }
 
@@ -529,14 +529,14 @@ sub process_tracking_flags {
 
     push @results, $data;
 
-    $count++;
+    $total_count++;
 
   # Send a batch of data, reset counts and then run query for the next batch of rows
-    if ($count % API_BLOCK_COUNT == 0) {
-      logger("count: $count, last offset: $last_offset", DEBUG_OUTPUT);
+    if (scalar @results >= API_BLOCK_COUNT) {
+      logger("total count: $total_count last offset: $last_offset", DEBUG_OUTPUT);
 
       # Send the rows to the server
-      send_data($table_name, \@results, $count);
+      send_data($table_name, \@results, $total_count);
 
       @results = ();
       $last_offset += API_BLOCK_COUNT;
@@ -545,12 +545,12 @@ sub process_tracking_flags {
   }
 
   # Send the final rows to the server
-  send_data($table_name, \@results, $count) if @results;
+  send_data($table_name, \@results, $total_count) if @results;
 }
 
 sub process_keywords {
   my $table_name  = 'keywords';
-  my $count       = 0;
+  my $total_count = 0;
   my $last_offset = 0;
   my @results     = ();
 
@@ -568,7 +568,7 @@ sub process_keywords {
 
   while (my ($bug_id, $keyword) = $sth->fetchrow_array()) {
     if ($excluded_bugs{$bug_id}) {
-      $count++;
+      $total_count++;
       next;
     }
 
@@ -580,14 +580,14 @@ sub process_keywords {
 
     push @results, $data;
 
-    $count++;
+    $total_count++;
 
   # Send a batch of data, reset counts and then run query for the next batch of rows
-    if ($count % API_BLOCK_COUNT == 0) {
-      logger("count: $count, last offset: $last_offset", DEBUG_OUTPUT);
+    if (scalar @results >= API_BLOCK_COUNT) {
+      logger("total count: $total_count, count: $total_count, last offset: $last_offset", DEBUG_OUTPUT);
 
       # Send the rows to the server
-      send_data($table_name, \@results, $count);
+      send_data($table_name, \@results, $total_count);
 
       @results = ();
       $last_offset += API_BLOCK_COUNT;
@@ -596,12 +596,12 @@ sub process_keywords {
   }
 
   # Send the final rows to the server
-  send_data($table_name, \@results, $count) if @results;
+  send_data($table_name, \@results, $total_count) if @results;
 }
 
 sub process_see_also {
   my $table_name  = 'see_also';
-  my $count       = 0;
+  my $total_count = 0;
   my $last_offset = 0;
   my @results     = ();
 
@@ -616,7 +616,7 @@ sub process_see_also {
 
   while (my ($bug_id, $value, $class) = $sth->fetchrow_array()) {
     if ($excluded_bugs{$bug_id}) {
-      $count++;
+      $total_count++;
       next;
     }
 
@@ -636,14 +636,14 @@ sub process_see_also {
 
     push @results, $data;
 
-    $count++;
+    $total_count++;
 
   # Send a batch of data, reset counts and then run query for the next batch of rows
-    if ($count % API_BLOCK_COUNT == 0) {
-      logger("count: $count, last offset: $last_offset", DEBUG_OUTPUT);
+    if (scalar @results >= API_BLOCK_COUNT) {
+      logger("total count: $total_count, last offset: $last_offset", DEBUG_OUTPUT);
 
       # Send the rows to the server
-      send_data($table_name, \@results, $count);
+      send_data($table_name, \@results, $total_count);
 
       @results = ();
       $last_offset += API_BLOCK_COUNT;
@@ -652,12 +652,12 @@ sub process_see_also {
   }
 
   # Send the final rows to the server
-  send_data($table_name, \@results, $count) if @results;
+  send_data($table_name, \@results, $total_count) if @results;
 }
 
 sub process_users {
   my $table_name  = 'users';
-  my $count       = 0;
+  my $total_count = 0;
   my $last_offset = 0;
   my @results     = ();
 
@@ -716,14 +716,14 @@ sub process_users {
 
     push @results, $data;
 
-    $count++;
+    $total_count++;
 
   # Send a batch of data, reset counts and then run query for the next batch of rows
-    if ($count % API_BLOCK_COUNT == 0) {
-      logger("count: $count, last offset: $last_offset", DEBUG_OUTPUT);
+    if (scalar @results >= API_BLOCK_COUNT) {
+      logger("total count: $total_count, last offset: $last_offset", DEBUG_OUTPUT);
 
       # Send the rows to the server
-      send_data($table_name, \@results, $count);
+      send_data($table_name, \@results, $total_count);
 
       @results = ();
       $last_offset += API_BLOCK_COUNT;
@@ -732,12 +732,12 @@ sub process_users {
   }
 
   # Send the final rows to the server
-  send_data($table_name, \@results, $count) if @results;
+  send_data($table_name, \@results, $total_count) if @results;
 }
 
 sub process_two_columns {
   my ($table_name, $bq_name, $column_names, $data_names) = @_;
-  my $count          = 0;
+  my $total_count    = 0;
   my $last_offset    = 0;
   my @results        = ();
   my $columns_string = join ', ', @{$column_names};
@@ -752,7 +752,7 @@ sub process_two_columns {
 
   while (my ($value1, $value2) = $sth->fetchrow_array()) {
     if ($excluded_bugs{$value1}) {
-      $count++;
+      $total_count++;
       next;
     }
 
@@ -762,14 +762,14 @@ sub process_two_columns {
 
     push @results, $data;
 
-    $count++;
+    $total_count++;
 
   # Send a batch of data, reset counts and then run query for the next batch of rows
-    if ($count % API_BLOCK_COUNT == 0) {
-      logger("count: $count, last offset: $last_offset", DEBUG_OUTPUT);
+    if (scalar @results >= API_BLOCK_COUNT) {
+      logger("total count: $total_count, last offset: $last_offset", DEBUG_OUTPUT);
 
       # Send the rows to the server
-      send_data($bq_name, \@results, $count);
+      send_data($bq_name, \@results, $total_count);
 
       @results = ();
       $last_offset += API_BLOCK_COUNT;
@@ -778,7 +778,7 @@ sub process_two_columns {
   }
 
   # Send the final rows to the server
-  send_data($bq_name, \@results, $count) if @results;
+  send_data($bq_name, \@results, $total_count) if @results;
 }
 
 sub get_cache {
