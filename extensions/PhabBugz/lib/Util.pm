@@ -53,18 +53,26 @@ use constant LEGACY_APPROVAL_MAPPING => {
 
 # Set approval flags on Phabricator revision bug attachments.
 sub set_attachment_approval_flags {
-  my ($attachment, $revision, $flag_setter, $phab_user) = @_;
+  my ($attachment, $revision, $phab_user) = @_;
+  my $bmo_user = $phab_user->bugzilla_user;
 
   my $revision_status_flag_map = {
     'abandoned'       => '-',
     'accepted'        => '+',
+    'accepted-prior'  => '+',
     'changes-planned' => 'X',
     'draft'           => '?',
     'needs-review'    => '?',
     'needs-revision'  => '-',
   };
 
-  my $status = $revision_status_flag_map->{$revision->status};
+  # Find the current review status of the revision changer
+  my $status = undef;
+  foreach my $reviewer (@{$revision->reviews}) {
+    if ($reviewer->id == $phab_user->id) {
+      $status = $reviewer->status;
+    }
+  }
 
   if (!$status) {
     INFO( "Approval flag status not found for revision status '"
@@ -110,23 +118,15 @@ sub set_attachment_approval_flags {
     # Set the flag to it's new status. If it already has that status,
     # it will be a non-change. We also need to check to make sure the
     # flag change is allowed.
-    if (!$flag_setter->can_change_flag($flag->type, $flag->status, $status)) {
+    if (!$bmo_user->can_change_flag($flag->type, $flag->status, $status)) {
       INFO(
         "Unable to set existing `$approval_flag_name` flag to `$status` due to permissions."
       );
       return;
     }
 
-    # If setting to + then at least one accepted reviewer needs to a release manager.
-    if ($status eq '+' && !$relman_accepted) {
-      INFO(
-        "Unable to set existing `$approval_flag_name` flag to `$status` due to not being accepted by a release manager."
-      );
-      return;
-    }
-
-    # If setting to -, then changer needs to be a release manager
-    if ($status eq '-' && !$phab_user->is_release_manager) {
+    # If setting to + or - then user needs to be a release manager.
+    if (($status eq '+' || $status eq '-') && !$phab_user->is_release_manager) {
       INFO(
         "Unable to set existing `$approval_flag_name` flag to `$status` due to not being a release manager."
       );
@@ -143,18 +143,18 @@ sub set_attachment_approval_flags {
   if (!@old_flags && $status ne 'X') {
     my $approval_flag = Bugzilla::FlagType->new({name => $approval_flag_name});
     if ($approval_flag) {
-      # If setting to + then at least one accepted reviewer needs to a release manager.
-      if ($status eq '+' && !$relman_accepted) {
+      # If setting to + then at least one accepted reviewer needs to be a release manager.
+      if ($status eq '+' && !$phab_user->is_release_manager) {
         INFO(
           "Unable to create new `$approval_flag_name` flag with status `$status` due to not being accepted by a release manager."
         );
         return;
       }
 
-      if ($flag_setter->can_change_flag($approval_flag, 'X', $status)) {
+      if ($bmo_user->can_change_flag($approval_flag, 'X', $status)) {
         INFO("Creating new `$approval_flag_name` flag with status `$status`");
         push @new_flags,
-          {setter => $flag_setter, status => $status, type_id => $approval_flag->id,};
+          {setter => $bmo_user, status => $status, type_id => $approval_flag->id,};
       }
       else {
         INFO(
