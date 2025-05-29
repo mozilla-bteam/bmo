@@ -138,131 +138,127 @@ sub process_bugs {
   my $table_name  = 'bugs';
   my $total_count = 0;
   my $last_offset = 0;
-  my @results     = ();
 
   logger("Processing $table_name");
 
-  my $sth
-    = $dbh->prepare(
-    'SELECT bug_id AS id, delta_ts AS modification_time FROM bugs ORDER BY bug_id LIMIT ? OFFSET ?'
-    );
+  my $sth = $dbh->prepare(
+    'SELECT bug_id, delta_ts FROM bugs ORDER BY bug_id LIMIT ? OFFSET ?');
 
   $sth->execute(API_BLOCK_COUNT, $last_offset);
 
-  while (my ($id, $mod_time) = $sth->fetchrow_array()) {
-    logger("Processing id $id with mod_time of $mod_time.");
+  while (my @rows = @{$sth->fetchall_arrayref() || []}) {
+    my @results;
 
-    # First check to see if we have a cached version with the same modification date
-    my $data = get_cache($id, $table_name, $mod_time);
+    foreach my $row (@rows) {
+      my ($id, $mod_time) = @{$row};
 
-    if (!$data) {
-      logger("$table_name id $id with time $mod_time not found in cache.",
-        DEBUG_OUTPUT);
+      logger("Processing id $id with mod_time of $mod_time.");
 
-      my $obj = Bugzilla::Bug->new($id);
+      # First check to see if we have a cached version with the same modification date
+      my $data = get_cache($id, $table_name, $mod_time);
 
-      if (!$obj) {
-        logger("Object $id not loaded from database or no longer exists");
-        next;
+      if (!$data) {
+        logger("$table_name id $id with time $mod_time not found in cache.",
+          DEBUG_OUTPUT);
+
+        my $obj = Bugzilla::Bug->new($id);
+
+        if (!$obj) {
+          logger("Object $id not loaded from database or no longer exists");
+          next;
+        }
+
+        logger("Object $id loaded from database", DEBUG_OUTPUT);
+
+        my $bug_is_private = scalar @{$obj->groups_in};
+
+        if (any { $obj->product eq $_ } EXCLUDE_PRODUCTS) {
+          $excluded_bugs{$obj->id} = 1;
+          $total_count++;
+          next;
+        }
+
+        $private_bugs{$obj->id} = 1 if $bug_is_private;
+
+        # Standard non-sensitive fields
+        $data = {
+          id             => $obj->id,
+          status         => $obj->bug_status,
+          type           => $obj->bug_type,
+          component      => $obj->component,
+          creation_ts    => $obj->creation_ts,
+          updated_ts     => $obj->delta_ts,
+          op_sys         => $obj->op_sys,
+          product        => $obj->product,
+          platform       => $obj->rep_platform,
+          reporter_id    => $obj->reporter->id,
+          version        => $obj->version,
+          team_name      => $obj->component_obj->team_name,
+          classification => $obj->classification,
+          comment_count  => $obj->comment_count,
+          vote_count     => $obj->votes,
+        };
+
+        # Fields that require custom values based on criteria
+        $data->{assignee_id}
+          = $obj->assigned_to->login ne 'nobody@mozilla.org'
+          ? $obj->assigned_to->id
+          : undef;
+        $data->{url}
+          = (!$bug_is_private && $obj->bug_file_loc) ? $obj->bug_file_loc : undef;
+        $data->{severity} = $obj->bug_severity ne '--' ? $obj->bug_severity : undef;
+        $data->{crash_signature}
+          = (!$bug_is_private && $obj->cf_crash_signature)
+          ? $obj->cf_crash_signature
+          : undef;
+        $data->{priority}   = $obj->priority ne '--' ? $obj->priority   : undef;
+        $data->{resolution} = $obj->resolution       ? $obj->resolution : undef;
+        $data->{summary}    = !$bug_is_private       ? $obj->short_desc : undef;
+        $data->{whiteboard}
+          = (!$bug_is_private && $obj->status_whiteboard)
+          ? $obj->status_whiteboard
+          : undef;
+        $data->{milestone}
+          = $obj->target_milestone ne '---' ? $obj->target_milestone : undef;
+        $data->{is_public} = $bug_is_private ? true : false;
+        $data->{cc_count}  = scalar @{$obj->cc || []};
+
+        # If more than one group, then pick the one with the least of amount of members
+        if (!$bug_is_private) {
+          $data->{group} = undef;
+        }
+        elsif (scalar @{$obj->groups_in} == 1) {
+          my $groups = $obj->groups_in;
+          $data->{group} = $groups->[0]->name;
+        }
+        else {
+          $data->{group} = get_multi_group_value($obj);
+        }
+
+        # Store a copy of the data for use in later executions
+        store_cache($obj->id, $table_name, $obj->delta_ts, $data);
       }
 
-      logger("Object $id loaded from database", DEBUG_OUTPUT);
+      push @results, $data;
 
-      my $bug_is_private = scalar @{$obj->groups_in};
-
-      if (any { $obj->product eq $_ } EXCLUDE_PRODUCTS) {
-        $excluded_bugs{$obj->id} = 1;
-        $total_count++;
-        next;
-      }
-
-      $private_bugs{$obj->id} = 1 if $bug_is_private;
-
-      # Standard non-sensitive fields
-      $data = {
-        id             => $obj->id,
-        status         => $obj->bug_status,
-        type           => $obj->bug_type,
-        component      => $obj->component,
-        creation_ts    => $obj->creation_ts,
-        updated_ts     => $obj->delta_ts,
-        op_sys         => $obj->op_sys,
-        product        => $obj->product,
-        platform       => $obj->rep_platform,
-        reporter_id    => $obj->reporter->id,
-        version        => $obj->version,
-        team_name      => $obj->component_obj->team_name,
-        classification => $obj->classification,
-        comment_count  => $obj->comment_count,
-        vote_count     => $obj->votes,
-      };
-
-      # Fields that require custom values based on criteria
-      $data->{assignee_id}
-        = $obj->assigned_to->login ne 'nobody@mozilla.org'
-        ? $obj->assigned_to->id
-        : undef;
-      $data->{url}
-        = (!$bug_is_private && $obj->bug_file_loc) ? $obj->bug_file_loc : undef;
-      $data->{severity} = $obj->bug_severity ne '--' ? $obj->bug_severity : undef;
-      $data->{crash_signature}
-        = (!$bug_is_private && $obj->cf_crash_signature)
-        ? $obj->cf_crash_signature
-        : undef;
-      $data->{priority}   = $obj->priority ne '--' ? $obj->priority   : undef;
-      $data->{resolution} = $obj->resolution       ? $obj->resolution : undef;
-      $data->{summary}    = !$bug_is_private       ? $obj->short_desc : undef;
-      $data->{whiteboard}
-        = (!$bug_is_private && $obj->status_whiteboard)
-        ? $obj->status_whiteboard
-        : undef;
-      $data->{milestone}
-        = $obj->target_milestone ne '---' ? $obj->target_milestone : undef;
-      $data->{is_public} = $bug_is_private ? true : false;
-      $data->{cc_count}  = scalar @{$obj->cc || []};
-
-      # If more than one group, then pick the one with the least of amount of members
-      if (!$bug_is_private) {
-        $data->{group} = undef;
-      }
-      elsif (scalar @{$obj->groups_in} == 1) {
-        my $groups = $obj->groups_in;
-        $data->{group} = $groups->[0]->name;
-      }
-      else {
-        $data->{group} = get_multi_group_value($obj);
-      }
-
-      # Store a copy of the data for use in later executions
-      store_cache($obj->id, $table_name, $obj->delta_ts, $data);
+      $total_count++;
     }
 
-    push @results, $data;
+    # Send a batch of data and then run query for the next batch of rows
+    logger("total count: $total_count, last offset: $last_offset", DEBUG_OUTPUT);
 
-    $total_count++;
+    # Send the rows to the server
+    send_data($table_name, \@results, $total_count);
 
-  # Send a batch of data, reset counts and then run query for the next batch of rows
-    if (scalar @results >= API_BLOCK_COUNT) {
-      logger("total count: $total_count, last offset: $last_offset", DEBUG_OUTPUT);
-
-      # Send the rows to the server
-      send_data($table_name, \@results, $total_count);
-
-      @results = ();
-      $last_offset += API_BLOCK_COUNT;
-      $sth->execute(API_BLOCK_COUNT, $last_offset);
-    }
+    $last_offset += API_BLOCK_COUNT;
+    $sth->execute(API_BLOCK_COUNT, $last_offset);
   }
-
-  # Send the final rows to the server
-  send_data($table_name, \@results, $total_count) if @results;
 }
 
 sub process_attachments {
   my $table_name  = 'attachments';
   my $total_count = 0;
   my $last_offset = 0;
-  my @results     = ();
 
   logger("Processing $table_name.");
 
@@ -273,76 +269,75 @@ sub process_attachments {
 
   $sth->execute(API_BLOCK_COUNT, $last_offset);
 
-  while (my ($id, $mod_time) = $sth->fetchrow_array()) {
-    logger("Processing id $id with mod_time of $mod_time.");
+  while (my @rows = @{$sth->fetchall_arrayref() || []}) {
+    my @results;
 
-    # First check to see if we have a cached version with the same modification date
-    my $data = get_cache($id, $table_name, $mod_time);
+    foreach my $row (@rows) {
+      my ($id, $mod_time) = @{$row};
 
-    if (!$data) {
-      logger("$table_name id $id with time $mod_time not found in cache.",
-        DEBUG_OUTPUT);
+      logger("Processing id $id with mod_time of $mod_time.");
 
-      my $obj = Bugzilla::Attachment->new($id);
+      # First check to see if we have a cached version with the same modification date
+      my $data = get_cache($id, $table_name, $mod_time);
 
-      if (!$obj) {
-        logger("Object $id not loaded from database or no longer exists");
-        next;
+      if (!$data) {
+        logger("$table_name id $id with time $mod_time not found in cache.",
+          DEBUG_OUTPUT);
+
+        my $obj = Bugzilla::Attachment->new($id);
+
+        if (!$obj) {
+          logger("Object $id not loaded from database or no longer exists");
+          next;
+        }
+
+        logger("Object $id loaded from database", DEBUG_OUTPUT);
+
+        if ($excluded_bugs{$obj->bug_id}) {
+          $total_count++;
+          next;
+        }
+
+        # Standard non-sensitive fields
+        $data = {
+          id           => $obj->id,
+          bug_id       => $obj->bug_id,
+          creation_ts  => $obj->attached,
+          content_type => $obj->contenttype,
+          updated_ts   => $obj->modification_time,
+          submitter_id => $obj->attacher->id,
+          is_obsolete  => ($obj->isobsolete ? true : false),
+        };
+
+        # Fields that require custom values based on criteria
+        my $bug_is_private = exists $private_bugs{$obj->bug_id};
+        $data->{description} = !$bug_is_private ? $obj->description : undef;
+        $data->{filename}    = !$bug_is_private ? $obj->filename    : undef;
+
+        # Store a new copy of the data for use later
+        store_cache($obj->id, $table_name, $obj->modification_time, $data);
       }
 
-      logger("Object $id loaded from database", DEBUG_OUTPUT);
+      push @results, $data;
 
-      if ($excluded_bugs{$obj->bug_id}) {
-        $total_count++;
-        next;
-      }
-
-      # Standard non-sensitive fields
-      $data = {
-        id           => $obj->id,
-        bug_id       => $obj->bug_id,
-        creation_ts  => $obj->attached,
-        content_type => $obj->contenttype,
-        updated_ts   => $obj->modification_time,
-        submitter_id => $obj->attacher->id,
-        is_obsolete  => ($obj->isobsolete ? true : false),
-      };
-
-      # Fields that require custom values based on criteria
-      my $bug_is_private = exists $private_bugs{$obj->bug_id};
-      $data->{description} = !$bug_is_private ? $obj->description : undef;
-      $data->{filename}    = !$bug_is_private ? $obj->filename    : undef;
-
-      # Store a new copy of the data for use later
-      store_cache($obj->id, $table_name, $obj->modification_time, $data);
+      $total_count++;
     }
 
-    push @results, $data;
+    # Send a batch of data and then run query for the next batch of rows
+    logger("total count: $total_count, last offset: $last_offset", DEBUG_OUTPUT);
 
-    $total_count++;
+    # Send the rows to the server
+    send_data($table_name, \@results, $total_count);
 
-  # Send a batch of data, reset counts and then run query for the next batch of rows
-    if (scalar @results >= API_BLOCK_COUNT) {
-      logger("total count: $total_count, last offset: $last_offset", DEBUG_OUTPUT);
-
-      # Send the rows to the server
-      send_data($table_name, \@results, $total_count);
-
-      @results = ();
-      $last_offset += API_BLOCK_COUNT;
-      $sth->execute(API_BLOCK_COUNT, $last_offset);
-    }
+    $last_offset += API_BLOCK_COUNT;
+    $sth->execute(API_BLOCK_COUNT, $last_offset);
   }
-
-  # Send the final rows to the server
-  send_data($table_name, \@results, $total_count) if @results;
 }
 
 sub process_flags {
   my $table_name  = 'flags';
   my $total_count = 0;
   my $last_offset = 0;
-  my @results     = ();
 
   logger("Processing $table_name.");
 
@@ -351,65 +346,65 @@ sub process_flags {
 
   $sth->execute(API_BLOCK_COUNT, $last_offset);
 
-  while (my ($id, $mod_time) = $sth->fetchrow_array()) {
-    logger("Processing id $id with mod_time of $mod_time.");
+  while (my @rows = @{$sth->fetchall_arrayref() || []}) {
+    my @results;
 
-    # First check to see if we have a cached version with the same modification date
-    my $data = get_cache($id, $table_name, $mod_time);
+    foreach my $row (@rows) {
+      my ($id, $mod_time) = @{$row};
 
-    if (!$data) {
-      logger("$table_name id $id with time $mod_time not found in cache.",
-        DEBUG_OUTPUT);
+      logger("Processing id $id with mod_time of $mod_time.");
 
-      my $obj = Bugzilla::Flag->new($id);
+      # First check to see if we have a cached version with the same modification date
+      my $data = get_cache($id, $table_name, $mod_time);
 
-      if (!$obj) {
-        logger("Object $id not loaded from database or no longer exists");
-        next;
+      if (!$data) {
+        logger("$table_name id $id with time $mod_time not found in cache.",
+          DEBUG_OUTPUT);
+
+        my $obj = Bugzilla::Flag->new($id);
+
+        if (!$obj) {
+          logger("Object $id not loaded from database or no longer exists");
+          next;
+        }
+
+        logger("Object $id loaded from database", DEBUG_OUTPUT);
+
+        if ($excluded_bugs{$obj->bug_id}) {
+          $total_count++;
+          next;
+        }
+
+        $data = {
+          id            => $obj->id,
+          attachment_id => $obj->attach_id || undef,
+          bug_id        => $obj->bug_id,
+          creation_ts   => $obj->creation_date,
+          updated_ts    => $obj->modification_date,
+          requestee_id  => $obj->requestee_id,
+          setter_id     => $obj->setter_id,
+          name          => $obj->type->name,
+          value         => $obj->status,
+        };
+
+        # Store a new copy of the data for use later
+        store_cache($obj->id, $table_name, $obj->modification_date, $data);
       }
 
-      logger("Object $id loaded from database", DEBUG_OUTPUT);
+      push @results, $data;
 
-      if ($excluded_bugs{$obj->bug_id}) {
-        $total_count++;
-        next;
-      }
-
-      $data = {
-        id            => $obj->id,
-        attachment_id => $obj->attach_id || undef,
-        bug_id        => $obj->bug_id,
-        creation_ts   => $obj->creation_date,
-        updated_ts    => $obj->modification_date,
-        requestee_id  => $obj->requestee_id,
-        setter_id     => $obj->setter_id,
-        name          => $obj->type->name,
-        value         => $obj->status,
-      };
-
-      # Store a new copy of the data for use later
-      store_cache($obj->id, $table_name, $obj->modification_date, $data);
+      $total_count++;
     }
 
-    push @results, $data;
+    # Send a batch of data and then run query for the next batch of rows
+    logger("total count: $total_count, last offset: $last_offset", DEBUG_OUTPUT);
 
-    $total_count++;
+    # Send the rows to the server
+    send_data($table_name, \@results, $total_count);
 
-  # Send a batch of data, reset counts and then run query for the next batch of rows
-    if (scalar @results >= API_BLOCK_COUNT) {
-      logger("total count: $total_count, last offset: $last_offset", DEBUG_OUTPUT);
-
-      # Send the rows to the server
-      send_data($table_name, \@results, $total_count);
-
-      @results = ();
-      $last_offset += API_BLOCK_COUNT;
-      $sth->execute(API_BLOCK_COUNT, $last_offset);
-    }
+    $last_offset += API_BLOCK_COUNT;
+    $sth->execute(API_BLOCK_COUNT, $last_offset);
   }
-
-  # Send the rows to the server
-  send_data($table_name, \@results, $total_count) if @results;
 }
 
 # Process flags that were removed today using the flag_state_activity table
@@ -418,7 +413,6 @@ sub process_flag_state_activity {
   my $table_name  = 'flag_state_activity';
   my $total_count = 0;
   my $last_offset = 0;
-  my @results     = ();
 
   logger("Processing $table_name.");
 
@@ -430,71 +424,70 @@ sub process_flag_state_activity {
 
   $sth->execute(API_BLOCK_COUNT, $last_offset);
 
-  while (my ($id, $mod_time) = $sth->fetchrow_array()) {
-    logger("Processing id $id with mod_time of $mod_time.");
+  while (my @rows = @{$sth->fetchall_arrayref() || []}) {
+    my @results;
 
-    # First check to see if we have a cached version with the same modification date
-    my $data = get_cache($id, $table_name, $mod_time);
+    foreach my $row (@rows) {
+      my ($id, $mod_time) = @{$row};
 
-    if (!$data) {
-      logger("$table_name id $id with time $mod_time not found in cache.",
-        DEBUG_OUTPUT);
+      logger("Processing id $id with mod_time of $mod_time.");
 
-      my $obj = Bugzilla::Extension::Review::FlagStateActivity->new($id);
+      # First check to see if we have a cached version with the same modification date
+      my $data = get_cache($id, $table_name, $mod_time);
 
-      if (!$obj) {
-        logger("Object $id not loaded from database or no longer exists");
-        next;
+      if (!$data) {
+        logger("$table_name id $id with time $mod_time not found in cache.",
+          DEBUG_OUTPUT);
+
+        my $obj = Bugzilla::Extension::Review::FlagStateActivity->new($id);
+
+        if (!$obj) {
+          logger("Object $id not loaded from database or no longer exists");
+          next;
+        }
+
+        logger("Object $id loaded from database", DEBUG_OUTPUT);
+
+        if ($excluded_bugs{$obj->bug_id}) {
+          $total_count++;
+          next;
+        }
+
+        $data = {
+          attachment_id => $obj->attachment_id || undef,
+          bug_id        => $obj->bug_id,
+          creation_ts   => $obj->flag_when,
+          updated_ts    => $obj->flag_when,
+          requestee_id  => $obj->requestee_id,
+          setter_id     => $obj->setter_id,
+          name          => $obj->type->name,
+          value         => $obj->status,
+        };
+
+        # Store a new copy of the data for use later
+        store_cache($obj->id, $table_name, $obj->flag_when, $data);
       }
 
-      logger("Object $id loaded from database", DEBUG_OUTPUT);
+      push @results, $data;
 
-      if ($excluded_bugs{$obj->bug_id}) {
-        $total_count++;
-        next;
-      }
-
-      $data = {
-        attachment_id => $obj->attachment_id || undef,
-        bug_id        => $obj->bug_id,
-        creation_ts   => $obj->flag_when,
-        updated_ts    => $obj->flag_when,
-        requestee_id  => $obj->requestee_id,
-        setter_id     => $obj->setter_id,
-        name          => $obj->type->name,
-        value         => $obj->status,
-      };
-
-      # Store a new copy of the data for use later
-      store_cache($obj->id, $table_name, $obj->flag_when, $data);
+      $total_count++;
     }
 
-    push @results, $data;
+    # Send a batch of data and then run query for the next batch of rows
+    logger("total count: $total_count, last offset: $last_offset", DEBUG_OUTPUT);
 
-    $total_count++;
+    # Send the rows to the server
+    send_data('flags', \@results, $total_count);
 
-  # Send a batch of data, reset counts and then run query for the next batch of rows
-    if (scalar @results >= API_BLOCK_COUNT) {
-      logger("total count: $total_count, last offset: $last_offset", DEBUG_OUTPUT);
-
-      # Send the rows to the server
-      send_data('flags', \@results, $total_count);
-
-      @results = ();
-      $last_offset += API_BLOCK_COUNT;
-      $sth->execute(API_BLOCK_COUNT, $last_offset);
-    }
+    $last_offset += API_BLOCK_COUNT;
+    $sth->execute(API_BLOCK_COUNT, $last_offset);
   }
-
-  # Send the rows to the server
-  send_data('flags', \@results, $total_count) if @results;
 }
 
 sub process_tracking_flags {
   my $table_name  = 'tracking_flags';
   my $total_count = 0;
   my $last_offset = 0;
-  my @results     = ();
 
   logger("Processing $table_name.");
 
@@ -508,51 +501,50 @@ sub process_tracking_flags {
 
   $sth->execute(API_BLOCK_COUNT, $last_offset);
 
-  while (my ($id, $name, $bug_id, $value) = $sth->fetchrow_array()) {
-    if ($excluded_bugs{$bug_id}) {
+  while (my @rows = @{$sth->fetchall_arrayref() || []}) {
+    my @results;
+
+    foreach my $row (@rows) {
+      my ($id, $name, $bug_id, $value) = @{$row};
+
+      if ($excluded_bugs{$bug_id}) {
+        $total_count++;
+        next;
+      }
+
+      # Standard fields
+      my $data = {id => $id, bug_id => $bug_id};
+
+      # Fields that require custom values based on other criteria
+      if (exists $private_bugs{$bug_id}) {
+        $data->{name}  = undef;
+        $data->{value} = undef;
+      }
+      else {
+        $data->{name}  = $name;
+        $data->{value} = $value;
+      }
+
+      push @results, $data;
+
       $total_count++;
-      next;
     }
 
-    # Standard fields
-    my $data = {id => $id, bug_id => $bug_id};
+    # Send a batch of data and then run query for the next batch of rows
+    logger("total count: $total_count last offset: $last_offset", DEBUG_OUTPUT);
 
-    # Fields that require custom values based on other criteria
-    if (exists $private_bugs{$bug_id}) {
-      $data->{name}  = undef;
-      $data->{value} = undef;
-    }
-    else {
-      $data->{name}  = $name;
-      $data->{value} = $value;
-    }
+    # Send the rows to the server
+    send_data($table_name, \@results, $total_count);
 
-    push @results, $data;
-
-    $total_count++;
-
-  # Send a batch of data, reset counts and then run query for the next batch of rows
-    if (scalar @results >= API_BLOCK_COUNT) {
-      logger("total count: $total_count last offset: $last_offset", DEBUG_OUTPUT);
-
-      # Send the rows to the server
-      send_data($table_name, \@results, $total_count);
-
-      @results = ();
-      $last_offset += API_BLOCK_COUNT;
-      $sth->execute(API_BLOCK_COUNT, $last_offset);
-    }
+    $last_offset += API_BLOCK_COUNT;
+    $sth->execute(API_BLOCK_COUNT, $last_offset);
   }
-
-  # Send the final rows to the server
-  send_data($table_name, \@results, $total_count) if @results;
 }
 
 sub process_keywords {
   my $table_name  = 'keywords';
   my $total_count = 0;
   my $last_offset = 0;
-  my @results     = ();
 
   logger("Processing $table_name.");
 
@@ -566,44 +558,45 @@ sub process_keywords {
 
   $sth->execute(API_BLOCK_COUNT, $last_offset);
 
-  while (my ($bug_id, $keyword) = $sth->fetchrow_array()) {
-    if ($excluded_bugs{$bug_id}) {
+  while (my @rows = @{$sth->fetchall_arrayref() || []}) {
+    my @results;
+
+    foreach my $row (@rows) {
+      my ($bug_id, $keyword) = @{$row};
+
+      if ($excluded_bugs{$bug_id}) {
+        $total_count++;
+        next;
+      }
+
+      # Standard fields
+      my $data = {bug_id => $bug_id};
+
+      # Fields that require custom values based on other criteria
+      $data->{keyword} = !exists $private_bugs{$bug_id} ? $keyword : undef;
+
+      push @results, $data;
+
       $total_count++;
-      next;
     }
 
-    # Standard fields
-    my $data = {bug_id => $bug_id};
+    # Send a batch of data and then run query for the next batch of rows
+    logger(
+      "total count: $total_count, count: $total_count, last offset: $last_offset",
+      DEBUG_OUTPUT);
 
-    # Fields that require custom values based on other criteria
-    $data->{keyword} = !exists $private_bugs{$bug_id} ? $keyword : undef;
+    # Send the rows to the server
+    send_data($table_name, \@results, $total_count);
 
-    push @results, $data;
-
-    $total_count++;
-
-  # Send a batch of data, reset counts and then run query for the next batch of rows
-    if (scalar @results >= API_BLOCK_COUNT) {
-      logger("total count: $total_count, count: $total_count, last offset: $last_offset", DEBUG_OUTPUT);
-
-      # Send the rows to the server
-      send_data($table_name, \@results, $total_count);
-
-      @results = ();
-      $last_offset += API_BLOCK_COUNT;
-      $sth->execute(API_BLOCK_COUNT, $last_offset);
-    }
+    $last_offset += API_BLOCK_COUNT;
+    $sth->execute(API_BLOCK_COUNT, $last_offset);
   }
-
-  # Send the final rows to the server
-  send_data($table_name, \@results, $total_count) if @results;
 }
 
 sub process_see_also {
   my $table_name  = 'see_also';
   my $total_count = 0;
   my $last_offset = 0;
-  my @results     = ();
 
   logger("Processing $table_name.");
 
@@ -614,52 +607,51 @@ sub process_see_also {
 
   $sth->execute(API_BLOCK_COUNT, $last_offset);
 
-  while (my ($bug_id, $value, $class) = $sth->fetchrow_array()) {
-    if ($excluded_bugs{$bug_id}) {
+  while (my @rows = @{$sth->fetchall_arrayref() || []}) {
+    my @results;
+
+    foreach my $row (@rows) {
+      my ($bug_id, $value, $class) = @{$row};
+
+      if ($excluded_bugs{$bug_id}) {
+        $total_count++;
+        next;
+      }
+
+      # Standard fields
+      my $data = {bug_id => $bug_id,};
+
+      # Fields that require custom values based on other criteria
+      if ($private_bugs{$bug_id}) {
+        $data->{url} = undef;
+      }
+      elsif ($class =~ /::Local/) {
+        $data->{url} = Bugzilla->localconfig->urlbase . 'show_bug.cgi?id=' . $value;
+      }
+      else {
+        $data->{url} = $value;
+      }
+
+      push @results, $data;
+
       $total_count++;
-      next;
     }
 
-    # Standard fields
-    my $data = {bug_id => $bug_id,};
+    # Send a batch of data and then run query for the next batch of rows
+    logger("total count: $total_count, last offset: $last_offset", DEBUG_OUTPUT);
 
-    # Fields that require custom values based on other criteria
-    if ($private_bugs{$bug_id}) {
-      $data->{url} = undef;
-    }
-    elsif ($class =~ /::Local/) {
-      $data->{url} = Bugzilla->localconfig->urlbase . 'show_bug.cgi?id=' . $value;
-    }
-    else {
-      $data->{url} = $value;
-    }
+    # Send the rows to the server
+    send_data($table_name, \@results, $total_count);
 
-    push @results, $data;
-
-    $total_count++;
-
-  # Send a batch of data, reset counts and then run query for the next batch of rows
-    if (scalar @results >= API_BLOCK_COUNT) {
-      logger("total count: $total_count, last offset: $last_offset", DEBUG_OUTPUT);
-
-      # Send the rows to the server
-      send_data($table_name, \@results, $total_count);
-
-      @results = ();
-      $last_offset += API_BLOCK_COUNT;
-      $sth->execute(API_BLOCK_COUNT, $last_offset);
-    }
+    $last_offset += API_BLOCK_COUNT;
+    $sth->execute(API_BLOCK_COUNT, $last_offset);
   }
-
-  # Send the final rows to the server
-  send_data($table_name, \@results, $total_count) if @results;
 }
 
 sub process_users {
   my $table_name  = 'users';
   my $total_count = 0;
   my $last_offset = 0;
-  my @results     = ();
 
   logger("Processing $table_name.");
 
@@ -670,76 +662,75 @@ sub process_users {
 
   $sth->execute(API_BLOCK_COUNT, $last_offset);
 
-  while (my ($id, $mod_time) = $sth->fetchrow_array()) {
-    logger("Processing id $id with mod_time of $mod_time.");
+  while (my @rows = @{$sth->fetchall_arrayref() || []}) {
+    my @results;
 
-    # Set the mod time to an arbitrary value for caching purposes if its
-    # real mod time is not yet been set to a real value.
-    $mod_time = '1970-01-01 12:00:00' if !$mod_time;
+    foreach my $row (@rows) {
+      my ($id, $mod_time) = @{$row};
 
-    # First check to see if we have a cached version with the same modification date
-    my $data = get_cache($id, $table_name, $mod_time);
+      logger("Processing id $id with mod_time of $mod_time.");
 
-    if (!$data) {
-      logger("$table_name id $id with time $mod_time not found in cache.",
-        DEBUG_OUTPUT);
+      # Set the mod time to an arbitrary value for caching purposes if its
+      # real mod time is not yet been set to a real value.
+      $mod_time = '1970-01-01 12:00:00' if !$mod_time;
 
-      my $obj = Bugzilla::User->new($id);
+      # First check to see if we have a cached version with the same modification date
+      my $data = get_cache($id, $table_name, $mod_time);
 
-      if (!$obj) {
-        logger("Object $id not loaded from database or no longer exists");
-        next;
+      if (!$data) {
+        logger("$table_name id $id with time $mod_time not found in cache.",
+          DEBUG_OUTPUT);
+
+        my $obj = Bugzilla::User->new($id);
+
+        if (!$obj) {
+          logger("Object $id not loaded from database or no longer exists");
+          next;
+        }
+
+        logger("Object $id loaded from database", DEBUG_OUTPUT);
+
+        # Standard fields
+        $data = {
+          id        => $obj->id,
+          last_seen =>
+            ($obj->last_seen_date ? $obj->last_seen_date . ' 00:00:00' : undef),
+          email  => $obj->email,
+          is_new => ($obj->is_new ? true : false),
+        };
+
+        # Fields that require custom values based on criteria
+        $data->{nick} = $obj->nick ? $obj->nick : undef;
+        $data->{name} = $obj->name ? $obj->name : undef;
+        $data->{is_staff}
+          = $obj->in_group('mozilla-employee-confidential') ? true : false;
+        $data->{is_trusted} = $obj->in_group('editbugs') ? true             : false;
+        $data->{ldap_email} = $obj->ldap_email           ? $obj->ldap_email : undef;
+
+        # Store a new copy of the data for use later
+        store_cache($obj->id, $table_name, $obj->modification_ts, $data);
       }
 
-      logger("Object $id loaded from database", DEBUG_OUTPUT);
+      push @results, $data;
 
-      # Standard fields
-      $data = {
-        id        => $obj->id,
-        last_seen =>
-          ($obj->last_seen_date ? $obj->last_seen_date . ' 00:00:00' : undef),
-        email  => $obj->email,
-        is_new => ($obj->is_new ? true : false),
-      };
-
-      # Fields that require custom values based on criteria
-      $data->{nick} = $obj->nick ? $obj->nick : undef;
-      $data->{name} = $obj->name ? $obj->name : undef;
-      $data->{is_staff}
-        = $obj->in_group('mozilla-employee-confidential') ? true : false;
-      $data->{is_trusted} = $obj->in_group('editbugs') ? true             : false;
-      $data->{ldap_email} = $obj->ldap_email           ? $obj->ldap_email : undef;
-
-      # Store a new copy of the data for use later
-      store_cache($obj->id, $table_name, $obj->modification_ts, $data);
+      $total_count++;
     }
 
-    push @results, $data;
+    # Send a batch of data and then run query for the next batch of rows
+    logger("total count: $total_count, last offset: $last_offset", DEBUG_OUTPUT);
 
-    $total_count++;
+    # Send the rows to the server
+    send_data($table_name, \@results, $total_count);
 
-  # Send a batch of data, reset counts and then run query for the next batch of rows
-    if (scalar @results >= API_BLOCK_COUNT) {
-      logger("total count: $total_count, last offset: $last_offset", DEBUG_OUTPUT);
-
-      # Send the rows to the server
-      send_data($table_name, \@results, $total_count);
-
-      @results = ();
-      $last_offset += API_BLOCK_COUNT;
-      $sth->execute(API_BLOCK_COUNT, $last_offset);
-    }
+    $last_offset += API_BLOCK_COUNT;
+    $sth->execute(API_BLOCK_COUNT, $last_offset);
   }
-
-  # Send the final rows to the server
-  send_data($table_name, \@results, $total_count) if @results;
 }
 
 sub process_two_columns {
   my ($table_name, $bq_name, $column_names, $data_names) = @_;
   my $total_count    = 0;
   my $last_offset    = 0;
-  my @results        = ();
   my $columns_string = join ', ', @{$column_names};
   my $order_by       = $column_names->[0];
 
@@ -750,35 +741,35 @@ sub process_two_columns {
 
   $sth->execute(API_BLOCK_COUNT, $last_offset);
 
-  while (my ($value1, $value2) = $sth->fetchrow_array()) {
-    if ($excluded_bugs{$value1}) {
+  while (my @rows = @{$sth->fetchall_arrayref() || []}) {
+    my @results;
+
+    foreach my $row (@rows) {
+      my ($value1, $value2) = @{$row};
+
+      if ($excluded_bugs{$value1}) {
+        $total_count++;
+        next;
+      }
+
+      logger("Processing values $value1, $value2 for $table_name.");
+
+      my $data = {$data_names->[0] => $value1, $data_names->[1] => $value2,};
+
+      push @results, $data;
+
       $total_count++;
-      next;
     }
 
-    logger("Processing values $value1, $value2 for $table_name.");
+    # Send a batch of data and then run query for the next batch of rows
+    logger("total count: $total_count, last offset: $last_offset", DEBUG_OUTPUT);
 
-    my $data = {$data_names->[0] => $value1, $data_names->[1] => $value2,};
+    # Send the rows to the server
+    send_data($bq_name, \@results, $total_count);
 
-    push @results, $data;
-
-    $total_count++;
-
-  # Send a batch of data, reset counts and then run query for the next batch of rows
-    if (scalar @results >= API_BLOCK_COUNT) {
-      logger("total count: $total_count, last offset: $last_offset", DEBUG_OUTPUT);
-
-      # Send the rows to the server
-      send_data($bq_name, \@results, $total_count);
-
-      @results = ();
-      $last_offset += API_BLOCK_COUNT;
-      $sth->execute(API_BLOCK_COUNT, $last_offset);
-    }
+    $last_offset += API_BLOCK_COUNT;
+    $sth->execute(API_BLOCK_COUNT, $last_offset);
   }
-
-  # Send the final rows to the server
-  send_data($bq_name, \@results, $total_count) if @results;
 }
 
 sub get_cache {
