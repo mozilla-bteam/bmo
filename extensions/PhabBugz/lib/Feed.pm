@@ -651,7 +651,9 @@ sub process_revision_change {
     # set the approval flags. This ensures that users who create revisions will
     # set the flag to `?`, and only approvals from `mozilla-next-drivers` group
     # members will set the flag to `+` or `-`.
-    set_attachment_approval_flags($attachment, $revision, $changer);
+    my $flag_setter = $changer->bugzilla_user;
+
+    set_attachment_approval_flags($attachment, $revision, $flag_setter, $changer);
   }
 
   $attachment->update($timestamp);
