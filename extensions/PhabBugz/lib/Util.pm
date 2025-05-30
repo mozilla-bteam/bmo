@@ -102,13 +102,6 @@ sub set_attachment_approval_flags {
       . $approval_flag_name
       . $status);
 
-  # Set value if the revision has been accepted by member of release managers
-  my $relman_accepted = 0;
-  foreach my $reviewer (@{$revision->reviews}) {
-    next if $reviewer->status ne 'accepted';
-    $relman_accepted = 1 if $reviewer->is_release_manager;
-  }
-
   # Find the current approval flag state if it exists.
   foreach my $flag (@{$attachment->flags}) {
 
