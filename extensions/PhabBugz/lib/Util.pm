@@ -67,16 +67,18 @@ sub set_attachment_approval_flags {
   };
 
   # Find the current review status of the revision changer
-  my $status = undef;
+  my $status          = undef;
+  my $reviewer_status = undef;
   foreach my $reviewer (@{$revision->reviews}) {
     if ($reviewer->{user}->id == $phab_user->id) {
-      $status = $reviewer->{status};
+      $reviewer_status = $reviewer->{status};
+      $status          = $revision_status_flag_map->{$reviewer_status};
     }
   }
 
   if (!$status) {
     INFO( "Approval flag status not found for revision status '"
-        . $revision->status
+        . $reviewer_status
         . "'");
     return;
   }
@@ -97,7 +99,7 @@ sub set_attachment_approval_flags {
   INFO( 'Setting revision D'
       . $revision->id
       . ' with '
-      . $revision->status
+      . $reviewer_status
       . ' status to '
       . $approval_flag_name
       . $status);
