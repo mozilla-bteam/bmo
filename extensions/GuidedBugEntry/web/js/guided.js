@@ -890,9 +890,6 @@ var bugForm = {
       return false;
     }
 
-    if (document.getElementById('data').value && !document.getElementById('data_description').value)
-      document.getElementById('data_description').value = bugForm._getFilename();
-
     document.getElementById('submit').disabled = true;
     document.getElementById('submit').value = 'Submitting Bug...';
 
