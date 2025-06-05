@@ -73,6 +73,7 @@ sub set_attachment_approval_flags {
     if ($reviewer->{user}->id == $phab_user->id) {
       $reviewer_status = $reviewer->{status};
       $status          = $revision_status_flag_map->{$reviewer_status};
+      last;
     }
   }
 
@@ -120,7 +121,7 @@ sub set_attachment_approval_flags {
       return;
     }
 
-    # If setting to + or - then user needs to be a release manager.
+    # If setting to + then the Phabricator user needs to be a release manager.
     if (($status eq '+' || $status eq '-') && !$phab_user->is_release_manager) {
       INFO(
         "Unable to set existing `$approval_flag_name` flag to `$status` due to not being a release manager."
