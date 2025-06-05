@@ -693,21 +693,7 @@ sub search {
   my $search = new Bugzilla::Search(%options);
 
   # Execute the query.
-  my $data = [];
-  do {
-    local $SIG{__DIE__}  = undef;
-    local $SIG{__WARN__} = undef;
-    ($data) = eval { $search->data };
-    # If the search query failed, handle Throw*Error correctly, or for all other
-    # failures log it and return an empty list of bugs.
-    if (my $search_err = $@) {
-      return if ref $search_err eq 'ARRAY' && $search_err->[0] eq "EXIT\n";
-      if (!ref $search_err && $search_err =~ /maximum statement execution time exceeded/) {
-        ThrowUserError('db_search_timeout');
-      }
-      ERROR('REST error: ' . dumper \%options . " " . dumper $search_err);
-    }
-  };
+  my ($data) = $search->data;
 
   # BMO if the caller only wants the count, that's all we need to return
   if ($params->{count_only}) {
