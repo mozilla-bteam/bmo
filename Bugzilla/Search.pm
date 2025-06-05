@@ -976,16 +976,16 @@ sub _sql {
   my $user_agent   = $cgi->user_agent || $cgi->script_name;
   my $query_string = $cgi->canonicalize_query();
   my $query        = <<END;
-SELECT $timeout_comment $select
-  FROM $from
- WHERE $where
-$group_by$order_by$limit
 /*
 user-id: $user_id
 remote-ip: $remote_ip
 user-agent: $user_agent
 query-string: $query_string
 */
+  SELECT $timeout_comment $select
+  FROM $from
+ WHERE $where
+$group_by$order_by$limit
 END
   $self->{sql} = $query;
   return $self->{sql};
