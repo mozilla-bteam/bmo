@@ -875,7 +875,7 @@ sub data {
 
   $start_time = [gettimeofday()];
   $sql        = $search->_sql;
-  my $unsorted_data = $search->_sql_execute($sql);
+  my $unsorted_data = $search->_sql_execute($sql, 'selectall_arrayref');
   push(@extra_data, {sql => $sql, time => tv_interval($start_time)});
 
   # Let's sort the data. We didn't do it in the query itself because
@@ -994,7 +994,6 @@ END
 
 sub _sql_execute {
   my ($self, $sql, $func) = @_;
-  $func ||= 'selectall_arrayref';
   my $dbh = Bugzilla->dbh;
 
   my $results;
