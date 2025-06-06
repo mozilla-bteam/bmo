@@ -77,7 +77,7 @@ sub on_dbi_connected {
     # causing bug 321645. TRADITIONAL sets these modes (among others) as
     # well, so it has to be stipped as well
     my $new_sql_mode = join(",",
-      grep { $_ !~ /^STRICT_(?:TRANS|ALL)_TABLES|TRADITIONAL$/ }
+      grep { $_ !~ /^STRICT_(?:TRANS|ALL)_TABLES|TRADITIONAL|ONLY_FULL_GROUP_BY$/ }
         split(/,/, $sql_mode));
 
     if ($sql_mode ne $new_sql_mode) {
