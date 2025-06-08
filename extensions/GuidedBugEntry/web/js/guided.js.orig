@@ -810,7 +810,6 @@ var bugForm = {
     const updatedRequiredFields = (required) => {
       $attachFileContentOuter.querySelectorAll('[aria-required]').forEach(($input) => {
         $input.setAttribute('aria-required', required);
-        $input.required = required;
       });
     };
 
@@ -832,10 +831,21 @@ var bugForm = {
       $form.contenttypemethod.checked = true;
       $form.contenttypeselection.selectedIndex = 0;
       $form.contenttypeentry.value = '';
+      document.querySelectorAll('#attachment_flags select').forEach(($select) => {
+        $select.selectedIndex = 0;
+      });
       updatedRequiredFields(false);
     });
 
     updatedRequiredFields(false);
+  },
+
+  _getFilename: function() {
+    var filename = document.getElementById('data').value;
+    if (!filename)
+      return '';
+    filename = filename.replace(/^.+[\\\/]/, '');
+    return filename;
   },
 
   _mandatoryMissing: function() {
