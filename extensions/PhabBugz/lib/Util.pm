@@ -53,7 +53,7 @@ use constant LEGACY_APPROVAL_MAPPING => {
 
 # Set approval flags on Phabricator revision bug attachments.
 sub set_attachment_approval_flags {
-  my ($attachment, $revision, $phab_user) = @_;
+  my ($attachment, $revision, $phab_user, $is_new) = @_;
   my $bmo_user = $phab_user->bugzilla_user;
 
   my $revision_status_flag_map = {
