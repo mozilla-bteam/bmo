@@ -177,8 +177,8 @@ sub send {
     }
 
     my $tx = mojo_user_agent()->post($webhook->url, $headers => json => $payload);
-    if ($tx->res->code != 200) {
-      die 'Expected HTTP 200, got '
+    if (!$tx->res->is_success) {
+      die 'Expected HTTP 2xx, got '
         . $tx->res->code . ' ('
         . $tx->error->{message} . ') '
         . $tx->res->body;
