@@ -229,6 +229,7 @@ use constant WS_ERROR_CODE => {
 
   # Search errors are 1000-1100
   buglist_parameters_required => 1000,
+  db_search_timeout           => 1001,
 
   # Job queue errors 1400-1500
   jobqueue_status_error => 1400,

@@ -22,6 +22,7 @@ use Bugzilla::Error;
 use Bugzilla::Field;
 use Bugzilla::Group;
 use Bugzilla::Keyword;
+use Bugzilla::Logging;
 use Bugzilla::Search::Clause;
 use Bugzilla::Search::ClauseGroup;
 use Bugzilla::Search::Condition qw(condition);
@@ -845,8 +846,8 @@ sub data {
   }
 
   # Do we just want bug IDs to pass to the 2nd query or all the data immediately?
-  #my $func = $all_in_bugs_table ? 'selectall_arrayref' : 'selectcol_arrayref';
-  #my $bug_ids = $dbh->$func($sql);
+  my $func = $all_in_bugs_table ? 'selectall_arrayref' : 'selectcol_arrayref';
+  my $bug_ids = $self->_sql_execute($sql, $func);
   my @extra_data = ({sql => $sql, time => tv_interval($start_time)});
 
   # Restore the original 'fields' argument, just in case.
@@ -883,9 +884,7 @@ sub data {
 
   $start_time = [gettimeofday()];
   $sql        = $search->_sql;
-  $sth        = $dbh->prepare($sql);
-  $dbh->bz_call_with_timeout($sth);
-  my $unsorted_data = $sth->fetchall_arrayref();
+  my $unsorted_data = $search->_sql_execute($sql, 'selectall_arrayref');
   push(@extra_data, {sql => $sql, time => tv_interval($start_time)});
 
   # Let's sort the data. We didn't do it in the query itself because
@@ -987,19 +986,46 @@ sub _sql {
   my $user_agent   = $cgi->user_agent || $cgi->script_name;
   my $query_string = $cgi->canonicalize_query();
   my $query        = <<END;
-SELECT $timeout_comment $select
-  FROM $from
- WHERE $where
-$group_by$order_by$limit
 /*
 user-id: $user_id
 remote-ip: $remote_ip
 user-agent: $user_agent
 query-string: $query_string
 */
+  SELECT $timeout_comment $select
+  FROM $from
+ WHERE $where
+$group_by$order_by$limit
 END
   $self->{sql} = $query;
   return $self->{sql};
+}
+
+sub _sql_execute {
+  my ($self, $sql, $func) = @_;
+  my $dbh = Bugzilla->dbh;
+
+  my $results;
+  do {
+    local $SIG{__DIE__}  = undef;
+    local $SIG{__WARN__} = undef;
+
+    $results = eval { $dbh->$func($sql) };
+
+    # If the search query failed, handle Throw*Error correctly, or for all other
+    # failures log it and return an empty list of bugs.
+    if (my $search_err = $@) {
+      return if ref $search_err eq 'ARRAY' && $search_err->[0] eq "EXIT\n";
+      if (!ref $search_err
+        && $search_err =~ /maximum statement execution time exceeded/)
+      {
+        ThrowUserError('db_search_timeout');
+      }
+      ERROR(Dumper($self->_params) . ' ' . Dumper($search_err));
+    }
+  };
+
+  return $results;
 }
 
 sub search_description {

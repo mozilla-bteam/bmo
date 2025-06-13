@@ -18,6 +18,7 @@ use Bugzilla::Comment::TagWeights;
 use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Field;
+use Bugzilla::Logging;
 use Bugzilla::WebService::Constants;
 use Bugzilla::WebService::Util
   qw(extract_flags filter filter_wants validate translate);
@@ -35,6 +36,7 @@ use Bugzilla::Search::Quicksearch;
 
 use List::Util qw(max);
 use List::MoreUtils qw(uniq);
+use Mojo::Util qw(dumper);
 use Storable qw(dclone);
 use Types::Standard -all;
 use Type::Utils;
@@ -695,6 +697,8 @@ sub search {
   $options{params} = $match_params;
 
   my $search = new Bugzilla::Search(%options);
+
+  # Execute the query.
   my ($data) = $search->data;
 
   # BMO if the caller only wants the count, that's all we need to return

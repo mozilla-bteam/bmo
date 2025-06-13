@@ -721,24 +721,10 @@ $::SIG{TERM} = 'DEFAULT';
 $::SIG{PIPE} = 'DEFAULT';
 
 # Execute the query.
-my ($data, $extra_data);
-do {
-  local $SIG{__DIE__}  = undef;
-  local $SIG{__WARN__} = undef;
-  ($data, $extra_data) = eval { $search->data };
-  # If the search query failed, handle Throw*Error correctly, or for all other
-  # failures log it and return an empty list of bugs.
-  if (my $search_err = $@) {
-    return if ref $search_err eq 'ARRAY' && $search_err->[0] eq "EXIT\n";
-    if (!ref $search_err && $search_err =~ /maximum statement execution time exceeded/) {
-      ThrowUserError('db_search_timeout');
-    }
-    use Data::Dumper;
-    ERROR 'buglist.cgi?' . $cgi->query_string . " " . Dumper($search_err);
-  }
-};
+my ($data, $extra_data) = $search->data;
 
 $vars->{'search_description'} = $search->search_description;
+
 if ( $cgi->param('debug')
   && Bugzilla->params->{debug_group}
   && $user->in_group(Bugzilla->params->{debug_group}))
