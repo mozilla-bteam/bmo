@@ -836,15 +836,6 @@ sub data {
   my $start_time = [gettimeofday()];
   my $sql        = $self->_sql;
 
-  my $sth = $dbh->prepare($sql);
-  $dbh->bz_call_with_timeout($sth);
-  my $bug_ids = $sth->fetchall_arrayref();
-
-  # Simulate selectcol_arrayref
-  if (!$all_in_bugs_table) {
-    $bug_ids = [map { $_->[0] } @$bug_ids];
-  }
-
   # Do we just want bug IDs to pass to the 2nd query or all the data immediately?
   my $func = $all_in_bugs_table ? 'selectall_arrayref' : 'selectcol_arrayref';
   my $bug_ids = $self->_sql_execute($sql, $func);
@@ -2267,15 +2258,7 @@ sub build_subselect {
   # large performance hits on MySql
   my $q    = "SELECT DISTINCT $inner FROM $table WHERE $cond";
   my $dbh  = Bugzilla->dbh;
-  my $list = [];
-
-  my $sth = $dbh->prepare($q);
-  $dbh->bz_call_with_timeout($sth);
-
-  while (my $row = $sth->fetch) {
-    push @{$list}, $row->[0];
-  }
-
+  my $list = $dbh->selectcol_arrayref($q);
   return $negate ? "1=1" : "1=2" unless @$list;
   return $dbh->sql_in($outer, $list, $negate);
 }
