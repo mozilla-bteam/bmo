@@ -69,10 +69,18 @@ sub set_attachment_approval_flags {
   # Find the current review status of the revision changer
   my $status          = undef;
   my $reviewer_status = undef;
-  foreach my $reviewer (@{$revision->reviews}) {
-    if ($reviewer->{user}->id == $phab_user->id) {
-      $reviewer_status = $reviewer->{status};
-      $status          = $revision_status_flag_map->{$reviewer_status};
+
+  if ($is_new) {
+    $reviewer_status = $revision->status;
+    $status          = $revision_status_flag_map->{$reviewer_status};
+  }
+  else {
+    foreach my $reviewer (@{$revision->reviews}) {
+      if ($reviewer->{user}->id == $phab_user->id) {
+        $reviewer_status = $reviewer->{status};
+        $status          = $revision_status_flag_map->{$reviewer_status};
+        last;
+      }
     }
   }
 
