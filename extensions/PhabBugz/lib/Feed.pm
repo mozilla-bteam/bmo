@@ -42,6 +42,7 @@ use Bugzilla::Extension::PhabBugz::Util qw(
   request
   set_attachment_approval_flags
   set_phab_user
+  set_reviewer_rotation
 );
 
 has 'is_daemon' => (is => 'rw', default => 0);
@@ -724,6 +725,10 @@ sub process_revision_change {
   # Finish up
   $bug->update($timestamp);
   $revision->update();
+
+  ### Phabricator Reviewer Rotation
+  # This should happen after all of the above changes and Herald has had a chance to run.
+  set_reviewer_rotation($revision);
 
   # Email changes for this revisions bug and also for any other
   # bugs that previously had these revision attachments
