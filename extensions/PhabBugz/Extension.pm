@@ -121,14 +121,8 @@ sub db_schema_abstract_schema {
   $args->{'schema'}->{'phab_reviewer_rotation'} = {
     FIELDS => [
       id            => {TYPE => 'INTSERIAL',    NOTNULL => 1, PRIMARYKEY => 1,},
-      revision_phid => {TYPE => 'VARCHAR(255)', NOTNULL => 1,},
       project_phid  => {TYPE => 'VARCHAR(255)', NOTNULL => 1,},
       user_phid     => {TYPE => 'VARCHAR(255)', NOTNULL => 1,},
-      user_id       => {
-        TYPE       => 'INT3',
-        NOTNULL    => 1,
-        REFERENCES => {TABLE => 'profiles', COLUMN => 'userid', DELETE => 'CASCADE'}
-      }
     ]
   };
 }
