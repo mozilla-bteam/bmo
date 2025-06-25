@@ -17,17 +17,17 @@ use Bugzilla::Error;
 use Bugzilla::Logging;
 use Bugzilla::User;
 use Bugzilla::Types qw(:types);
-use Bugzilla::Util qw(mojo_user_agent trim);
+use Bugzilla::Util  qw(mojo_user_agent trim);
 use Bugzilla::Extension::PhabBugz::Constants;
 use Bugzilla::Extension::PhabBugz::Types qw(:types);
 
 use List::MoreUtils qw(any);
-use List::Util qw(first);
+use List::Util      qw(any first);
 use Try::Tiny;
 use Type::Params qw( compile );
 use Type::Utils;
 use Types::Standard qw( :types );
-use Mojo::JSON qw(encode_json);
+use Mojo::JSON      qw(encode_json);
 
 use base qw(Exporter);
 
@@ -41,6 +41,7 @@ our @EXPORT = qw(
   request
   set_attachment_approval_flags
   set_phab_user
+  set_reviewer_rotation
 );
 
 use constant LEGACY_APPROVAL_MAPPING => {
@@ -188,11 +189,11 @@ sub create_revision_attachment {
   # BMO does not contain actual diff content.
   my @review_attachments
     = grep { is_attachment_phab_revision($_) } @{$bug->attachments};
-  my $attachment
-    = first { trim($_->data) eq $revision_uri } @review_attachments;
+  my $attachment = first { trim($_->data) eq $revision_uri } @review_attachments;
 
 
   if (!defined $attachment) {
+
     # No attachment is present, so we can now create new one
 
     if (!$timestamp) {
@@ -200,7 +201,7 @@ sub create_revision_attachment {
     }
 
     # If submitter, then switch to that user when creating attachment
-    local $submitter->{groups} = [Bugzilla::Group->get_all]; # We need to always be able to add attachment
+    local $submitter->{groups} = [Bugzilla::Group->get_all];    # We need to always be able to add attachment
     my $restore_prev_user = Bugzilla->set_user($submitter, scope_guard => 1);
 
     $attachment = Bugzilla::Attachment->create({
@@ -293,7 +294,7 @@ sub get_attachment_revisions {
 }
 
 sub request {
-  state $check = compile(Str, HashRef, Optional[Bool]);
+  state $check = compile(Str, HashRef, Optional [Bool]);
   my ($method, $data, $no_die) = $check->(@_);
   my $request_cache = Bugzilla->request_cache;
   my $params        = Bugzilla->params;
@@ -330,6 +331,153 @@ sub set_phab_user {
   $user->{groups} = [Bugzilla::Group->get_all];
 
   return Bugzilla->set_user($user, scope_guard => 1);
+}
+
+sub set_reviewer_rotation {
+  my ($revision) = @_;
+  my $rev_identifier = 'D' . $revision->id;
+
+  INFO("$rev_identifier: Setting reviewer rotation.");
+
+  # Load a fresh version of the revision with Heralds changes.
+  $revision = Bugzilla::Extension::PhabBugz::Revision->new_from_query(
+    {phids => [$revision->phid]});
+
+  # 1. Find out what the project reviewers and individual reviewers are. If the revision
+  # has a reviewer group set, normally it ends in "-reviewer-rotation". Normally Herald
+  # will set this if certain conditions are met. If there are no blocking reviewer groups,
+  # then do nothing.
+  my @review_projects;
+  my @review_users;
+
+  # Map of phids to blocking status
+  my %is_blocking;
+
+  foreach my $reviewer (@{$revision->reviews}) {
+    # Only interested in reviewer rotation groups
+    if ($reviewer->{is_project} && $reviewer->{user}->name =~ /-reviewer-rotation$/) {
+      push @review_projects, $reviewer->{user};
+      $is_blocking{$reviewer->{user}->phid} = $reviewer->{is_blocking} ? 1 : 0;
+    }
+    elsif (!$reviewer->{is_project}) {
+      push @review_users, $reviewer->{user};
+      $is_blocking{$reviewer->{user}->phid} = $reviewer->{is_blocking} ? 1 : 0;
+    }
+  }
+
+  if (!@review_projects) {
+    INFO("$rev_identifier: Reviewer rotation projects not found.");
+    return;
+  }
+
+  INFO( "$rev_identifier: Reviewer rotation project(s) "
+      . (join ', ', map { $_->name } @review_projects)
+      . ' found.');
+
+  # 2. Once the blocking reviewer rotation groups are determined, query Phabricator for
+  # list of group members for each and sort them by user ID descending.
+  foreach my $project (@review_projects) {
+    my $project_members
+      = [sort { $a->id <=> $b->id } @{$project->members}];
+
+    # 3. Make sure that none of the individual group members are not already
+    # set as a blocking reviewer. If so, then remove the blocking group and return.
+    foreach my $member (@{$project_members}) {
+      if (any { $_->id == $member->id } @review_users) {
+        INFO(
+          "$rev_identifier: Member of blocking reviewer project already set as a reviewer. Removing blocking reviewer project."
+        );
+        $revision->remove_reviewer($project->phid);
+        $revision->update;
+        next;
+      }
+    }
+
+    my $dbh = Bugzilla->dbh;
+
+    # 4. Find the last selected reviewer for the rotation group
+    my $user_phid
+      = $dbh->selectrow_array(
+      'SELECT user_phid FROM phab_reviewer_rotation WHERE project_phid = ?',
+      undef, $project->phid);
+
+    my $found_reviewer;
+    my $index = 0;
+    foreach my $member (@{$project_members}) {
+
+      # 5. If there is no member that was the last reviewer, then just pick the first
+      # member in the list
+      if (!$user_phid) {
+        $found_reviewer = $member;
+      }
+
+      # 6. If the member was the last select reviewer, then we need to remove them,
+      # and pick the next member in the list.
+      if ($user_phid eq $member->phid) {
+
+        # Delete old reviewer
+        INFO(
+          "$rev_identifier: Old reviewer " . $member->id . 'deleted and choosing next');
+        $user_phid = undef;
+        $dbh->do(
+          'DELETE FROM phab_reviewer_rotation WHERE project_phid = ? AND user_phid = ?',
+          undef, $project->phid, $user_phid);
+
+        # Select next member in order
+        $found_reviewer = $project_members->[$index];
+        $found_reviewer = $project_members->[0] if !$found_reviewer;    # Loop back around
+      }
+
+   # 7. Once a potential reviewer has been found, look to see if they can see the bug,
+   # and they are not set to away (not accepting reviews). If both are are negative,
+   # we choose the next person in the list.
+      if ( $found_reviewer
+        && $found_reviewer->bugzilla_user->can_see_bug($revision->bug->id)
+        && $found_reviewer->bugzilla_user->settings->{block_reviews}->{value} ne 'on')
+      {
+        INFO("$rev_identifier: Found new reviewer " . $member->id);
+        last;
+      }
+      else {
+        $found_reviewer = undef;
+      }
+
+      $index++;
+    }
+
+    if ($found_reviewer) {
+
+      # 8. Set the user as a blocking reviewer on the revision.
+      INFO("$rev_identifier: Adding new reviewer " . $found_reviewer->id);
+      if ($is_blocking{$project->phid}) {
+        $revision->add_reviewer('blocking(' . $found_reviewer->phid . ')');
+      }
+      else {
+        $revision->add_reviewer($found_reviewer->phid);
+      }
+
+      # 9. Remove the blocking reviewer group.
+      INFO("$rev_identifier: Removing reviewer project.");
+      $revision->remove_reviewer($project->phid);
+
+      # 10. Store the data in the phab_reviewer_rotation table so they will be
+      # next time.
+      INFO("$rev_identifier: Adding new blocking reviewer to database.");
+      $dbh->do(
+        'INSERT INTO phab_reviewer_rotation (project_phid, user_phid) VALUES (?, ?)',
+        undef,
+        $project->phid,
+        $found_reviewer->phid,
+      );
+
+      # 11. Add new blocking reviewer to blocking users list in case they are also
+      # a member of the next blocking rotation group.
+      push @review_users, $found_reviewer;
+    }
+  }
+
+  # 12. Save changes to the revision and return.
+  $revision->update;
 }
 
 1;
