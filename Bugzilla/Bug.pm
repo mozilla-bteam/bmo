@@ -3480,8 +3480,8 @@ sub remove_see_also {
   if ( !$skip_recursion
     and $removed_bug_url
     and $removed_bug_url->isa('Bugzilla::BugUrl::Local')
-    and Bugzilla->user->can_see_bug($removed_bug_url->ref_bug_url->bug_id)
-    and $removed_bug_url->ref_bug_url)
+    and $removed_bug_url->ref_bug_url
+    and Bugzilla->user->can_see_bug($removed_bug_url->ref_bug_url->bug_id))
   {
     my $ref_bug = Bugzilla::Bug->check($removed_bug_url->ref_bug_url->bug_id);
     my $ref_can_change
@@ -3490,9 +3490,14 @@ sub remove_see_also {
       && $ref_can_change->{allowed})
     {
       my $self_url = $removed_bug_url->local_uri($self->id);
-      $ref_bug->remove_see_also($self_url, 'skip_recursion');
-      push @{$self->{_update_ref_bugs}}, $ref_bug;
-      push @{$self->{see_also_changes}}, $ref_bug->id;
+
+      # Check to see that the referenced bug has this bug as a see_also
+      # and if so remove it.
+      if (any { $_ eq $self_url } @{ref_bug->see_also}) {
+        $ref_bug->remove_see_also($self_url, 'skip_recursion');
+        push @{$self->{_update_ref_bugs}}, $ref_bug;
+        push @{$self->{see_also_changes}}, $ref_bug->id;
+      }
     }
   }
 
