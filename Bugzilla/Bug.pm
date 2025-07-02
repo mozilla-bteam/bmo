@@ -3480,8 +3480,8 @@ sub remove_see_also {
   if ( !$skip_recursion
     and $removed_bug_url
     and $removed_bug_url->isa('Bugzilla::BugUrl::Local')
-    and Bugzilla->user->can_see_bug($removed_bug_url->ref_bug_url->bug_id)
-    and $removed_bug_url->ref_bug_url)
+    and $removed_bug_url->ref_bug_url
+    and Bugzilla->user->can_see_bug($removed_bug_url->ref_bug_url->bug_id))
   {
     my $ref_bug = Bugzilla::Bug->check($removed_bug_url->ref_bug_url->bug_id);
     my $ref_can_change

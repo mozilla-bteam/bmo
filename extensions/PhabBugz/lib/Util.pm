@@ -191,7 +191,6 @@ sub create_revision_attachment {
     = grep { is_attachment_phab_revision($_) } @{$bug->attachments};
   my $attachment = first { trim($_->data) eq $revision_uri } @review_attachments;
 
-
   if (!defined $attachment) {
 
     # No attachment is present, so we can now create new one
@@ -204,11 +203,13 @@ sub create_revision_attachment {
     local $submitter->{groups} = [Bugzilla::Group->get_all];    # We need to always be able to add attachment
     my $restore_prev_user = Bugzilla->set_user($submitter, scope_guard => 1);
 
+    my $new_attach_description = $revision->secured_title;
+
     $attachment = Bugzilla::Attachment->create({
       bug         => $bug,
       creation_ts => $timestamp,
       data        => $revision_uri,
-      description => $revision->title,
+      description => $new_attach_description,
       filename    => 'phabricator-D' . $revision->id . '-url.txt',
       ispatch     => 0,
       isprivate   => 0,
