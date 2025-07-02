@@ -128,7 +128,7 @@ sub set_attachment_approval_flags {
       return;
     }
 
-    # If setting to + then the Phabricator user needs to be a release manager.
+    # If setting to + or - then user needs to be a release manager.
     if (($status eq '+' || $status eq '-') && !$phab_user->is_release_manager) {
       INFO(
         "Unable to set existing `$approval_flag_name` flag to `$status` due to not being a release manager."
@@ -146,8 +146,7 @@ sub set_attachment_approval_flags {
   if (!@old_flags && $status ne 'X') {
     my $approval_flag = Bugzilla::FlagType->new({name => $approval_flag_name});
     if ($approval_flag) {
-
-  # If setting to + then at least one accepted reviewer needs to be a release manager.
+      # If setting to + then at least one accepted reviewer needs to be a release manager.
       if ($status eq '+' && !$phab_user->is_release_manager) {
         INFO(
           "Unable to create new `$approval_flag_name` flag with status `$status` due to not being accepted by a release manager."
@@ -191,6 +190,7 @@ sub create_revision_attachment {
   my $attachment
     = first { trim($_->data) eq $revision_uri } @review_attachments;
 
+
   if (!defined $attachment) {
     # No attachment is present, so we can now create new one
 
@@ -202,13 +202,11 @@ sub create_revision_attachment {
     local $submitter->{groups} = [Bugzilla::Group->get_all]; # We need to always be able to add attachment
     my $restore_prev_user = Bugzilla->set_user($submitter, scope_guard => 1);
 
-    my $new_attach_description = $revision->secured_title;
-
     $attachment = Bugzilla::Attachment->create({
       bug         => $bug,
       creation_ts => $timestamp,
       data        => $revision_uri,
-      description => $new_attach_description,
+      description => $revision->title,
       filename    => 'phabricator-D' . $revision->id . '-url.txt',
       ispatch     => 0,
       isprivate   => 0,

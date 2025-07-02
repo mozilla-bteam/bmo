@@ -638,9 +638,10 @@ sub process_revision_change {
   INFO('Updating obsolete status on attachmment ' . $attachment->id . " to $make_obsolete");
   $attachment->set_is_obsolete($make_obsolete);
 
-  if ($revision->title ne $attachment->description) {
+  my $new_attach_description = $revision->secured_title;
+  if ($new_attach_description ne $attachment->description) {
     INFO('Updating description on attachment ' . $attachment->id);
-    $attachment->set_description($revision->title);
+    $attachment->set_description($new_attach_description);
   }
 
   # Sync the `approval-mozilla-{repo}+` flags.
