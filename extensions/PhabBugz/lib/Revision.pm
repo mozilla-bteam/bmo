@@ -96,6 +96,7 @@ has reviewers_extra_raw => (
     Dict [reviewerPHID => Str, voidedPHID => Maybe [Str], diffPHID => Maybe [Str]]
   ]
 );
+has stack_graph => (is => 'lazy', isa => Tuple[ArrayRef, ArrayRef]);
 
 sub new_from_query {
   my ($class, $params) = @_;
@@ -420,6 +421,22 @@ sub _build_repository {
     return $self->{repository} = $repository;
   }
   return undef;
+}
+
+sub _build_stack_graph {
+  my ($self) = @_;
+
+  my @phids = keys %{$self->stack_graph_raw};
+  my @edges = ();
+
+  foreach my $node (@phids) {
+    my $predecessors = $self->stack_graph_raw->{$node};
+    foreach my $predecessor (@{$predecessors}) {
+      push @edges, [$node, $predecessor];
+    }
+  }
+
+  return (\@phids, \@edges);
 }
 
 #########################
