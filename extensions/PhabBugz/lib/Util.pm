@@ -335,9 +335,8 @@ sub set_phab_user {
 
 sub set_reviewer_rotation {
   my ($revision) = @_;
-  my $rev_identifier = 'D' . $revision->id;
 
-  INFO("$rev_identifier: Setting reviewer rotation.");
+  INFO('D' . $revision->id . ': Setting reviewer rotation');
 
   # Load a fresh version of the revision with Heralds changes.
   $revision = Bugzilla::Extension::PhabBugz::Revision->new_from_query(
@@ -354,11 +353,11 @@ sub set_reviewer_rotation {
   my @review_users    = get_review_users($revision, $is_blocking);
 
   if (!@review_projects) {
-    INFO("$rev_identifier: Reviewer rotation projects not found.");
+    INFO('Reviewer rotation projects not found');
     return;
   }
 
-  INFO( "$rev_identifier: Reviewer rotation project(s) "
+  INFO( 'Reviewer rotation project(s) '
       . (join ', ', map { $_->name } @review_projects)
       . ' found.');
 
@@ -379,7 +378,7 @@ sub set_reviewer_rotation {
       # set as a reviewer. If so, then remove the rotation group and return.
       if (any { $_->id == $member->id } @review_users) {
         INFO(
-          "$rev_identifier: Member of review rotation project already set as a reviewer. Removing review rotation project."
+          'Member of review rotation project already set as a reviewer. Removing review rotation project'
         );
         $revision->remove_reviewer($project->phid);
         $revision->update;
@@ -430,7 +429,7 @@ sub set_reviewer_rotation {
           && $found_reviewer->bugzilla_user->can_see_bug($revision->bug->id)
           && $found_reviewer->bugzilla_user->settings->{block_reviews}->{value} ne 'on')
         {
-          INFO("$rev_identifier: Found new reviewer " . $member->id);
+          INFO('Found new reviewer ' . $member->id);
           last;
         }
         else {
@@ -444,7 +443,7 @@ sub set_reviewer_rotation {
     if ($found_reviewer) {
 
       # Set the user as a reviewer on the revision.
-      INFO("$rev_identifier: Adding new reviewer " . $found_reviewer->id);
+      INFO('Adding new reviewer ' . $found_reviewer->id);
       if ($is_blocking->{$project->phid}) {
         $revision->add_reviewer('blocking(' . $found_reviewer->phid . ')');
       }
@@ -453,7 +452,7 @@ sub set_reviewer_rotation {
       }
 
       # Remove the review rotation group.
-      INFO("$rev_identifier: Removing reviewer project.");
+      INFO('Removing reviewer project');
       $revision->remove_reviewer($project->phid);
 
       # Store the data in the phab_reviewer_rotation table so they will be
@@ -472,7 +471,7 @@ sub set_reviewer_rotation {
 
 sub find_last_reviewer_phid {
   my ($project) = @_;
-  INFO('D' . $revision->id . ': Retrieving last reviewer for project ' . $project->phid);
+  INFO('Retrieving last reviewer for project ' . $project->phid);
   return Bugzilla->dbh->selectrow_array(
     'SELECT user_phid FROM phab_reviewer_rotation WHERE project_phid = ?',
     undef, $project->phid);
@@ -480,7 +479,7 @@ sub find_last_reviewer_phid {
 
 sub delete_last_reviewer_phid {
   my ($project, $reviewer_phid) = @_;
-  INFO('D' . $revision->id . ": Deleting last reviewer $reviewer_phid");
+  INFO("Deleting last reviewer $reviewer_phid");
   Bugzilla->dbh->do(
     'DELETE FROM phab_reviewer_rotation WHERE project_phid = ? AND user_phid = ?',
     undef, $project->phid, $reviewer_phid);
@@ -488,18 +487,17 @@ sub delete_last_reviewer_phid {
 
 sub add_last_reviewer_phid {
   my ($project, $reviewer_phid) = @_;
-  INFO('D' . $revision->id . ": Adding last reviewer $reviewer_phid");
+  INFO("Adding last reviewer $reviewer_phid");
   Bugzills->dbh->do(
     'INSERT INTO phab_reviewer_rotation (project_phid, user_phid) VALUES (?, ?)',
     undef, $project->phid, $reviewer_phid);
-
 }
 
 sub get_stack_reviewers {
   my ($revision, $is_blocking) = @_;
   my @stack_reviewers;
 
-  INFO('D' . $revision->id . ': Retrieving stack reviewers from all stack revisions');
+  INFO('Retrieving stack reviewers from all stack revisions');
 
   my ($stack_phids) = $revision->stack_graph;
   if (@{$stack_phids}) {
@@ -522,7 +520,7 @@ sub get_review_rotation_projects {
   my ($revision, $is_blocking);
   my @review_projects;
 
-  INFO('D' . $revision->id . ': Retrieving review rotation projects');
+  INFO('Retrieving review rotation projects');
 
   foreach my $reviewer (@{$revision->reviews}) {
 
@@ -543,7 +541,7 @@ sub get_review_users {
   my ($revision, $is_blocking);
   my @review_users;
 
-  INFO('D' . $revision->id . ': Retrieving review users (not projects)');
+  INFO('Retrieving review users (not projects)');
 
   foreach my $reviewer (@{$revision->reviews}) {
 
