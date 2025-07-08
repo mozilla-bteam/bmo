@@ -315,8 +315,18 @@
         <td><textarea aria-labelledby="_ar_comm_i10_label"></textarea></td>
       </tr>
       <tr>
-        <th id="_ar_comm_i11_label">String changes made/needed</th>
-        <td><input type="text" class="long" aria-labelledby="_ar_comm_i11_label"></td>
+        <th id="_ar_comm_i11_label">Does the fix cause any migrations to be skipped?</th>
+        <td>
+          <div role="radiogroup" class="buttons toggle" aria-labelledby="_ar_comm_i11_label">
+            <div class="item"><input id="_ar_comm_i11_r1" type="radio" name="_ar_comm_i11_radio" value="Yes"><label for="_ar_comm_i11_r1">Yes</label></div>
+            <div class="item"><input id="_ar_comm_i11_r2" type="radio" name="_ar_comm_i11_radio" value="No"><label for="_ar_comm_i11_r2">No</label></div>
+            <div class="item"><input id="_ar_comm_i11_r3" type="radio" name="_ar_comm_i11_radio" value="N/A"><label for="_ar_comm_i11_r3">N/A</label></div>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <th id="_ar_comm_i12_label">String changes made/needed</th>
+        <td><input type="text" class="long" aria-labelledby="_ar_comm_i12_label"></td>
       </tr>
     </table>
   </section>
