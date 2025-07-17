@@ -1023,16 +1023,13 @@ sub fetch_product_versions {
 }
 
 sub mojo_user_agent {
-  my ($params)           = @_;
-  my $request_timeout    = $params->{request_timeout}    // 30;
-  my $connect_timeout    = $params->{connect_timeout}    // 5;
-  my $inactivity_timeout = $params->{inactivity_timeout} // 30;
+  my ($params) = @_;
 
-  my $ua = Mojo::UserAgent->new(
-    request_timeout    => $request_timeout,
-    connect_timeout    => $connect_timeout,
-    inactivity_timeout => $inactivity_timeout,
-  );
+  state $ua = Mojo::UserAgent->new;
+
+  $ua->request_timeout($params->{request_timeout}       // 30);
+  $ua->connect_timeout($params->{connect_timeout}       // 5);
+  $ua->inactivity_timeout($params->{inactivity_timeout} // 30);
 
   if (my $proxy = Bugzilla->params->{proxy_url}) {
     $ua->proxy->http($proxy)->https($proxy);
