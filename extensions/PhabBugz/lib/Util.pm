@@ -388,7 +388,7 @@ sub set_reviewer_rotation {
       # If the member is one of the reviewers for a revision in the stack,
       # then use the same reviewer for this revision
       if (any { $_->id == $member->id } @stack_reviewers) {
-        $found_reviewer = $member->phid;
+        $found_reviewer = $member;
         last;
       }
     }
@@ -488,7 +488,7 @@ sub delete_last_reviewer_phid {
 sub add_last_reviewer_phid {
   my ($project, $reviewer_phid) = @_;
   INFO("Adding last reviewer $reviewer_phid");
-  Bugzills->dbh->do(
+  Bugzilla->dbh->do(
     'INSERT INTO phab_reviewer_rotation (project_phid, user_phid) VALUES (?, ?)',
     undef, $project->phid, $reviewer_phid);
 }
@@ -499,17 +499,16 @@ sub get_stack_reviewers {
 
   INFO('Retrieving stack reviewers from all stack revisions');
 
-  my ($stack_phids) = $revision->stack_graph;
-  if (@{$stack_phids}) {
-    foreach my $phid (@{$stack_phids}) {
-      my $stack_revision
-        = Bugzilla::Extension::PhabBugz::Revision->new_from_query({phids => [$phid]});
-      next if !$stack_revision;
-      foreach my $reviewer (@{$stack_revision->reviews}) {
-        next if $reviewer->{is_project};
-        push @stack_reviewers, $reviewer->{user};
-        $is_blocking->{$reviewer->{user}->phid} = $reviewer->{is_blocking} ? 1 : 0;
-      }
+  my $stack_data = $revision->stack_graph;
+
+  foreach my $phid (@{$stack_data->{phids}}) {
+    my $stack_revision
+      = Bugzilla::Extension::PhabBugz::Revision->new_from_query({phids => [$phid]});
+    next if !$stack_revision;
+    foreach my $reviewer (@{$stack_revision->reviews}) {
+      next if $reviewer->{is_project};
+      push @stack_reviewers, $reviewer->{user};
+      $is_blocking->{$reviewer->{user}->phid} = $reviewer->{is_blocking} ? 1 : 0;
     }
   }
 
@@ -517,18 +516,18 @@ sub get_stack_reviewers {
 }
 
 sub get_review_rotation_projects {
-  my ($revision, $is_blocking);
+  my ($revision, $is_blocking) = @_;
   my @review_projects;
 
   INFO('Retrieving review rotation projects');
 
-  foreach my $reviewer (@{$revision->reviews}) {
+  foreach my $reviewer (@{$revision->reviews || []}) {
 
     # Only interested in projects
     next if !$reviewer->{is_project};
 
     # Only interested in reviewer rotation groups
-    next if $reviewer->{user}->name !~ /-reviewer-rotation$/;
+    next if $reviewer->{user}->name !~ /-reviewer?s-rotation$/;
 
     push @review_projects, $reviewer->{user};
     $is_blocking->{$reviewer->{user}->phid} = $reviewer->{is_blocking} ? 1 : 0;
@@ -538,7 +537,7 @@ sub get_review_rotation_projects {
 }
 
 sub get_review_users {
-  my ($revision, $is_blocking);
+  my ($revision, $is_blocking) = @_;
   my @review_users;
 
   INFO('Retrieving review users (not projects)');

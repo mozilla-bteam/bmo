@@ -16,6 +16,7 @@ use Types::Standard -all;
 use Type::Utils;
 
 use Bugzilla::Bug;
+use Bugzilla::Logging;
 use Bugzilla::Types qw(JSONBool);
 use Bugzilla::Error;
 use Bugzilla::Util qw(trim);
@@ -96,7 +97,7 @@ has reviewers_extra_raw => (
     Dict [reviewerPHID => Str, voidedPHID => Maybe [Str], diffPHID => Maybe [Str]]
   ]
 );
-has stack_graph => (is => 'lazy', isa => Tuple[ArrayRef, ArrayRef]);
+has stack_graph => (is => 'lazy');
 
 sub new_from_query {
   my ($class, $params) = @_;
@@ -436,7 +437,7 @@ sub _build_stack_graph {
     }
   }
 
-  return (\@phids, \@edges);
+  return {phids => \@phids, edges => \@edges};
 }
 
 #########################
