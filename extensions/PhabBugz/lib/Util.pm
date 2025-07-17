@@ -17,7 +17,7 @@ use Bugzilla::Error;
 use Bugzilla::Logging;
 use Bugzilla::User;
 use Bugzilla::Types qw(:types);
-use Bugzilla::Util  qw(mojo_user_agent trim);
+use Bugzilla::Util qw(mojo_user_agent trim);
 use Bugzilla::Extension::PhabBugz::Constants;
 use Bugzilla::Extension::PhabBugz::Types qw(:types);
 
@@ -27,7 +27,7 @@ use Try::Tiny;
 use Type::Params qw( compile );
 use Type::Utils;
 use Types::Standard qw( :types );
-use Mojo::JSON      qw(encode_json);
+use Mojo::JSON qw(encode_json);
 
 use base qw(Exporter);
 
@@ -193,7 +193,6 @@ sub create_revision_attachment {
 
 
   if (!defined $attachment) {
-
     # No attachment is present, so we can now create new one
 
     if (!$timestamp) {
@@ -201,7 +200,7 @@ sub create_revision_attachment {
     }
 
     # If submitter, then switch to that user when creating attachment
-    local $submitter->{groups} = [Bugzilla::Group->get_all];    # We need to always be able to add attachment
+    local $submitter->{groups} = [Bugzilla::Group->get_all]; # We need to always be able to add attachment
     my $restore_prev_user = Bugzilla->set_user($submitter, scope_guard => 1);
 
     $attachment = Bugzilla::Attachment->create({
@@ -294,7 +293,7 @@ sub get_attachment_revisions {
 }
 
 sub request {
-  state $check = compile(Str, HashRef, Optional [Bool]);
+  state $check = compile(Str, HashRef, Optional[Bool]);
   my ($method, $data, $no_die) = $check->(@_);
   my $request_cache = Bugzilla->request_cache;
   my $params        = Bugzilla->params;
@@ -423,8 +422,8 @@ sub set_reviewer_rotation {
         }
 
        # Once a potential reviewer has been found, look to see if they can see the bug,
-       # and they are not set to away (not accepting reviews). If both are are negative,
-       # we choose the next person in the list.
+       # and they are not set to away (not accepting reviews). If both are positive,
+       # we have found our reviewer and exit the loop.
         if ( $found_reviewer
           && $found_reviewer->bugzilla_user->can_see_bug($revision->bug->id)
           && $found_reviewer->bugzilla_user->settings->{block_reviews}->{value} ne 'on')
