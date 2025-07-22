@@ -415,7 +415,7 @@ sub set_reviewer_rotation {
     # Make sure that none of the individual group members are not already
     # set as a reviewer. If so, then remove the rotation group and go on
     # to next project. We do not want to call set_new_reviewer() since we
-    # do not want this reviewr set to last reviewer in the DB.
+    # do not want this reviewer set to last reviewer in the DB.
     if (!$found_reviewer && @review_users) {
       foreach my $member (@project_members) {
         next if !any { $_->id == $member->id } @review_users;
