@@ -338,13 +338,16 @@ sub _build_reviews {
 
   my @reviewers;
   foreach my $raw (@{$self->reviewers_raw}) {
+    # Only interests in user or project objects (would there ever be something else?)
+    my $reviewer_phid = $raw->{reviewerPHID};
+    next if $reviewer_phid !~ /^PHID-(?:PROJ|USER)/;
+
     my $reviewer_data = {
       is_blocking => ($raw->{isBlocking} ? 1 : 0),
       is_project  => 0,
       status      => $raw->{status},
     };
 
-    my $reviewer_phid = $raw->{reviewerPHID};
     if ($reviewer_phid =~ /^PHID-PROJ/) {
       $reviewer_data->{user} = Bugzilla::Extension::PhabBugz::Project->new_from_query({phids => [$reviewer_phid]});
       $reviewer_data->{is_project} = 1;
@@ -352,6 +355,8 @@ sub _build_reviews {
     elsif ($reviewer_phid =~ /^PHID-USER/) {
       $reviewer_data->{user} = Bugzilla::Extension::PhabBugz::User->new_from_query({phids => [$reviewer_phid]});
     }
+
+    next if !$reviewer_data->{user}; # Skip if user or project was not found.
 
     # Set to accepted-prior if the diffs reviewer are different and the reviewer status is accepted
     foreach my $reviewer_extra (@{$self->reviewers_extra_raw}) {
