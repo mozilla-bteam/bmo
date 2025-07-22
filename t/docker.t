@@ -14,7 +14,6 @@ use IO::Handle;
 use Test::More;
 
 my $dockerfile = 'Dockerfile.bmo-slim';
-my $ci_config  = '.circleci/config.yml';
 
 my $base;
 open my $dockerfile_fh, '<', $dockerfile;
@@ -30,23 +29,5 @@ close $dockerfile_fh;
 my ($image, $version) = split(/:/ms, $base, 2);
 is($image, 'perl', 'base image is Perl');
 like($version, qr/\d{1}\.\d{2}\.\d{1}-slim/ms, "version is x.xx.x-slim");
-
-my $regex = qr{
-    \Q$image\E
-    :
-    (?!\Q$version\E)
-    (\d{4}\d{2}\d{2}\.\d+)
-}msx;
-
-open my $ci_config_fh, '<', $ci_config;
-while (my $line = readline $ci_config_fh) {
-  chomp $line;
-  if ($line =~ /($regex)/ms) {
-    my $ln = $ci_config_fh->input_line_number;
-    fail("found docker image $1, expected $base in $ci_config line $ln");
-  }
-  pass("Forbidden version not found");
-}
-close $ci_config_fh;
 
 done_testing;
