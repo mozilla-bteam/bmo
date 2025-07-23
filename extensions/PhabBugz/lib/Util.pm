@@ -389,7 +389,6 @@ PROJECT: foreach my $project (@review_projects) {
     @project_members = rotate_reviewer_list(\@project_members, $last_reviewer_phid);
 
     # If there is only one member, then guess what? You are always getting it.
-    my $found_reviewer = 0;
     if (scalar @project_members == 1) {
       my $lone_reviewer = $project_members[0];
 
@@ -404,7 +403,7 @@ PROJECT: foreach my $project (@review_projects) {
 
     # If the member is one of the reviewers for a revision in the stack,
     # then use the same reviewer for this revision
-    if (!$found_reviewer && @stack_reviewers) {
+    if (@stack_reviewers) {
       foreach my $member (@project_members) {
         next if !any { $_->id == $member->id } @stack_reviewers;
         INFO('Found a previous stack reviewer: ' . $member->name);
@@ -417,7 +416,7 @@ PROJECT: foreach my $project (@review_projects) {
     # set as a reviewer. If so, then remove the rotation group and go on
     # to next project. We do not want to call set_new_reviewer() since we
     # do not want this reviewer set to last reviewer in the DB.
-    if (!$found_reviewer && @review_users) {
+    if (@review_users) {
       foreach my $member (@project_members) {
         next if !any { $_->id == $member->id } @review_users;
         INFO('Member manually set as a reviewer so done: ' . $member->name);
@@ -428,7 +427,7 @@ PROJECT: foreach my $project (@review_projects) {
 
     # If we still have not found a reviewer and there is no member that was the
     # last reviewer, then just pick the first member in the list
-    if (!$found_reviewer && !$last_reviewer_phid) {
+    if (!$last_reviewer_phid) {
       INFO('Last reviewer not found so picking first member: '
           . $project_members[0]->name);
       set_new_reviewer($revision, $project, $project_members[0], $is_blocking,
@@ -543,6 +542,7 @@ sub get_stack_reviewers {
   my $stack_data = $revision->stack_graph;
 
   foreach my $phid (@{$stack_data->{phids}}) {
+    next if $phid eq $revision->phid;    # Skip this revision
     my $stack_revision
       = Bugzilla::Extension::PhabBugz::Revision->new_from_query({phids => [$phid]});
     next if !$stack_revision;
