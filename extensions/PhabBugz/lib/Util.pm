@@ -346,21 +346,18 @@ sub set_reviewer_rotation {
   # Map of phids to blocking status
   my $is_blocking = {};
 
-# Find out what the project reviewers and individual reviewers are. If the revision
-# has a reviewer group set, normally it ends in "-reviewer-rotation". Normally Herald
-# will set this if certain conditions are met. If there are no review rotation groups,
-# then do nothing.
+# Find out what the reviewer groups (if any) are. If the revision has a reviewer
+# group set, normally it ends in "-reviewer-rotation". Normally Herald will set this
+# if certain conditions are met. If there are no review rotation groups, then do nothing.
   my @review_projects = get_review_rotation_projects($revision, $is_blocking);
-  my @review_users    = get_review_users($revision, $is_blocking);
 
   if (!@review_projects) {
-    INFO('Reviewer rotation projects not found');
+    INFO('Reviewer rotation projects not found. Returning.');
     return;
   }
 
-  INFO( 'Reviewer rotation project(s) '
-      . (join ', ', map { $_->name } @review_projects)
-      . ' found.');
+  # After project reviewers, we also need to get a list of individual reviewers
+  my @review_users = get_review_users($revision, $is_blocking);
 
   # If the revision is part of a stack, grab a list of current reviewers
   # and if one of the project members is a reviewer, then assign the same reviewer
@@ -368,106 +365,152 @@ sub set_reviewer_rotation {
 
   # Once the reviewer rotation groups are determined, query Phabricator for
   # list of group members for each and sort them by user ID descending.
-  foreach my $project (@review_projects) {
-    my $found_reviewer;
+PROJECT: foreach my $project (@review_projects) {
+    INFO('Processing review project: ' . $project->name);
 
-    my $project_members = [sort { $a->id <=> $b->id } @{$project->members}];
+    # Sort the project members so we always the same order as best we can.
+    my @project_members = sort { $a->id <=> $b->id } @{$project->members};
 
-    foreach my $member (@{$project_members}) {
+    # If there are no members then we can't do anything and should just skip
+    if (!@project_members) {
+      INFO('No project members found for ' . $project->name . '. Skipping.');
+      next;
+    }
 
-      # Make sure that none of the individual group members are not already
-      # set as a reviewer. If so, then remove the rotation group and return.
-      if (any { $_->id == $member->id } @review_users) {
-        INFO(
-          'Member of review rotation project already set as a reviewer. Removing review rotation project'
-        );
+    INFO('Sorted project members found: '
+        . (join ', ', map { $_->name } @project_members));
+
+    # Find the last selected reviewer for the rotation group, if one exists.
+    my $last_reviewer_phid = find_last_reviewer_phid($project);
+    INFO('Last reviewer phid found: '
+        . ($last_reviewer_phid ? $last_reviewer_phid : 'None'));
+
+    # If a last reviewer exists, we want to rotate the list to where the
+    # last reviewer is at the front of the list while maintaining order.
+    # move them to the front of the member list
+    @project_members = rotate_reviewer_list(\@project_members, $last_reviewer_phid);
+
+    # If there is only one member, then guess what? You are always getting it.
+    if (scalar @project_members == 1) {
+      my $lone_reviewer = $project_members[0];
+
+      if ( $lone_reviewer->bugzilla_user->can_see_bug($revision->bug->id)
+        && $lone_reviewer->bugzilla_user->settings->{block_reviews}->{value} ne 'on')
+      {
+        INFO('Single project member found: ' . $lone_reviewer->name);
+        set_new_reviewer($revision, $project, $lone_reviewer, $is_blocking, \@review_users);
+        next;
+      }
+    }
+
+    # If the member is one of the reviewers for a revision in the stack,
+    # then use the same reviewer for this revision
+    if (@stack_reviewers) {
+      foreach my $member (@project_members) {
+        next if !any { $_->id == $member->id } @stack_reviewers;
+        INFO('Found a previous stack reviewer: ' . $member->name);
+        set_new_reviewer($revision, $project, $member, $is_blocking, \@review_users);
+        next PROJECT;
+      }
+    }
+
+    # Make sure that none of the individual group members are not already
+    # set as a reviewer. If so, then remove the rotation group and go on
+    # to next project. We do not want to call set_new_reviewer() since we
+    # do not want this reviewer set to last reviewer in the DB.
+    if (@review_users) {
+      foreach my $member (@project_members) {
+        next if !any { $_->id == $member->id } @review_users;
+        INFO('Member manually set as a reviewer so done: ' . $member->name);
         $revision->remove_reviewer($project->phid);
-        $revision->update;
+        next PROJECT;
+      }
+    }
+
+    # If we still have not found a reviewer and there is no member that was the
+    # last reviewer, then just pick the first member in the list
+    if (!$last_reviewer_phid) {
+      INFO('Last reviewer not found so picking first member: '
+          . $project_members[0]->name);
+      set_new_reviewer($revision, $project, $project_members[0], $is_blocking,
+        \@review_users);
+      next;
+    }
+
+    # Loop through all members and pick the next one in line after last selected
+    foreach my $member (@project_members) {
+      INFO('Considering candidate reviewer: ' . $member->name);
+
+      # Skip this member if they were the last one picked
+      if ($member->phid eq $last_reviewer_phid) {
+        INFO('Already the last reviewer picked, skipping: ' . $member->name);
         next;
       }
 
-      # If the member is one of the reviewers for a revision in the stack,
-      # then use the same reviewer for this revision
-      if (any { $_->id == $member->id } @stack_reviewers) {
-        $found_reviewer = $member->phid;
+      # Here we look to see if they can see the bug, and they are not set to away
+      # (not accepting reviews). If both are positive, we have found our reviewer
+      # and exit the loop.
+      if ( $member->bugzilla_user->can_see_bug($revision->bug->id)
+        && $member->bugzilla_user->settings->{block_reviews}->{value} ne 'on')
+      {
+        INFO('Promoting member to reviewer: ' . $member->name);
+        set_new_reviewer($revision, $project, $member, $is_blocking, \@review_users);
         last;
       }
-    }
-
-    # If we did not find a stack reviewer, then start the round robin
-    # process to find the next reviewer in the rotation
-    if (!$found_reviewer) {
-      my $dbh = Bugzilla->dbh;
-
-      # Find the last selected reviewer for the rotation group
-      my $last_reviewer_phid = find_last_reviewer_phid($project);
-
-      my $index = 0;
-      foreach my $member (@{$project_members}) {
-
-        # If there is no member that was the last reviewer, then just pick the first
-        # member in the list
-        if (!$last_reviewer_phid) {
-          $found_reviewer = $member;
-        }
-
-        # If the member was the last select reviewer, then we need to remove them,
-        # and pick the next member in the list.
-        if ($last_reviewer_phid eq $member->phid) {
-
-          # Delete old reviewer
-          delete_last_reviewer_phid($project, $last_reviewer_phid);
-
-          # Select next member in order
-          $found_reviewer = $project_members->[$index];
-          $found_reviewer = $project_members->[0] if !$found_reviewer;    # Loop back around
-        }
-
-       # Once a potential reviewer has been found, look to see if they can see the bug,
-       # and they are not set to away (not accepting reviews). If both are are negative,
-       # we choose the next person in the list.
-        if ( $found_reviewer
-          && $found_reviewer->bugzilla_user->can_see_bug($revision->bug->id)
-          && $found_reviewer->bugzilla_user->settings->{block_reviews}->{value} ne 'on')
-        {
-          INFO('Found new reviewer ' . $member->id);
-          last;
-        }
-        else {
-          $found_reviewer = undef;
-        }
-
-        $index++;
-      }
-    }
-
-    if ($found_reviewer) {
-
-      # Set the user as a reviewer on the revision.
-      INFO('Adding new reviewer ' . $found_reviewer->id);
-      if ($is_blocking->{$project->phid}) {
-        $revision->add_reviewer('blocking(' . $found_reviewer->phid . ')');
-      }
-      else {
-        $revision->add_reviewer($found_reviewer->phid);
-      }
-
-      # Remove the review rotation group.
-      INFO('Removing reviewer project');
-      $revision->remove_reviewer($project->phid);
-
-      # Store the data in the phab_reviewer_rotation table so they will be
-      # next time.
-      add_last_reviewer_phid($project, $found_reviewer->phid);
-
-      # Add new reviewer to review users list in case they are also
-      # a member of the next review rotation group.
-      push @review_users, $found_reviewer;
     }
   }
 
   # Save changes to the revision and return.
   $revision->update;
+}
+
+sub set_new_reviewer {
+  my ($revision, $project, $member, $is_blocking, $review_users) = @_;
+
+  INFO('Setting new reviewer ' . $member->name);
+
+  # Set the user as a reviewer on the revision.
+  if ($is_blocking->{$project->phid}) {
+    $revision->add_reviewer('blocking(' . $member->phid . ')');
+  }
+  else {
+    $revision->add_reviewer($member->phid);
+  }
+
+  # Remove the review rotation group.
+  INFO('Removing reviewer project');
+  $revision->remove_reviewer($project->phid);
+
+  # Store the data in the phab_reviewer_rotation table so they will be
+  # next time.
+  update_last_reviewer_phid($project, $member);
+
+  # Add new reviewer to review users list in case they are also
+  # a member of the next review rotation group.
+  push @{$review_users}, $member;
+}
+
+sub rotate_reviewer_list {
+  my ($project_members, $last_reviewer_phid) = @_;
+  my @project_members = @{$project_members};
+
+  return @project_members if !$last_reviewer_phid;
+
+  # Find index of the last reviewer
+  my ($index)
+    = grep { $project_members[$_]->phid eq $last_reviewer_phid }
+    0..$#project_members;
+
+  # Rotate list
+  my @rotated_members = (
+    @project_members[$index..$#project_members],
+    @project_members[0..$index - 1]
+  );
+
+  INFO(
+    'Rotated project members ' . (join ', ', map { $_->name } @rotated_members));
+
+  return @rotated_members;
 }
 
 sub find_last_reviewer_phid {
@@ -478,20 +521,18 @@ sub find_last_reviewer_phid {
     undef, $project->phid);
 }
 
-sub delete_last_reviewer_phid {
-  my ($project, $reviewer_phid) = @_;
-  INFO("Deleting last reviewer $reviewer_phid");
-  Bugzilla->dbh->do(
-    'DELETE FROM phab_reviewer_rotation WHERE project_phid = ? AND user_phid = ?',
-    undef, $project->phid, $reviewer_phid);
-}
+sub update_last_reviewer_phid {
+  my ($project, $reviewer) = @_;
+  my $dbh = Bugzilla->dbh;
 
-sub add_last_reviewer_phid {
-  my ($project, $reviewer_phid) = @_;
-  INFO("Adding last reviewer $reviewer_phid");
-  Bugzills->dbh->do(
+  INFO(
+    'Updating last reviewer ' . $reviewer->name . ' for project ' . $project->name);
+
+  $dbh->do('DELETE FROM phab_reviewer_rotation WHERE project_phid = ?',
+    undef, $project->phid);
+  $dbh->do(
     'INSERT INTO phab_reviewer_rotation (project_phid, user_phid) VALUES (?, ?)',
-    undef, $project->phid, $reviewer_phid);
+    undef, $project->phid, $reviewer->phid);
 }
 
 sub get_stack_reviewers {
@@ -500,46 +541,60 @@ sub get_stack_reviewers {
 
   INFO('Retrieving stack reviewers from all stack revisions');
 
-  my ($stack_phids) = $revision->stack_graph;
-  if (@{$stack_phids}) {
-    foreach my $phid (@{$stack_phids}) {
-      my $stack_revision
-        = Bugzilla::Extension::PhabBugz::Revision->new_from_query({phids => [$phid]});
-      next if !$stack_revision;
-      foreach my $reviewer (@{$stack_revision->reviews}) {
-        next if $reviewer->{is_project};
-        push @stack_reviewers, $reviewer->{user};
-        $is_blocking->{$reviewer->{user}->phid} = $reviewer->{is_blocking} ? 1 : 0;
-      }
+  my $stack_data = $revision->stack_graph;
+
+  foreach my $phid (@{$stack_data->{phids}}) {
+    next if $phid eq $revision->phid;    # Skip this revision
+    my $stack_revision
+      = Bugzilla::Extension::PhabBugz::Revision->new_from_query({phids => [$phid]});
+    next if !$stack_revision;
+    foreach my $reviewer (@{$stack_revision->reviews}) {
+      next if $reviewer->{is_project};
+      push @stack_reviewers, $reviewer->{user};
+      $is_blocking->{$reviewer->{user}->phid} = $reviewer->{is_blocking} ? 1 : 0;
     }
   }
+
+  INFO(
+    'Stack reviewers found: '
+      . (
+      @stack_reviewers ? (join ', ', map { $_->name } @stack_reviewers) : 'None'
+      )
+  );
 
   return @stack_reviewers;
 }
 
 sub get_review_rotation_projects {
-  my ($revision, $is_blocking);
+  my ($revision, $is_blocking) = @_;
   my @review_projects;
 
   INFO('Retrieving review rotation projects');
 
-  foreach my $reviewer (@{$revision->reviews}) {
+  foreach my $reviewer (@{$revision->reviews || []}) {
 
     # Only interested in projects
     next if !$reviewer->{is_project};
 
     # Only interested in reviewer rotation groups
-    next if $reviewer->{user}->name !~ /-reviewer-rotation$/;
+    next if $reviewer->{user}->name !~ /-reviewer?s-rotation$/;
 
     push @review_projects, $reviewer->{user};
     $is_blocking->{$reviewer->{user}->phid} = $reviewer->{is_blocking} ? 1 : 0;
   }
 
+  INFO(
+    'Reviewer rotation projects found: '
+      . (
+      @review_projects ? (join ', ', map { $_->name } @review_projects) : 'None'
+      )
+  );
+
   return @review_projects;
 }
 
 sub get_review_users {
-  my ($revision, $is_blocking);
+  my ($revision, $is_blocking) = @_;
   my @review_users;
 
   INFO('Retrieving review users (not projects)');
@@ -552,6 +607,9 @@ sub get_review_users {
     push @review_users, $reviewer->{user};
     $is_blocking->{$reviewer->{user}->phid} = $reviewer->{is_blocking} ? 1 : 0;
   }
+
+  INFO('Individual reviewers found: '
+      . (@review_users ? (join ', ', map { $_->name } @review_users) : 'None'));
 
   return @review_users;
 }

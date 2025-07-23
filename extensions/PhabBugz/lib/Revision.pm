@@ -16,6 +16,7 @@ use Types::Standard -all;
 use Type::Utils;
 
 use Bugzilla::Bug;
+use Bugzilla::Logging;
 use Bugzilla::Types qw(JSONBool);
 use Bugzilla::Error;
 use Bugzilla::Util qw(trim);
@@ -96,7 +97,7 @@ has reviewers_extra_raw => (
     Dict [reviewerPHID => Str, voidedPHID => Maybe [Str], diffPHID => Maybe [Str]]
   ]
 );
-has stack_graph => (is => 'lazy', isa => Tuple[ArrayRef, ArrayRef]);
+has stack_graph => (is => 'lazy');
 
 sub new_from_query {
   my ($class, $params) = @_;
@@ -337,6 +338,7 @@ sub _build_reviews {
 
   my @reviewers;
   foreach my $raw (@{$self->reviewers_raw}) {
+<<<<<<< HEAD
     my $reviewer_data = {
       is_blocking => ($raw->{isBlocking} ? 1 : 0),
       is_project  => 0,
@@ -351,6 +353,26 @@ sub _build_reviews {
     elsif ($reviewer_phid =~ /^PHID-USER/) {
       $reviewer_data->{user} = Bugzilla::Extension::PhabBugz::User->new_from_query({phids => [$reviewer_phid]});
     }
+
+    # Only interests in user or project objects (would there ever be something else?)
+    my $reviewer_phid = $raw->{reviewerPHID};
+    next if $reviewer_phid !~ /^PHID-(?:PROJ|USER)/;
+
+    my $reviewer_data = {
+      is_blocking => ($raw->{isBlocking} ? 1 : 0),
+      is_project  => 0,
+      status      => $raw->{status},
+    };
+
+    if ($reviewer_phid =~ /^PHID-PROJ/) {
+      $reviewer_data->{user} = Bugzilla::Extension::PhabBugz::Project->new_from_query({phids => [$reviewer_phid]});
+      $reviewer_data->{is_project} = 1;
+    }
+    elsif ($reviewer_phid =~ /^PHID-USER/) {
+      $reviewer_data->{user} = Bugzilla::Extension::PhabBugz::User->new_from_query({phids => [$reviewer_phid]});
+    }
+
+    next if !$reviewer_data->{user}; # Skip if user or project was not found.
 
     # Set to accepted-prior if the diffs reviewer are different and the reviewer status is accepted
     foreach my $reviewer_extra (@{$self->reviewers_extra_raw}) {
@@ -436,7 +458,7 @@ sub _build_stack_graph {
     }
   }
 
-  return (\@phids, \@edges);
+  return {phids => \@phids, edges => \@edges};
 }
 
 #########################
