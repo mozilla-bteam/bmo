@@ -311,6 +311,15 @@ sub update {
 }
 
 #########################
+#      Accessors        #
+#########################
+
+sub secured_title {
+  my ($self) = @_;
+  return $self->is_private ? '(secure)' : $self->title;
+}
+
+#########################
 #      Builders         #
 #########################
 
@@ -338,22 +347,6 @@ sub _build_reviews {
 
   my @reviewers;
   foreach my $raw (@{$self->reviewers_raw}) {
-<<<<<<< HEAD
-    my $reviewer_data = {
-      is_blocking => ($raw->{isBlocking} ? 1 : 0),
-      is_project  => 0,
-      status      => $raw->{status},
-    };
-
-    my $reviewer_phid = $raw->{reviewerPHID};
-    if ($reviewer_phid =~ /^PHID-PROJ/) {
-      $reviewer_data->{user} = Bugzilla::Extension::PhabBugz::Project->new_from_query({phids => [$reviewer_phid]});
-      $reviewer_data->{is_project} = 1;
-    }
-    elsif ($reviewer_phid =~ /^PHID-USER/) {
-      $reviewer_data->{user} = Bugzilla::Extension::PhabBugz::User->new_from_query({phids => [$reviewer_phid]});
-    }
-
     # Only interests in user or project objects (would there ever be something else?)
     my $reviewer_phid = $raw->{reviewerPHID};
     next if $reviewer_phid !~ /^PHID-(?:PROJ|USER)/;
@@ -551,6 +544,8 @@ sub make_private {
   $self->set_policy('view', $new_policy->phid);
   $self->set_policy('edit', $new_policy->phid);
 
+  $self->{view_policy} = $new_policy->phid;
+
   return $self;
 }
 
@@ -565,6 +560,8 @@ sub make_public {
   $self->set_policy('view', 'public');
   $self->set_policy('edit', ($editbugs ? $editbugs->phid : 'users'));
 
+  $self->{view_policy} = 'public';
+
   my @current_group_projects
     = grep { $_->name =~ /^(bmo-.*|secure-revision)$/ } @{$self->projects};
   foreach my $project (@current_group_projects) {
@@ -572,6 +569,11 @@ sub make_public {
   }
 
   return $self;
+}
+
+sub is_private {
+  my ($self) = @_;
+  return $self->{view_policy} eq 'public' ? 0 : 1;
 }
 
 sub set_private_project_tags {
