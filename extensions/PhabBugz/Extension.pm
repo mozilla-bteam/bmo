@@ -118,6 +118,13 @@ sub db_schema_abstract_schema {
     ],
     INDEXES => [phabbugz_idx => {FIELDS => ['name'], TYPE => 'UNIQUE',},],
   };
+  $args->{'schema'}->{'phab_reviewer_rotation'} = {
+    FIELDS => [
+      id            => {TYPE => 'INTSERIAL',    NOTNULL => 1, PRIMARYKEY => 1,},
+      project_phid  => {TYPE => 'VARCHAR(255)', NOTNULL => 1,},
+      user_phid     => {TYPE => 'VARCHAR(255)', NOTNULL => 1,},
+    ]
+  };
 }
 
 sub install_filesystem {

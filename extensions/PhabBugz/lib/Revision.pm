@@ -16,6 +16,7 @@ use Types::Standard -all;
 use Type::Utils;
 
 use Bugzilla::Bug;
+use Bugzilla::Logging;
 use Bugzilla::Types qw(JSONBool);
 use Bugzilla::Error;
 use Bugzilla::Util qw(trim);
@@ -57,8 +58,17 @@ has bug              => (is => 'lazy', isa => Object);
 has uplift_request   => (is => 'ro',   isa => Maybe[ArrayRef | Dict [ slurpy Any ]]);
 has author           => (is => 'lazy', isa => Object);
 has repository       => (is => 'lazy', isa => Maybe[PhabRepo]);
-has reviews =>
-  (is => 'lazy', isa => ArrayRef [Dict [user => PhabUser | PhabProject, status => Str]]);
+has reviews => (
+  is  => 'lazy',
+  isa => ArrayRef [
+    Dict [
+      user        => PhabUser | PhabProject,
+      status      => Str,
+      is_blocking => Bool,
+      is_project  => Bool
+    ]
+  ]
+);
 has subscribers => (is => 'lazy', isa => ArrayRef [PhabUser]);
 has projects    => (is => 'lazy', isa => ArrayRef [Project]);
 has reviewers_raw => (
@@ -87,6 +97,7 @@ has reviewers_extra_raw => (
     Dict [reviewerPHID => Str, voidedPHID => Maybe [Str], diffPHID => Maybe [Str]]
   ]
 );
+has stack_graph => (is => 'lazy');
 
 sub new_from_query {
   my ($class, $params) = @_;
@@ -334,26 +345,31 @@ sub _build_author {
 sub _build_reviews {
   my ($self) = @_;
 
-  my %by_phid = map { $_->{reviewerPHID} => $_ } @{$self->reviewers_raw};
-  my @users;
-  foreach my $phid (keys %by_phid) {
-    if ($phid =~ /^PHID-PROJ/) {
-      push(@users,
-        Bugzilla::Extension::PhabBugz::Project->new_from_query({phids => [$phid]}));
-    }
-    elsif ($phid =~ /^PHID-USER/) {
-      push(@users,
-        Bugzilla::Extension::PhabBugz::User->new_from_query({phids => [$phid]}));
-    }
-  }
-
   my @reviewers;
-  foreach my $user (@users) {
-    my $reviewer_data = {user => $user, status => $by_phid{$user->phid}{status}};
+  foreach my $raw (@{$self->reviewers_raw}) {
+    # Only interests in user or project objects (would there ever be something else?)
+    my $reviewer_phid = $raw->{reviewerPHID};
+    next if $reviewer_phid !~ /^PHID-(?:PROJ|USER)/;
+
+    my $reviewer_data = {
+      is_blocking => ($raw->{isBlocking} ? 1 : 0),
+      is_project  => 0,
+      status      => $raw->{status},
+    };
+
+    if ($reviewer_phid =~ /^PHID-PROJ/) {
+      $reviewer_data->{user} = Bugzilla::Extension::PhabBugz::Project->new_from_query({phids => [$reviewer_phid]});
+      $reviewer_data->{is_project} = 1;
+    }
+    elsif ($reviewer_phid =~ /^PHID-USER/) {
+      $reviewer_data->{user} = Bugzilla::Extension::PhabBugz::User->new_from_query({phids => [$reviewer_phid]});
+    }
+
+    next if !$reviewer_data->{user}; # Skip if user or project was not found.
 
     # Set to accepted-prior if the diffs reviewer are different and the reviewer status is accepted
     foreach my $reviewer_extra (@{$self->reviewers_extra_raw}) {
-      if ($reviewer_extra->{reviewerPHID} eq $user->phid) {
+      if ($reviewer_extra->{reviewerPHID} eq $reviewer_phid) {
         if ($reviewer_extra->{diffPHID}) {
           if ( $reviewer_data->{status} eq 'accepted'
             && $reviewer_extra->{diffPHID} ne $self->diff_phid)
@@ -420,6 +436,22 @@ sub _build_repository {
     return $self->{repository} = $repository;
   }
   return undef;
+}
+
+sub _build_stack_graph {
+  my ($self) = @_;
+
+  my @phids = keys %{$self->stack_graph_raw};
+  my @edges = ();
+
+  foreach my $node (@phids) {
+    my $predecessors = $self->stack_graph_raw->{$node};
+    foreach my $predecessor (@{$predecessors}) {
+      push @edges, [$node, $predecessor];
+    }
+  }
+
+  return {phids => \@phids, edges => \@edges};
 }
 
 #########################
