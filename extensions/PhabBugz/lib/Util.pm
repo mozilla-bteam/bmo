@@ -363,7 +363,7 @@ sub set_reviewer_rotation {
 
   # Once the reviewer rotation groups are determined, query Phabricator for
   # list of group members for each and sort them by user ID descending.
-  PROJECT: foreach my $project (@review_projects) {
+PROJECT: foreach my $project (@review_projects) {
     INFO('Processing review project: ' . $project->name);
 
     # Sort the project members so we always the same order as best we can.
@@ -397,7 +397,8 @@ sub set_reviewer_rotation {
         && $lone_reviewer->bugzilla_user->settings->{block_reviews}->{value} ne 'on')
       {
         INFO('Single project member found: ' . $lone_reviewer->name);
-        $found_reviewer = $lone_reviewer;
+        set_new_reviewer($revision, $project, $lone_reviewer, $is_blocking, \@review_users);
+        next;
       }
     }
 
@@ -407,8 +408,8 @@ sub set_reviewer_rotation {
       foreach my $member (@project_members) {
         next if !any { $_->id == $member->id } @stack_reviewers;
         INFO('Found a previous stack reviewer: ' . $member->name);
-        $found_reviewer = $member;
-        last;
+        set_new_reviewer($revision, $project, $member, $is_blocking, \@review_users);
+        next PROJECT;
       }
     }
 
@@ -430,40 +431,31 @@ sub set_reviewer_rotation {
     if (!$found_reviewer && !$last_reviewer_phid) {
       INFO('Last reviewer not found so picking first member: '
           . $project_members[0]->name);
-      $found_reviewer = $project_members[0];
+      set_new_reviewer($revision, $project, $project_members[0], $is_blocking,
+        \@review_users);
+      next;
     }
 
     # Loop through all members and pick the next one in line after last selected
-    if (!$found_reviewer) {
-      foreach my $member (@project_members) {
-        INFO('Considering candidate reviewer: ' . $member->name);
+    foreach my $member (@project_members) {
+      INFO('Considering candidate reviewer: ' . $member->name);
 
-        # Skip this member if they were the last one picked
-        if ($member->phid eq $last_reviewer_phid) {
-          INFO('Already the last reviewer picked, skipping: ' . $member->name);
-          next;
-        }
-
-        # Here we look to see if they can see the bug, and they are not set to away
-        # (not accepting reviews). If both are positive, we have found our reviewer
-        # and exit the loop.
-        if ( $member->bugzilla_user->can_see_bug($revision->bug->id)
-          && $member->bugzilla_user->settings->{block_reviews}->{value} ne 'on')
-        {
-          $found_reviewer = $member;
-          last;
-        }
+      # Skip this member if they were the last one picked
+      if ($member->phid eq $last_reviewer_phid) {
+        INFO('Already the last reviewer picked, skipping: ' . $member->name);
+        next;
       }
-    }
 
-    if ($found_reviewer) {
-      INFO('Promoting member to reviewer: ' . $found_reviewer->name);
-
-      set_new_reviewer($revision, $project, $found_reviewer, $is_blocking);
-
-      # Add new reviewer to review users list in case they are also
-      # a member of the next review rotation group.
-      push @review_users, $found_reviewer;
+      # Here we look to see if they can see the bug, and they are not set to away
+      # (not accepting reviews). If both are positive, we have found our reviewer
+      # and exit the loop.
+      if ( $member->bugzilla_user->can_see_bug($revision->bug->id)
+        && $member->bugzilla_user->settings->{block_reviews}->{value} ne 'on')
+      {
+        INFO('Promoting member to reviewer: ' . $member->name);
+        set_new_reviewer($revision, $project, $member, $is_blocking, \@review_users);
+        last;
+      }
     }
   }
 
@@ -472,7 +464,7 @@ sub set_reviewer_rotation {
 }
 
 sub set_new_reviewer {
-  my ($revision, $project, $member, $is_blocking) = @_;
+  my ($revision, $project, $member, $is_blocking, $review_users) = @_;
 
   INFO('Setting new reviewer ' . $member->name);
 
@@ -491,6 +483,10 @@ sub set_new_reviewer {
   # Store the data in the phab_reviewer_rotation table so they will be
   # next time.
   update_last_reviewer_phid($project, $member);
+
+  # Add new reviewer to review users list in case they are also
+  # a member of the next review rotation group.
+  push @{$review_users}, $member;
 }
 
 sub rotate_reviewer_list {
