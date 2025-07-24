@@ -65,12 +65,12 @@ sub bug {
 
 sub reminder_ts {
   my ($self) = @_;
-  return $self->{reminder_ts} ? datetime_from($self->{reminder_ts}) : undef;
+  return $self->{reminder_ts} ? datetime_from($self->{reminder_ts}, 'UTC') : undef;
 }
 
 sub creation_ts {
   my ($self) = @_;
-  return $self->{creation_ts} ? datetime_from($self->{creation_ts}) : undef;
+  return $self->{creation_ts} ? datetime_from($self->{creation_ts}, 'UTC') : undef;
 }
 
 sub id     { return $_[0]->{id}; }
