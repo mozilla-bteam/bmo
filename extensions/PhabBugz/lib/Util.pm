@@ -422,6 +422,7 @@ PROJECT: foreach my $project (@review_projects) {
         next if !any { $_->id == $member->id } @review_users;
         INFO('Member manually set as a reviewer so done: ' . $member->name);
         $revision->remove_reviewer($project->phid);
+        $revision->add_subscriber($project->phid);
         next PROJECT;
       }
     }
