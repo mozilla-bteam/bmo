@@ -480,6 +480,10 @@ sub set_new_reviewer {
   INFO('Removing reviewer project');
   $revision->remove_reviewer($project->phid);
 
+  # And add to subscriber list
+  INFO('Adding reviewer project to subscriber list');
+  $revision->add_subscriber($project->phid);
+
   # Store the data in the phab_reviewer_rotation table so they will be
   # next time.
   update_last_reviewer_phid($project, $member);
