@@ -78,6 +78,7 @@ sub should_send {
     if ( ($event =~ /create/ && $message->routing_key eq 'bug.create')
       || ($event =~ /change/ && $message->routing_key =~ /^bug\.modify/)
       || ($event =~ /comment/    && $message->routing_key eq 'comment.create')
+      || ($event =~ /attachment_change/ && $message->routing_key =~ /^attachment[.]modify/)
       || ($event =~ /attachment/ && $message->routing_key eq 'attachment.create'))
     {
       return 1;
