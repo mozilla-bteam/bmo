@@ -20,6 +20,7 @@ use Bugzilla::Logging;
 use Bugzilla::Types qw(JSONBool);
 use Bugzilla::Error;
 use Bugzilla::Util qw(trim);
+use Bugzilla::Extension::PhabBugz::Comment;
 use Bugzilla::Extension::PhabBugz::Project;
 use Bugzilla::Extension::PhabBugz::Repository;
 use Bugzilla::Extension::PhabBugz::Types qw(:types);
@@ -98,6 +99,7 @@ has reviewers_extra_raw => (
   ]
 );
 has stack_graph => (is => 'lazy');
+has comments => (is => 'lazy');
 
 sub new_from_query {
   my ($class, $params) = @_;
@@ -452,6 +454,28 @@ sub _build_stack_graph {
   }
 
   return {phids => \@phids, edges => \@edges};
+}
+
+sub _build_comments {
+  my ($self) = @_;
+
+  return $self->{comments} if $self->{comments};
+
+  my $result       = request('transaction.search', {objectIdentifier => $self->phid});
+  my $transactions = [];
+  if (exists $result->{result}{data} && @{$result->{result}{data}}) {
+    $transactions = $result->{result}{data};
+  }
+
+  my @comments;
+  foreach my $transaction (@{$transactions}) {
+    next if !$transaction->{type} || $transaction->{type} ne 'comment';
+    foreach my $comment (@{$transaction->{comments}}) {
+      push @comments, Bugzilla::Extension::PhabBugz::Comment->new($comment);
+    }
+  }
+
+  return $self->{comments} = \@comments;
 }
 
 #########################
