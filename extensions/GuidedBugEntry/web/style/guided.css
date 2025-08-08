@@ -227,3 +227,8 @@ ul.product-list > li > .product-item {
 .help-good {
   color: var(--positive-message-foreground-color);
 }
+
+#guided-markdown-help {
+  float: right;
+  font-size: var(--font-size-small);
+}
