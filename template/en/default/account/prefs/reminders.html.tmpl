@@ -11,6 +11,8 @@
 [% PROCESS global/variables.none.tmpl %]
 [% PROCESS 'global/field-descs.none.tmpl' %]
 
+<p>Reminders are sent out once per day at midnight UTC of the date selected.</p>
+
 <script [% script_nonce FILTER none%]>
   window.addEventListener("DOMContentLoaded", () => {
     const type_list = ["days", "months", "date"];
@@ -82,8 +84,8 @@
       </td>
       <td>[% reminder.bug.short_desc FILTER html %]</td>
       <td>[% reminder.note FILTER html %]</td>
-      <td>[% reminder.reminder_ts FILTER time('%Y-%m-%d') FILTER html %]</td>
-      <td>[% reminder.creation_ts FILTER time('%Y-%m-%d') FILTER html %]</td>
+      <td>[% reminder.reminder_ts FILTER time('%Y-%m-%d', 'UTC') FILTER html %] UTC</td>
+      <td>[% reminder.creation_ts FILTER time('%Y-%m-%d', 'UTC') FILTER html %] UTC</td>
       <td>[% IF reminder.sent %]Yes[% ELSE %]No[% END %]</td>
     </tr>
   [% END %]

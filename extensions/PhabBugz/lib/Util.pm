@@ -21,8 +21,7 @@ use Bugzilla::Util qw(mojo_user_agent trim);
 use Bugzilla::Extension::PhabBugz::Constants;
 use Bugzilla::Extension::PhabBugz::Types qw(:types);
 
-use List::MoreUtils qw(any);
-use List::Util      qw(any first);
+use List::Util      qw(first none);
 use Try::Tiny;
 use Type::Params qw( compile );
 use Type::Utils;
@@ -406,7 +405,7 @@ PROJECT: foreach my $project (@review_projects) {
     # then use the same reviewer for this revision
     if (@stack_reviewers) {
       foreach my $member (@project_members) {
-        next if !any { $_->id == $member->id } @stack_reviewers;
+        next if none { $_->id == $member->id } @stack_reviewers;
         INFO('Found a previous stack reviewer: ' . $member->name);
         set_new_reviewer($revision, $project, $member, $is_blocking, \@review_users);
         next PROJECT;
@@ -419,9 +418,10 @@ PROJECT: foreach my $project (@review_projects) {
     # do not want this reviewer set to last reviewer in the DB.
     if (@review_users) {
       foreach my $member (@project_members) {
-        next if !any { $_->id == $member->id } @review_users;
+        next if none { $_->id == $member->id } @review_users;
         INFO('Member manually set as a reviewer so done: ' . $member->name);
         $revision->remove_reviewer($project->phid);
+        $revision->add_subscriber($project->phid);
         next PROJECT;
       }
     }
@@ -454,8 +454,25 @@ PROJECT: foreach my $project (@review_projects) {
       {
         INFO('Promoting member to reviewer: ' . $member->name);
         set_new_reviewer($revision, $project, $member, $is_blocking, \@review_users);
-        last;
+        next PROJECT;
       }
+    }
+
+    # If we got to this point, we did not find a suitable reviewer so
+    # we will leave a comment in the revision with explanation. First
+    # we need to check to make sure we have not already added this comment.
+    my $comments     = $revision->comments;
+    my $project_name = $project->name;
+    INFO("A reviewer was not found for $project_name.");
+    if (none {$_->text =~ /REVIEWER ROTATION:.* $project_name/} @{$comments}) {
+      INFO('Adding comment to revision because reviewer not found');
+      $revision->add_comment(
+        'REVIEWER ROTATION: An available rotation reviewer was not found from the group '
+          . $project->name
+          . ' for this revision.');
+    }
+    else {
+      INFO('Comment already added previously. Skipping.');
     }
   }
 
@@ -479,6 +496,10 @@ sub set_new_reviewer {
   # Remove the review rotation group.
   INFO('Removing reviewer project');
   $revision->remove_reviewer($project->phid);
+
+  # And add to subscriber list
+  INFO('Adding reviewer project to subscriber list');
+  $revision->add_subscriber($project->phid);
 
   # Store the data in the phab_reviewer_rotation table so they will be
   # next time.
