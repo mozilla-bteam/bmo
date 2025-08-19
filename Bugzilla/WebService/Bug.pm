@@ -1233,17 +1233,9 @@ sub add_comment {
   $bug->set_all({comment_tags => $params->{comment_tags}})
     if defined $params->{comment_tags};
 
-  # Capture the call to bug->update (which creates the new comment) in
-  # a transaction so we're sure to get the correct comment_id.
-
-  my $dbh = Bugzilla->dbh;
-  $dbh->bz_start_transaction();
-
   $bug->update();
 
-  my $new_comment_id = $dbh->bz_last_key('longdescs', 'comment_id');
-
-  $dbh->bz_commit_transaction();
+  my $new_comment_id = Bugzilla->dbh->bz_last_key('longdescs', 'comment_id');
 
   # Send mail.
   Bugzilla::BugMail::Send($bug->bug_id, {changer => Bugzilla->user});
