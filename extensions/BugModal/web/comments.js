@@ -486,8 +486,7 @@ Bugzilla.BugModal.Comments = class Comments {
     // Check the connectivity, API support, user setting, bug security and sensitive keywords
     if ((navigator.connection && navigator.connection.type === 'cellular') ||
         typeof IntersectionObserver !== 'function' || !BUGZILLA.user.settings.inline_attachments ||
-        BUGZILLA.bug_secure || !BUGZILLA.bug_keywords ||
-        BUGZILLA.bug_keywords.split(', ').find(keyword => keyword.match(/^(hang|assertion|crash)$/))) {
+        BUGZILLA.bug_secure || /\b(?:hang|assertion|crash)\b/.test(BUGZILLA.bug_keywords ?? '')) {
       return;
     }
 
