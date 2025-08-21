@@ -492,7 +492,7 @@ Bugzilla.BugModal.Comments = class Comments {
       BUGZILLA.bug_secure ||
       /\b(?:hang|assertion|crash)\b/.test(BUGZILLA.bug_keywords ?? '') ||
       typeof IntersectionObserver !== 'function' ||
-      (navigator.connection && navigator.connection.type === 'cellular')
+      navigator.connection?.type === 'cellular'
     ) {
       return;
     }
