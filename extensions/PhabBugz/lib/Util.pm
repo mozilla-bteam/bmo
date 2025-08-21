@@ -392,7 +392,8 @@ PROJECT: foreach my $project (@review_projects) {
     if (scalar @project_members == 1) {
       my $lone_reviewer = $project_members[0];
 
-      if ( $lone_reviewer->bugzilla_user->can_see_bug($revision->bug->id)
+      if ( $lone_reviewer->phid ne $revision->author->phid
+        && $lone_reviewer->bugzilla_user->can_see_bug($revision->bug->id)
         && $lone_reviewer->bugzilla_user->settings->{block_reviews}->{value} ne 'on')
       {
         INFO('Single project member found: ' . $lone_reviewer->name);
@@ -406,6 +407,7 @@ PROJECT: foreach my $project (@review_projects) {
     if (@stack_reviewers) {
       foreach my $member (@project_members) {
         next if none { $_->id == $member->id } @stack_reviewers;
+        next if $member->phid eq $revision->author->phid;
         INFO('Found a previous stack reviewer: ' . $member->name);
         set_new_reviewer($revision, $project, $member, $is_blocking, \@review_users);
         next PROJECT;
@@ -428,7 +430,9 @@ PROJECT: foreach my $project (@review_projects) {
 
     # If we still have not found a reviewer and there is no member that was the
     # last reviewer, then just pick the first member in the list
-    if (!$last_reviewer_phid) {
+    if (!$last_reviewer_phid
+      && $project_members[0]->phid ne $revision->author->phid)
+    {
       INFO('Last reviewer not found so picking first member: '
           . $project_members[0]->name);
       set_new_reviewer($revision, $project, $project_members[0], $is_blocking,
@@ -449,7 +453,8 @@ PROJECT: foreach my $project (@review_projects) {
       # Here we look to see if they can see the bug, and they are not set to away
       # (not accepting reviews). If both are positive, we have found our reviewer
       # and exit the loop.
-      if ( $member->bugzilla_user->can_see_bug($revision->bug->id)
+      if ($member->phid ne $revision->author->phid
+        && $member->bugzilla_user->can_see_bug($revision->bug->id)
         && $member->bugzilla_user->settings->{block_reviews}->{value} ne 'on')
       {
         INFO('Promoting member to reviewer: ' . $member->name);
