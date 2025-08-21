@@ -483,10 +483,17 @@ Bugzilla.BugModal.Comments = class Comments {
    * Prepare to show an attachment inline if possible.
    */
   prepare_inline_attachments() {
-    // Check the connectivity, API support, user setting, bug security and sensitive keywords
-    if ((navigator.connection && navigator.connection.type === 'cellular') ||
-        typeof IntersectionObserver !== 'function' || !BUGZILLA.user.settings.inline_attachments ||
-        BUGZILLA.bug_secure || /\b(?:hang|assertion|crash)\b/.test(BUGZILLA.bug_keywords ?? '')) {
+    // Check the Bugzilla instance parameter, user setting, bug security, sensitive keywords, API
+    // support and connectivity. If any of these conditions are not met, skip the inline attachment
+    // rendering.
+    if (
+      !BUGZILLA.param.allow_attachment_display ||
+      !BUGZILLA.user.settings.inline_attachments ||
+      BUGZILLA.bug_secure ||
+      /\b(?:hang|assertion|crash)\b/.test(BUGZILLA.bug_keywords ?? '') ||
+      typeof IntersectionObserver !== 'function' ||
+      (navigator.connection && navigator.connection.type === 'cellular')
+    ) {
       return;
     }
 

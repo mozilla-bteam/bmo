@@ -123,7 +123,8 @@
                 maxattachmentsize => Param('maxattachmentsize'),
                 maxusermatches => Param('maxusermatches'),
                 splinter_base => Param('splinter_base'),
-                use_markdown => Param('use_markdown'),
+                use_markdown => Param('use_markdown') == '1',
+                allow_attachment_display => Param('allow_attachment_display') == '1',
             },
             constant => {
                 COMMENT_COLS => constants.COMMENT_COLS,
