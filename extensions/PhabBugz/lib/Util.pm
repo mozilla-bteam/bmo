@@ -597,7 +597,7 @@ sub get_review_rotation_projects {
     next if !$reviewer->{is_project};
 
     # Only interested in reviewer rotation groups
-    next if $reviewer->{user}->name !~ /-reviewer?s-rotation$/;
+    next if $reviewer->{user}->name !~ /-reviewers?-rotation$/;
 
     push @review_projects, $reviewer->{user};
     $is_blocking->{$reviewer->{user}->phid} = $reviewer->{is_blocking} ? 1 : 0;
