@@ -935,19 +935,18 @@ input[type="radio"]:checked {
 #bugzilla-body {
   display: flow-root;
   position: relative;
-  overflow: auto;
   outline: none;
 }
 
 @media screen {
   :root {
     scroll-padding-top: calc(var(--global-header-height) + var(--private-bug-banner-height, 0px) + 8px);
+    scrollbar-color: var(--scrollbar-color);
   }
 
   body {
     color: var(--application-foreground-color);
     background-color: var(--application-background-color);
-    scrollbar-color: var(--scrollbar-color);
   }
 
   #wrapper {
@@ -971,6 +970,7 @@ input[type="radio"]:checked {
  */
 
 #header {
+  width: 100dvw;
   height: var(--global-header-height);
   color: var(--application-header-foreground-color);
   background-color: var(--application-header-background-color);
