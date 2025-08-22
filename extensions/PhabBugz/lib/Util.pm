@@ -428,18 +428,6 @@ PROJECT: foreach my $project (@review_projects) {
       }
     }
 
-    # If we still have not found a reviewer and there is no member that was the
-    # last reviewer, then just pick the first member in the list
-    if (!$last_reviewer_phid
-      && $project_members[0]->phid ne $revision->author->phid)
-    {
-      INFO('Last reviewer not found so picking first member: '
-          . $project_members[0]->name);
-      set_new_reviewer($revision, $project, $project_members[0], $is_blocking,
-        \@review_users);
-      next;
-    }
-
     # Loop through all members and pick the next one in line after last selected
     foreach my $member (@project_members) {
       INFO('Considering candidate reviewer: ' . $member->name);
