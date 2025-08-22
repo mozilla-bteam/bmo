@@ -729,7 +729,7 @@ Bugzilla.CommentEditor = class CommentEditor extends Bugzilla.TextEditor {
 window.addEventListener(
   'DOMContentLoaded',
   () => {
-    const useMarkdown = BUGZILLA.param.use_markdown === '1';
+    const useMarkdown = BUGZILLA.param.use_markdown;
 
     document
       .querySelectorAll('textarea[name="comment"]:not(.bz_default_hidden)')
