@@ -3098,7 +3098,7 @@ div.bz_comment_text pre {
 
 #toast {
   position: fixed;
-  inset: 10px auto auto 50dvw;
+  inset: 50px auto auto 50dvw;
   z-index: 100;
   box-sizing: border-box;
   border: 1px solid var(--control-border-color);
