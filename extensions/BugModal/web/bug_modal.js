@@ -285,16 +285,11 @@ $(function() {
         });
 
     // show floating message after creating/updating a bug/attachment
-    if ($('#floating-message-text').text()) {
-        $('#floating-message').fadeIn(250).delay(4000).fadeOut();
-    }
+    const { changeSummary } = document.querySelector('#changeform')?.dataset ?? {};
 
-    // hide floating message when clicked
-    $('#floating-message')
-        .click(function(event) {
-            event.preventDefault();
-            $(this).hide();
-        });
+    if (changeSummary) {
+        Bugzilla.Toast.show(changeSummary);
+    }
 
     const $tooltipParent = document.querySelector('#bugzilla-body');
 
@@ -461,38 +456,30 @@ $(function() {
         }
 
         if (hasExecCopy) {
-            function copy(text, name) {
-                const captalizedName = name[0].toUpperCase() + name.slice(1);
-                // execCommand("copy") only works on selected text
-                $('#clip-container').show();
-                $('#clip').val(text).select();
-                $('#floating-message-text')
-                  .text(document.execCommand("copy") ? `${captalizedName} copied!` : `Couldn’t copy ${name}`);
-                $('#floating-message').fadeIn(250).delay(2500).fadeOut();
-                $('#clip-container').hide();
+            const copy = (data, name) => {
+                const capitalizedName = `${name[0].toUpperCase()}${name.slice(1)}`;
+
+                Bugzilla.Clipboard.copy(data, {
+                    successMessage: `${capitalizedName} copied!`,
+                    errorMessage: `Couldn’t copy ${name}`,
+                });
             }
 
             const url = BUGZILLA.bug_url;
 
             const bugNumberText = `bug ${BUGZILLA.bug_id}`;
             const summaryText = `Bug ${BUGZILLA.bug_id} - ${BUGZILLA.bug_summary}`;
-
-            const bugNumberHTML = `<a href="${url}">${bugNumberText.htmlEncode()}</a>`;
             const summaryHTML = `<a href="${url}">${summaryText.htmlEncode()}</a>`;
 
-            $('#copy-summary').click(() => {
-                function onCopy(event) {
-                    if (event.target.nodeType === 1 && event.target.matches('#clip')) {
-                        event.clipboardData.setData('text/uri-list', url);
-                        event.clipboardData.setData('text/plain', summaryText);
-                        event.clipboardData.setData('text/html', summaryHTML);
-                        event.preventDefault();
-                        document.removeEventListener('copy', onCopy);
-                    }
-                }
+            const htmlData = {
+                'text/plain': summaryText,
+                'text/html': summaryHTML,
+            };
 
-                document.addEventListener('copy', onCopy);
-                copy(summaryText, "bug summary");
+            $('#copy-summary').click(() => {
+                // We used to include `{ 'text/uri-list': url }` in the data, but not all browsers
+                // support it with the Clipboard API. So we just copy the HTML and plain text.
+                copy(htmlData, "bug summary");
             });
 
             $('#copy-markdown-summary').click(() => {
@@ -507,17 +494,7 @@ $(function() {
             });
 
             $('#copy-html-summary').click(() => {
-                function onCopy(event) {
-                    if (event.target.nodeType === 1 && event.target.matches('#clip')) {
-                        event.clipboardData.setData('text/plain', summaryHTML);
-                        event.clipboardData.setData('text/html', summaryHTML);
-                        event.preventDefault();
-                        document.removeEventListener('copy', onCopy);
-                    }
-                }
-
-                document.addEventListener('copy', onCopy);
-                copy(summaryHTML, "HTML link with bug summary");
+                copy(htmlData, "HTML link with bug summary");
             });
         }
         else {
@@ -801,12 +778,7 @@ $(function() {
                 && !hasGoodSeverity()
             ) {
                 $('#bug_severity').addClass('attention');
-                $('#floating-message-text')
-                    .text("Severity of S1-S4 is required to mark a bug as triaged.");
-                $('#floating-message')
-                    .fadeIn(250)
-                    .delay(2500)
-                    .fadeOut();
+                Bugzilla.Toast.show('Severity of S1-S4 is required to mark a bug as triaged.');
                 return;
             }
 
@@ -871,12 +843,11 @@ $(function() {
                 ccListLoading();
 
             // show message
-            $('#floating-message-text')
-                .text(is_cced ? 'You are now following this bug' : 'You are no longer following this bug');
-            $('#floating-message')
-                .fadeIn(250)
-                .delay(2500)
-                .fadeOut();
+            Bugzilla.Toast.show(
+              is_cced
+                ? 'You are now following this bug'
+                : 'You are no longer following this bug'
+            );
 
             // show/hide "add me to the cc list"
             if (is_cced) {

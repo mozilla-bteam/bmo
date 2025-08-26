@@ -38,12 +38,10 @@ function show_usermenu(vcard) {
         items.unshift({
             name: "Copy Name",
             callback: function () {
-                $('#clip-container').show();
-                $('#clip').val(name).select();
-                $('#floating-message-text')
-                  .text(document.execCommand('copy') ? 'Name has been copied' : 'Could not copy name');
-                $('#floating-message').fadeIn(250).delay(2500).fadeOut();
-                $('#clip-container').hide();
+                Bugzilla.Clipboard.copy(name, {
+                    successMessage: 'Name has been copied',
+                    errorMessage: 'Could not copy name',
+                });
             }
         });
     }

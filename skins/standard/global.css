@@ -3093,6 +3093,30 @@ div.bz_comment_text pre {
 }
 
 /**
+ * Toast notification
+ */
+
+#toast {
+  position: fixed;
+  inset: 10px auto auto 50dvw;
+  z-index: 100;
+  box-sizing: border-box;
+  border: 1px solid var(--control-border-color);
+  border-radius: 2px;
+  padding: 4px 8px;
+  width: max-content;
+  max-width: 90dvw;
+  color: var(--secondary-label-color);
+  background: var(--informative-message-background-color);
+  box-shadow: var(--menu-box-shadow);
+  text-align: center;
+  cursor: default;
+  -webkit-user-select: none;
+  user-select: none;
+  transform: translateX(-50%);
+}
+
+/**
  * Print media
  */
 
