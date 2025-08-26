@@ -77,8 +77,8 @@ sub run_last_changes {
     my $bug = Bugzilla::Bug->check($params->{bug_id});
     my $html
       = Bugzilla->params->{use_markdown}
-      ? Bugzilla->markdown->render_html($text, $bug, $comment, $user)
-      : Bugzilla::Template::quoteUrls($text, $bug, $comment, $user);
+      ? Bugzilla->markdown->render_html($text, $bug)
+      : Bugzilla::Template::quoteUrls($text, $bug);
     $last_changes->{comment_html} = $html;
     $last_changes->{email} = $comment->{creator} if !$last_changes->{email};
     my $datetime = datetime_from($comment->{creation_time});
