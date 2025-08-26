@@ -121,7 +121,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     if (lastChangesCache[bug_id]) {
-      const { email, when, activity, comment_html } = lastChangesCache[bug_id];
+      const { email, when, activity, comment_html = '' } = lastChangesCache[bug_id];
 
       $target.innerHTML = `
         <div id="last_changes_${bug_id}">
@@ -157,7 +157,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     `
                     : ``
                 }
-                ${comment_html ?? ''}
+                ${comment_html}
               `
               : `This is a new ${BUGZILLA.string.bug} and no changes have been made yet.`
           }
