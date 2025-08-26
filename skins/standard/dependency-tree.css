@@ -64,7 +64,7 @@
 }
 
 .expander {
-  width: 18px;
+  width: 18px !important;
   height: 18px;
 }
 
