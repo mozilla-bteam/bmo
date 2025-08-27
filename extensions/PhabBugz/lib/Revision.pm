@@ -321,6 +321,15 @@ sub secured_title {
   return $self->is_private ? '(secure)' : $self->title;
 }
 
+sub uplift_hash {
+  my ($self) = @_;
+
+  my $uplift_json_encoded = encode_json(
+    $self->uplift_request, {canonical => 1}
+  );
+  return sha1_hex($uplift_json_encoded);
+}
+
 #########################
 #      Builders         #
 #########################

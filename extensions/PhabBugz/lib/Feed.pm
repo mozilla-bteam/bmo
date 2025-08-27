@@ -354,11 +354,65 @@ sub group_query {
   }
 }
 
-sub _is_uplift_request_form_change {
-  # Return `true` if the story text is an uplift request change.
+sub get_last_uplift_hash {
+  my ($revision_phid) = @_;
+  INFO('Retrieving last uplift form hash for revision ' . $revision_phid);
+
+  return Bugzilla->dbh->selectrow_array(
+    'SELECT uplift_form_hash FROM phab_uplift_form_state WHERE revision_phid = ?',
+    undef,
+    $revision_phid
+  );
+}
+
+sub update_last_uplift_hash {
+  my ($revision_phid, $uplift_hash) = @_;
+  my $dbh = Bugzilla->dbh;
+
+  INFO(
+    'Updating last uplift hash' . $uplift_hash . ' for revision' . $revision_phid
+  );
+
+  $dbh->do(
+    'DELETE FROM phab_uplift_form_state WHERE revision_phid = ?',
+    undef,
+    $revision_phid
+  );
+  $dbh->do(
+    'INSERT INTO phab_uplift_form_state (revision_phid, uplift_form_hash) VALUES (?, ?)',
+    undef,
+    $revision_phid,
+    $uplift_hash
+  );
+}
+
+sub is_uplift_request_form_story_change {
+  # Return `true` if the uplift request form has changed since last check.
   my ($story_text) = @_;
 
   return $story_text =~ /\s+uplift request field/;
+}
+
+sub has_uplift_request_form_changed {
+  # Return `true` if the uplift request form has changed since last check.
+  my ($revision) = @_;
+
+  # Take no action if the form is empty.
+  if (ref $revision->uplift_request ne 'HASH'
+    || !keys %{$revision->uplift_request})
+  {
+    INFO('Uplift request form field empty, ignoring.');
+    return;
+  }
+
+  my $previous_hash = get_last_uplift_hash($revision->phid);
+  if (!$previous_hash) {
+    # If the form is not empty and there is no previous hash,
+    # the form has changed.
+    return 1;
+  }
+
+  return $revision->uplift_hash ne $previous_hash;
 }
 
 sub readable_answer {
@@ -413,14 +467,6 @@ sub process_uplift_request_form_change {
 
   my ($timestamp) = Bugzilla->dbh->selectrow_array('SELECT NOW()');
   my $phab_bot_user = Bugzilla::User->new({name => PHAB_AUTOMATION_USER});
-
-  # Take no action if the form is empty.
-  if (ref $revision->uplift_request ne 'HASH'
-    || !keys %{$revision->uplift_request})
-  {
-    INFO('Uplift request form field cleared, ignoring.');
-    return;
-  }
 
   INFO('Commenting the uplift form on the bug.');
 
@@ -515,6 +561,7 @@ sub process_uplift_request_form_change {
   }
 
   INFO("Finished processing uplift request form change for $revision_phid.");
+  update_last_uplift_hash($revision->phid, $revision->uplift_hash);
 }
 
 sub process_revision_change {
@@ -554,9 +601,13 @@ sub process_revision_change {
   my $restore_prev_user = set_phab_user();
   my $bug               = $revision->bug;
 
-  # Change is a submission of the uplift request form.
-  if (_is_uplift_request_form_change($story_text)) {
-    return process_uplift_request_form_change($revision, $bug);
+  # Process uplift request form changes if the hash has changed since phab-bot last
+  # saw it.
+  if (has_uplift_request_form_changed($revision)) {
+    process_uplift_request_form_change($revision, $bug);
+
+    # Return early if updating from a story change.
+    return if is_uplift_request_form_story_change($story_text);
   }
 
   # Check to make sure bug id is valid and author can see it
