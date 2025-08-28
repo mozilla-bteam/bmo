@@ -685,7 +685,7 @@ Bugzilla.Clipboard = class Clipboard {
    * @type {boolean} `true` if the Clipboard API is supported, `false` otherwise.
    */
   static get canCopy() {
-    return typeof navigator.clipboard.write === 'function';
+    return typeof navigator.clipboard?.write === 'function';
   }
 
   /**
