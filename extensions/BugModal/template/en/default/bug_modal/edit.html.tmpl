@@ -139,7 +139,10 @@
 %]
 
 [% IF user.id %]
-  <form name="changeform" id="changeform" method="post" action="[% basepath FILTER none %]process_bug.cgi"[% IF bug.groups_in.size %] autocomplete="nope"[% END %]>
+  <form name="changeform" id="changeform" method="post"
+        action="[% basepath FILTER none %]process_bug.cgi"
+        data-change-summary="[% change_short_summary FILTER html %]"
+        [%= IF bug.groups_in.size %]autocomplete="nope"[% END %]>
   <input type="hidden" name="delta_ts" value="[% bug.delta_ts FILTER html %]">
   <input type="hidden" name="longdesclength" value="[% bug.comments.size FILTER html %]">
   <input type="hidden" name="id" id="bug_id" value="[% bug.bug_id FILTER html %]">
@@ -173,14 +176,13 @@
         </li>
       </ul>
     </div>
-    <div id="clip-container" style="display:none"><input type="text" id="clip"></div>
     [% IF user.id %]
       <button type="button" class="secondary" id="cc-btn" data-is-cced="[% is_cced ? 1 : 0 %]">
         [%~ is_cced ? "Stop Following" : "Follow" ~%]
       </button>
       [% IF Param('reminders_enabled') AND user.in_group(Param('reminders_group')) %]
-        <button type="button" class="secondary" id="reminder-btn" 
-                data-is-reminded="[% bug.is_reminded ? 1 : 0 %]" 
+        <button type="button" class="secondary" id="reminder-btn"
+                data-is-reminded="[% bug.is_reminded ? 1 : 0 %]"
                 data-has-needinfo-from="[% has_needinfo_from ? has_needinfo_from : "" FILTER html %]">
           [%~ bug.is_reminded ? "Remove Reminder" : "Add Reminder" ~%]
         </button>
@@ -283,9 +285,6 @@
 [%# === header === %]
 
 <div role="status" id="io-error" style="display:none"></div>
-<div role="status" id="floating-message" style="display:none">
-  <div id="floating-message-text">[% change_short_summary FILTER html %]</div>
-</div>
 
 [% WRAPPER bug_modal/module.html.tmpl
     title = ""

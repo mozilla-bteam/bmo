@@ -1399,25 +1399,6 @@ a.comment-tag-url {
   background: var(--secondary-region-background-color);
 }
 
-#floating-message {
-  position: fixed;
-  left: 50%;
-  top: 50px;
-  z-index: 100;
-}
-
-#floating-message-text {
-  position: relative;
-  left: -50%;
-  border: 1px solid var(--control-border-color);
-  border-radius: 2px;
-  padding: 4px 8px;
-  color: var(--secondary-label-color);
-  background: var(--informative-message-background-color);
-  box-shadow: var(--menu-box-shadow);
-  cursor: default;
-}
-
 #mode-container {
   display: table-cell;
   margin: 5px;
@@ -1654,16 +1635,6 @@ a.lightbox-icon.markdown {
 /**
  * clipboard shenanigans
  */
-
-#clip-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 0;
-  height: 0;
-  z-index: 100;
-  opacity: 0;
-}
 
 #user-guide {
   padding-top: 5px;
