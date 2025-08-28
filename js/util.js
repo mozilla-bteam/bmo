@@ -681,6 +681,14 @@ Bugzilla.API = class API {
  */
 Bugzilla.Clipboard = class Clipboard {
   /**
+   * Check if the Clipboard API is supported in the current browser.
+   * @type {boolean} `true` if the Clipboard API is supported, `false` otherwise.
+   */
+  static get canCopy() {
+    return typeof navigator.clipboard.write === 'function';
+  }
+
+  /**
    * Copy the given data to the clipboard and show a toast notification if needed.
    * @param {string | Record<string, any>} data Data to copy. It can be a string or an object, where
    * the keys are MIME types and the values are strings or `Blob` objects.

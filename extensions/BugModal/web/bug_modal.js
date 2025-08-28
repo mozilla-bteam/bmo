@@ -448,14 +448,7 @@ $(function() {
     // copy summary to clipboard
 
     if ($('#copy-summary').length) {
-        var hasExecCopy = false;
-        try {
-            hasExecCopy = document.queryCommandSupported("copy");
-        } catch(ex) {
-            // ignore
-        }
-
-        if (hasExecCopy) {
+        if (Bugzilla.Clipboard.canCopy) {
             const copy = (data, name) => {
                 const capitalizedName = `${name[0].toUpperCase()}${name.slice(1)}`;
 
