@@ -125,13 +125,6 @@ sub db_schema_abstract_schema {
       user_phid     => {TYPE => 'VARCHAR(255)', NOTNULL => 1,},
     ]
   };
-  $args->{'schema'}->{'phab_uplift_form_state'} = {
-    FIELDS => [
-      id               => {TYPE => 'INTSERIAL',    NOTNULL => 1, PRIMARYKEY => 1,},
-      revision_phid    => {TYPE => 'VARCHAR(255)', NOTNULL => 1,},
-      uplift_form_hash => {TYPE => 'VARCHAR(255)', NOTNULL => 1,},
-    ]
-  };
 }
 
 sub install_filesystem {
