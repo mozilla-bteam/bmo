@@ -14,6 +14,7 @@ use base qw(Bugzilla::WebService Bugzilla::WebService::Bug);
 
 use Bugzilla::Constants;
 use Bugzilla::Error;
+use Bugzilla::Template;
 use Bugzilla::Util qw(detaint_natural template_var datetime_from);
 use Bugzilla::WebService::Util qw(validate);
 
@@ -72,7 +73,13 @@ sub run_last_changes {
   if ($last_comment_id) {
     my $comments = $self->comments({comment_ids => [$last_comment_id]});
     my $comment = $comments->{comments}{$last_comment_id};
-    $last_changes->{comment} = $comment->{text};
+    my $text = $comment->{text};
+    my $bug = Bugzilla::Bug->check($params->{bug_id});
+    my $html
+      = Bugzilla->params->{use_markdown}
+      ? Bugzilla->markdown->render_html($text, $bug)
+      : Bugzilla::Template::quoteUrls($text, $bug);
+    $last_changes->{comment_html} = $html;
     $last_changes->{email} = $comment->{creator} if !$last_changes->{email};
     my $datetime = datetime_from($comment->{creation_time});
     $datetime->set_time_zone($user->timezone);

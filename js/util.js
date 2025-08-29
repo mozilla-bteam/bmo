@@ -676,6 +676,51 @@ Bugzilla.API = class API {
 };
 
 /**
+ * Provide static utility methods related to clipboard manipulation.
+ * @see https://developer.mozilla.org/en-US/docs/Web/API/Clipboard_API
+ */
+Bugzilla.Clipboard = class Clipboard {
+  /**
+   * Check if the Clipboard API is supported in the current browser.
+   * @type {boolean} `true` if the Clipboard API is supported, `false` otherwise.
+   */
+  static get canCopy() {
+    return typeof navigator.clipboard?.write === 'function';
+  }
+
+  /**
+   * Copy the given data to the clipboard and show a toast notification if needed.
+   * @param {string | Record<string, any>} data Data to copy. It can be a string or an object, where
+   * the keys are MIME types and the values are strings or `Blob` objects.
+   * @param {Object} [options] Options.
+   * @param {string} [options.successMessage] Message to show on success.
+   * @param {string} [options.errorMessage] Message to show on error.
+   * @returns {Promise.<boolean>} `true` if the data was copied successfully, `false` otherwise.
+   */
+  static async copy(data, { successMessage, errorMessage } = {}) {
+    let copied = false;
+
+    try {
+      if (typeof data === 'string') {
+        await navigator.clipboard.writeText(data);
+      } else {
+        await navigator.clipboard.write([new ClipboardItem(data)]);
+      }
+
+      copied = true;
+    } catch (ex) {
+      console.error(ex);
+    }
+
+    if (successMessage && errorMessage) {
+      Bugzilla.Toast.show(copied ? successMessage : errorMessage);
+    }
+
+    return copied;
+  }
+};
+
+/**
  * Extend the generic `Error` class so it can contain a custom name and other data if needed. This allows to gracefully
  * handle an error from either the REST API or the browser.
  */
@@ -930,6 +975,48 @@ Bugzilla.String = class String {
     return [...Array(length)]
       .map(() => '0123456789abcdef'[Math.floor(Math.random() * 16)])
       .join('');
+  }
+};
+
+/**
+ * Provide static utility methods related to toast notifications.
+ */
+Bugzilla.Toast = class Toast {
+  /**
+   * Show a toast notification.
+   * @param {string} message Message to show.
+   * @param {Object} [options] Options.
+   * @param {boolean} [options.html=false] Whether the message is HTML or plain text. This method
+   * doesn’t sanitize the HTML, so it should be used with caution.
+   * @param {number} [options.duration=2500] Duration in milliseconds to show the toast.
+   * @requires jQuery
+   */
+  static show(message, { html = false, duration = 2500 } = {}) {
+    let $toast = document.querySelector('#toast');
+
+    if (!$toast) {
+      $toast = document.createElement('div');
+      $toast.id = 'toast';
+      $toast.setAttribute('role', 'alert');
+      $toast.style.display = 'none';
+      $toast.addEventListener('click', () => {
+        $toast.style.display = 'none';
+      });
+      document.querySelector('#bugzilla-body').appendChild($toast);
+    }
+
+    if (html) {
+      $toast.innerHTML = message;
+    } else {
+      $toast.textContent = message;
+    }
+
+    $($toast)
+      .fadeIn(250)
+      .delay(duration)
+      .fadeOut(250, () => {
+        $toast.textContent = '';
+      });
   }
 };
 

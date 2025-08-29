@@ -73,19 +73,6 @@ Bugzilla.ComponentWatching = class ComponentWatching {
   }
 
   /**
-   * Show a short floating message if the button is on BugModal. This code is from bug_modal.js, requiring jQuery.
-   * @param {String} message Message text.
-   */
-  show_message(message) {
-    if (!document.querySelector('#floating-message')) {
-      return;
-    }
-
-    $('#floating-message-text').text(message);
-    $('#floating-message').fadeIn(250).delay(2500).fadeOut();
-  }
-
-  /**
    * Get all the component watching buttons on the current page.
    * @param {String} [product] Optional product name.
    * @param {String} [component] Optional component name.
@@ -182,7 +169,7 @@ Bugzilla.ComponentWatching = class ComponentWatching {
       code = 1;
     }
 
-    this.show_message(message);
+    Bugzilla.Toast.show(message);
     this.track_event(source, watchId ? 'unwatch' : 'watch', component ? 'component' : 'product', code);
   }
 
