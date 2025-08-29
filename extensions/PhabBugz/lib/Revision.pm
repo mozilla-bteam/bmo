@@ -11,8 +11,7 @@ use 5.10.1;
 use Moo;
 
 use Digest::SHA qw(sha1_hex);
-use JSON::MaybeXS qw(encode_json);
-use Mojo::JSON qw(true);
+use Mojo::JSON qw(encode_json true);
 use Scalar::Util qw(blessed weaken);
 use Types::Standard -all;
 use Type::Utils;
@@ -326,9 +325,8 @@ sub secured_title {
 sub uplift_hash {
   my ($self) = @_;
 
-  my $uplift_json_encoded = encode_json(
-    $self->uplift_request, {canonical => 1}
-  );
+  # Mojo's `encode_json` should sort keys by default.
+  my $uplift_json_encoded = encode_json($self->uplift_request);
   return sha1_hex($uplift_json_encoded);
 }
 
