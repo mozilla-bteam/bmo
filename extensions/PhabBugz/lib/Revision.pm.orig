@@ -10,8 +10,7 @@ package Bugzilla::Extension::PhabBugz::Revision;
 use 5.10.1;
 use Moo;
 
-use Digest::SHA qw(sha1_hex);
-use Mojo::JSON qw(encode_json true);
+use Mojo::JSON qw(true);
 use Scalar::Util qw(blessed weaken);
 use Types::Standard -all;
 use Type::Utils;
@@ -325,8 +324,9 @@ sub secured_title {
 sub uplift_hash {
   my ($self) = @_;
 
-  # Mojo's `encode_json` should sort keys by default.
-  my $uplift_json_encoded = encode_json($self->uplift_request);
+  my $uplift_json_encoded = encode_json(
+    $self->uplift_request, {canonical => 1}
+  );
   return sha1_hex($uplift_json_encoded);
 }
 
