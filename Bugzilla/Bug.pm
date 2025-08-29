@@ -1117,6 +1117,10 @@ sub update {
   }
 
   # Comments and comment tags
+  use Bugzilla::Logging;
+  use Mojo::Util qw(dumper);
+  INFO(dumper $self->{added_comments});
+
   foreach my $comment (@{$self->{added_comments} || []}) {
 
     # Override the Comment's timestamp to be identical to the update
