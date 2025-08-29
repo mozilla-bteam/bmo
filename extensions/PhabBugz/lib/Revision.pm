@@ -10,6 +10,7 @@ package Bugzilla::Extension::PhabBugz::Revision;
 use 5.10.1;
 use Moo;
 
+use JSON::MaybeXS qw(encode_json);
 use Mojo::JSON qw(true);
 use Scalar::Util qw(blessed weaken);
 use Types::Standard -all;
