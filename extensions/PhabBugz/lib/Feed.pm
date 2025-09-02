@@ -595,17 +595,6 @@ sub process_revision_change {
   my $restore_prev_user = set_phab_user();
   my $bug               = $revision->bug;
 
-  my ($timestamp) = Bugzilla->dbh->selectrow_array("SELECT NOW()");
-
-  # Process uplift request form changes if the hash has changed since phab-bot last
-  # saw it.
-  if (has_uplift_request_form_changed($revision)) {
-    process_uplift_request_form_change($revision, $bug);
-
-    # Return early if updating from a story change.
-    return if is_uplift_request_form_story_change($story_text);
-  }
-
   # Check to make sure bug id is valid and author can see it
   if ($bug->{error}
     || !$revision->author->bugzilla_user->can_see_bug($revision->bug_id))
@@ -624,6 +613,20 @@ sub process_revision_change {
     $revision->add_comment($phab_error_message);
     $revision->update();
     return;
+  }
+
+  my ($timestamp) = Bugzilla->dbh->selectrow_array("SELECT NOW()");
+
+  # Process uplift request form changes if the hash has changed since phab-bot last
+  # saw it.
+  if (has_uplift_request_form_changed($revision)) {
+    process_uplift_request_form_change($revision, $bug);
+
+    # Return early if updating from a story change.
+    if (is_uplift_request_form_story_change($story_text)) {
+      $bug->update($timestamp);
+      return;
+    }
   }
 
   # REVISION SECURITY POLICY
