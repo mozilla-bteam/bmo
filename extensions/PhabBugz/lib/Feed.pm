@@ -465,7 +465,6 @@ sub process_uplift_request_form_change {
   # Process an uplift request form change for the passed revision object.
   my ($revision, $bug) = @_;
 
-  my ($timestamp) = Bugzilla->dbh->selectrow_array('SELECT NOW()');
   my $phab_bot_user = Bugzilla::User->new({name => PHAB_AUTOMATION_USER});
 
   INFO('Commenting the uplift form on the bug.');
@@ -478,7 +477,6 @@ sub process_uplift_request_form_change {
     'isprivate'   => 0,
   };
   $bug->add_comment($comment_content, $comment_params);
-  $bug->update($timestamp);
 
   my $revision_phid = $revision->phid;
   INFO(
@@ -526,14 +524,11 @@ sub process_uplift_request_form_change {
   if ($revision->uplift_request->{'Needs manual QE test'}) {
     INFO('Needs manual QE test is set.');
 
-    # Reload the current bug object so we can call update again
-    my $reloaded_bug = Bugzilla::Bug->new($bug->id);
-
     my @old_flags;
     my @new_flags;
 
     # Find the current `qe-verify` flag state if it exists.
-    foreach my $flag (@{$reloaded_bug->flags}) {
+    foreach my $flag (@{$bug->flags}) {
       # Ignore for all flags except `qe-verify`.
       next if $flag->name ne 'qe-verify';
       # Set the flag to `+`. If already '+', it will be non-change.
@@ -556,8 +551,7 @@ sub process_uplift_request_form_change {
     }
 
     # Set the flags.
-    $reloaded_bug->set_flags(\@old_flags, \@new_flags);
-    $reloaded_bug->update($timestamp);
+    $bug->set_flags(\@old_flags, \@new_flags);
   }
 
   INFO("Finished processing uplift request form change for $revision_phid.");
@@ -601,15 +595,6 @@ sub process_revision_change {
   my $restore_prev_user = set_phab_user();
   my $bug               = $revision->bug;
 
-  # Process uplift request form changes if the hash has changed since phab-bot last
-  # saw it.
-  if (has_uplift_request_form_changed($revision)) {
-    process_uplift_request_form_change($revision, $bug);
-
-    # Return early if updating from a story change.
-    return if is_uplift_request_form_story_change($story_text);
-  }
-
   # Check to make sure bug id is valid and author can see it
   if ($bug->{error}
     || !$revision->author->bugzilla_user->can_see_bug($revision->bug_id))
@@ -628,6 +613,20 @@ sub process_revision_change {
     $revision->add_comment($phab_error_message);
     $revision->update();
     return;
+  }
+
+  my ($timestamp) = Bugzilla->dbh->selectrow_array("SELECT NOW()");
+
+  # Process uplift request form changes if the hash has changed since phab-bot last
+  # saw it.
+  if (has_uplift_request_form_changed($revision)) {
+    process_uplift_request_form_change($revision, $bug);
+
+    # Return early if updating from a story change.
+    if (is_uplift_request_form_story_change($story_text)) {
+      $bug->update($timestamp);
+      return;
+    }
   }
 
   # REVISION SECURITY POLICY
@@ -677,8 +676,6 @@ sub process_revision_change {
     my $subscribers = get_bug_role_phids($bug);
     $revision->set_subscribers($subscribers);
   }
-
-  my ($timestamp) = Bugzilla->dbh->selectrow_array("SELECT NOW()");
 
   # Create new or retrieve current attachment
   INFO('Checking for revision attachment');
