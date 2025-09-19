@@ -459,6 +459,26 @@ sub dbh_main {
   return request_cache->{dbh_main} ||= Bugzilla::DB::connect_main();
 }
 
+sub switch_to_replica1_db {
+  my $class = shift;
+
+  if (!request_cache->{dbh_replica1}) {
+    if ($class->localconfig->db_replica1_name) {
+      request_cache->{dbh_replica1} = Bugzilla::DB::connect_replica1();
+    }
+    elsif ($class->get_param_with_override('shadowdb')) {
+      request_cache->{dbh_replica1} = Bugzilla::DB::connect_shadow();
+    }
+    else {
+      request_cache->{dbh_replica1} = $class->dbh_main;
+    }
+  }
+
+  request_cache->{dbh} = request_cache->{dbh_replica1};
+
+  return $class->dbh;
+}
+
 sub languages {
   return Bugzilla::Install::Util::supported_languages();
 }
@@ -1096,6 +1116,12 @@ Switch from using the main database to using the shadow database.
 =item C<switch_to_main_db>
 
 Change the database object to refer to the main database.
+
+=item C<switch_to_replica1_db>
+
+Switch from using the main database to using the replica1 database. This
+will fall back to the shadow database, if one is configured, or the main
+database as a last resort.
 
 =item C<params>
 

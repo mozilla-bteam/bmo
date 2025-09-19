@@ -68,8 +68,8 @@ $dataset_id || die "Invalid BigQuery dataset ID.\n";
 # Check to make sure another instance is not currently running
 check_and_set_lock();
 
-# Use replica if available
-my $dbh = Bugzilla->switch_to_shadow_db();
+# Use dedicated replica1
+my $dbh = Bugzilla->switch_to_replica1_db;
 
 my $ua = LWP::UserAgent::Determined->new(
   agent                 => 'Bugzilla',
