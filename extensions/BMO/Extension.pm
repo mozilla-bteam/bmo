@@ -417,7 +417,7 @@ sub parse_bounty_attachment_description {
 sub triage_request {
   my ($vars) = @_;
   my $user = Bugzilla->login(LOGIN_REQUIRED);
-  if (Bugzilla->input_params->{update}) {
+  if (!$user->is_new && Bugzilla->input_params->{update}) {
     Bugzilla->set_user(Bugzilla::User->super_user);
     $user->set_groups({add => ['canconfirm']});
     Bugzilla->set_user($user);
