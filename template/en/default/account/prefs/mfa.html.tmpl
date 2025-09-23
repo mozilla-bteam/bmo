@@ -56,7 +56,7 @@
     </iframe>
 
   [% ELSIF user.mfa %]
-    [% IF user.mfa != 'Duo' && user.in_duo_required_group %]
+    [% IF user.mfa != 'Duo' && user.in_duo_required_group && !user.in_duo_excluded_group %]
       <p class="mfa-warning-msg">
         You are in a group requiring Duo Security for two-factor authentication. You must
         first disabled your current two-factor authentication and then select Duo Security
@@ -77,9 +77,9 @@
     <input type="hidden" name="mfa_action" id="mfa-action" value="disable">
 
     <div class="mfa-buttons">
-      [% IF user.mfa == 'Duo' && user.in_duo_required_group %]
+      [% IF user.mfa == 'Duo' && user.in_duo_required_group && !user.in_duo_excluded_group %]
         <p class="mfa-warning-msg">
-          You are in a group requiring Duo Security for two-factor authentication and 
+          You are in a group requiring Duo Security for two-factor authentication and
           therefore it cannot be disabled. Talk to an admin on Slack (#bmo) if you need assistance.
         </p>
       [% ELSIF user.mfa != 'Duo' || (user.mfa == 'Duo' && !user.in_duo_required_group) %]

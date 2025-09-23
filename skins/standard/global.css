@@ -779,6 +779,19 @@ input[type="checkbox"]:checked {
   background-size: 18px 18px;
 }
 
+input[type="checkbox"]:disabled {
+  border-color: var(--disabled-button-foreground-color);
+  background-color: var(--disabled-button-background-color);
+  border-width: 1px;
+  cursor: default;
+}
+
+input[type="checkbox"]:disabled:checked {
+  border-color: var(--disabled-control-foreground-color);
+  background-color: var(--disabled-control-foreground-color);
+  cursor: default;
+}
+
 input[type="radio"] {
   border-radius: 50%;
 }

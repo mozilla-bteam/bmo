@@ -47,6 +47,13 @@
       faster.
     </p>
 
+  [% ELSIF user.is_new %]
+
+    <p>
+      Your account is still too new to request the ability to triage [% terms.bugs %].
+      Please check back at a later time to see when you will become eligible.
+    </p>
+
   [% ELSE %]
 
     <p>
