@@ -105,6 +105,11 @@ use constant LOCALCONFIG_VARS => (
   {name => 'shadowdb_pass',       default => '',},
   {name => 'datadog_host',        default => '',},
   {name => 'datadog_port',        default => 8125,},
+  {name => 'db_replica1_host',    default => '',},
+  {name => 'db_replica1_name',    default => '',},
+  {name => 'db_replica1_user',    default => '',},
+  {name => 'db_replica1_pass',    default => '',},
+  {name => 'db_replica1_port',    default => 0,},
 );
 
 sub _read_localconfig_from_env {
