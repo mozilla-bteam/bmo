@@ -180,6 +180,20 @@ sub connect_main {
   return $main_dbh;
 }
 
+sub connect_replica1 {
+  state $replica1_dbh;
+  return $replica1_dbh if $replica1_dbh;
+
+  my $connect_params = dclone(Bugzilla->localconfig);
+  $connect_params->{db_host} = $connect_params->{db_replica1_host};
+  $connect_params->{db_name} = $connect_params->{db_replica1_name};
+  $connect_params->{db_user} = $connect_params->{db_replica1_user};
+  $connect_params->{db_pass} = $connect_params->{db_replica1_pass};
+  $connect_params->{db_port} = $connect_params->{db_replica1_port};
+
+  return $replica1_dbh = _connect($connect_params);
+}
+
 sub _connect {
   my ($params) = @_;
 
