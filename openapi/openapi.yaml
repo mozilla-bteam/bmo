@@ -1,9 +1,8 @@
 openapi: 3.1.0
 info:
   title: WebService API Reference
-  description: >
-    This is the standard REST API for external programs that want to interact
-    with Bugzilla. It provides a REST interface to various Bugzilla functions.
+  description:
+    $ref: docs/general.md
   license:
     name: MPL-2.0
     url: https://github.com/mozilla-bteam/bmo/blob/master/LICENSE
@@ -38,6 +37,8 @@ paths:
     $ref: paths/bug_comment_{comment_id}_tags.yaml
   /bug/comment/render:
     $ref: paths/bug_comment_render.yaml
+  /rest/bug_user_last_visit/{id}:
+    $ref: paths/bug_user_last_visit_{id}.yaml
 components:
   securitySchemes:
     X-BUGZILLA-API-KEY:
@@ -199,10 +200,8 @@ tags:
     externalDocs:
       url: https://bmo.readthedocs.io/en/latest/api/core/v1/product.html
   - name: Users
-    description: >-
-      This part of the Bugzilla API allows you to create user accounts, get
-      information about user accounts and to log in or out using an existing
-      account.
+    description:
+      $ref: docs/users.md
     externalDocs:
       url: https://bmo.readthedocs.io/en/latest/api/core/v1/user.html
   - name: Webhooks

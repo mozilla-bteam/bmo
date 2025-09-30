@@ -50,7 +50,7 @@ post:
   description: This allows you to add an attachment to a bug in Bugzilla.
   operationId: create_bug_attachment
   parameters:
-    - $ref: '#/components/parameters/BugId'
+    - $ref: ../components/parameters/BugId.yaml
   requestBody:
     required: true
     content:
