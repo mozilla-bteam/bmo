@@ -3724,6 +3724,22 @@ sub attachments {
   return $self->{'attachments'};
 }
 
+sub spam_attachment_id_map {
+  my ($self) = @_;
+  return $self->{'spam_attachments_id_map'} if exists $self->{'spam_attachments_id_map'};
+
+  my $spam_map = ();
+  my $raw_comments = $self->comments();
+  foreach my $comment (@$raw_comments) {
+    if ($comment->is_attachment_created && $comment->is_spam) {
+        $spam_map->{$comment->raw_attachment_id} = 1;
+    }
+  }
+  $self->{'spam_attachments_id_map'} = $spam_map;
+
+  return $self->{'spam_attachments_id_map'};
+}
+
 sub assigned_to {
   my ($self) = @_;
   return $self->{'assigned_to_obj'} if exists $self->{'assigned_to_obj'};
