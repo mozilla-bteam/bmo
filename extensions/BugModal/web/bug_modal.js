@@ -1183,7 +1183,7 @@ $(function() {
     $('#user-story-reply-btn')
         .click(function(event) {
             event.preventDefault();
-            var text = "(Commenting on User Story)\n" + wrapReplyText($('#cf_user_story').val());
+            var text = "(Commenting on User Story)\n" + wrapReplyText($('#user-story-reply-btn').data('user-story'));
             var current = $('#comment', '#changeform').val();
             if (current != text) {
                 $('#comment', '#changeform').val(current + text);
