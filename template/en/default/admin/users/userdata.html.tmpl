@@ -21,6 +21,15 @@
   #%]
 
 <tr>
+  [% IF otheruser.gravatar %]
+    <tr>
+      <td align="right">
+        <img id="gravatar" src="[% otheruser.gravatar(256) FILTER none %]" width="64" height="64">
+      </td>
+      <td>&nbsp;</td>
+    </tr>
+  [% END %]
+  </tr>
   <th><label for="login">Login name:</label></th>
   <td>
     [% IF editusers %]
