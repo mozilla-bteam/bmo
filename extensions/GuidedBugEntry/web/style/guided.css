@@ -41,6 +41,8 @@
 }
 
 ul.product-list {
+  display: flex;
+  flex-wrap: wrap;
   margin: 0 -10px 20px;
   padding: 0;
   list-style: outside none none;
@@ -55,8 +57,6 @@ ul.product-list > li {
   border-radius: var(--primary-region-border-radius);
   padding: 1px;
   width: 300px;
-  min-height: 166px;
-  height: 168px;
   background-color: var(--primary-region-background-color);
   background-clip: padding-box;
   box-shadow: var(--primary-region-box-shadow);
