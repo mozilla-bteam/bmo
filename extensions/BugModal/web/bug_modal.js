@@ -108,6 +108,28 @@ function initKeywordsAutocomplete(keywords) {
 $(function() {
     'use strict';
 
+    /**
+     * Reference to the main bug change form.
+     * @type {HTMLFormElement}
+     */
+    const $form = document.querySelector('#changeform');
+
+    /**
+     * Flag indicating whether we are creating a new bug or editing an existing one.
+     */
+    const isNewBug = $form.matches('.enter_bug_form');
+
+    /**
+     * Instance of the instant update handler.
+     */
+    const instantUpdater = isNewBug ? undefined : new Bugzilla.BugModal.InstantUpdater($form);
+
+    /**
+     * Flag indicating whether the user is in Edit mode or not. This affects the behavior of the
+     * Save button.
+     */
+    let editMode = isNewBug || false;
+
     // update relative dates
     var relative_timer_duration = 60000;
     var relative_timer_id = window.setInterval(relativeTimer, relative_timer_duration);
@@ -285,7 +307,7 @@ $(function() {
         });
 
     // show floating message after creating/updating a bug/attachment
-    const { changeSummary } = document.querySelector('#changeform')?.dataset ?? {};
+    const { changeSummary } = $form.dataset ?? {};
 
     if (changeSummary) {
         Bugzilla.Toast.show(changeSummary);
@@ -381,9 +403,6 @@ $(function() {
                     $('#ccr-' + $(this).data('n')).css('visibility', 'hidden');
                 }
             );
-            $('#cc-list .show_usermenu').click(function() {
-                return show_usermenu($(this)[0]);
-            });
             $('#cc-list .cc-remove')
                 .click(function(event) {
                     event.preventDefault();
@@ -621,6 +640,7 @@ $(function() {
     $('#mode-btn')
         .click(async event => {
             event.preventDefault();
+            editMode = true;
 
             // hide buttons, old error messages
             $('#mode-btn-readonly').hide();
@@ -720,12 +740,12 @@ $(function() {
 
     // disable the save buttons while posting
     $('.save-btn')
-        .click(function(event) {
+        .click(async function(event) {
             event.preventDefault();
 
             // Check if all the required fields are entered/selected.
             // This replaces the legacy `validateEnterBug()` function.
-            const hasInvalidField = [...this.form.querySelectorAll('[aria-required="true"]')]
+            const hasInvalidField = [...$form.querySelectorAll('[aria-required="true"]')]
                 .map(($input) => {
                     let invalid = false;
 
@@ -740,7 +760,7 @@ $(function() {
                     } else if ($input.type === 'select-one') {
                         invalid = $input.selectedIndex === -1;
                     } else if ($input.matches('[class="buttons toggle"]')) {
-                        invalid = !this.form[$input.id].value;
+                        invalid = !$form[$input.id].value;
                     }
 
                     $input.setAttribute('aria-invalid', invalid);
@@ -759,7 +779,7 @@ $(function() {
                     return !!$input;
                 });
 
-            if (hasInvalidField || !document.changeform.checkValidity())
+            if (hasInvalidField || !$form.checkValidity())
                 return;
 
             // unfortunately native html form validation doesn't support
@@ -776,7 +796,21 @@ $(function() {
             }
 
             $('.save-btn').attr('disabled', true);
-            this.form.submit();
+
+            if (editMode) {
+                // Submit the form normally as the user has probably changed multiple fields
+                $form.submit();
+            } else {
+                try {
+                    // Try to do an instant update via the API
+                    event.stopPropagation();
+                    await instantUpdater.submit();
+                    clearSavedBugComment();
+                } catch {
+                    // Fallback to a full form submission
+                    $form.submit();
+                }
+            }
 
             // remember expanded modules
             $('#editing').val(
@@ -1043,8 +1077,8 @@ $(function() {
         });
 
     // reply button
-    $('.reply-btn')
-        .click(function(event) {
+    $('#changeform')
+        .on('click', '.reply-btn', function(event) {
             event.preventDefault();
             var comment_id = $(event.target).data('id');
             var comment_no = $(event.target).data('no');
