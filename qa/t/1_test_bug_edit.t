@@ -499,6 +499,9 @@ $sel->type_ok('comment', 'Awesome comment that should be added instantly');
 $sel->click_ok('bottom-save-btn', 'Save changes');
 $sel->is_text_present_ok('Awesome comment that should be added instantly');
 
+# Wait for the instant update to complete
+sleep(2);
+
 $sel->type_ok('comment', 'Comment that should not be added instantly');
 $sel->click_ok('//button[text()="FIXED"]');
 $sel->click_ok('bottom-save-btn', 'Save changes');
