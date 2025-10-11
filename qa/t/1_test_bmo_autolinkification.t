@@ -25,6 +25,10 @@ $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_like(qr/\d+ \S $bug_summary/, "Bug created");
 my $bug_id = $sel->get_value("//input[\@name='id' and \@type='hidden']");
 
+# Reload the page with Edit mode enabled, otherwise the next test fails due to
+# instant bug update
+go_to_bug($sel, $bug_id);
+
 $sel->type_ok("comment", "bp-63f096f7-253b-4ee2-ae3d-8bb782090824");
 $sel->click_ok("bottom-save-btn");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
