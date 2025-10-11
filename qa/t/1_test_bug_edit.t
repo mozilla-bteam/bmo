@@ -491,6 +491,20 @@ $sel->click_ok('bottom-save-btn', 'Save changes');
 check_page_load($sel, qq{http://HOSTNAME/show_bug.cgi?id=$bug2_id});
 $sel->is_text_present_ok("Changes submitted for bug $bug2_id");
 
+# Test instant bug update. It works only when adding a comment in readonly mode.
+
+go_to_bug($sel, $bug2_id, 1);
+$sel->type_ok('comment', 'Awesome comment that should be added instantly');
+$sel->click_ok('bottom-save-btn', 'Save changes');
+# The form will not be submitted because only a comment was added
+check_page_load($sel, qq{http://HOSTNAME/show_bug.cgi?id=$bug2_id});
+$sel->is_text_present_ok('Awesome comment that should be added instantly');
+$sel->type_ok('comment', 'Comment that should not be added instantly');
+$sel->click_ok('//button[text()="FIXED"]');
+$sel->click_ok('bottom-save-btn', 'Save changes');
+# The form will be submitted because the status was changed
+check_page_load($sel, q{http://HOSTNAME/process_bug.cgi});
+
 # Test mass-change.
 
 $sel->click_ok('quicksearch_top');

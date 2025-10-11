@@ -289,15 +289,25 @@ Bugzilla.InlineCommentEditor = class InlineCommentEditor extends Bugzilla.Commen
     this.$commentBody.hidden = false;
     this.$outer.remove();
   }
+
+  /**
+   * Activate the inline comment editor on the given change set element. This method adds a click
+   * event listener to the edit button within the change set, which will instantiate a new
+   * {@link InlineCommentEditor} when clicked.
+   * @param {HTMLElement} $changeSet Change set element to activate the inline comment editor on.
+   */
+  static activate($changeSet) {
+    $changeSet.querySelector('.edit-btn')?.addEventListener('click', () => {
+      new Bugzilla.InlineCommentEditor($changeSet);
+    });
+  }
 };
 
 window.addEventListener(
   'DOMContentLoaded',
   () => {
     document.querySelectorAll('.change-set').forEach((/** @type {HTMLElement} */ $changeSet) => {
-      $changeSet.querySelector('.edit-btn')?.addEventListener('click', () => {
-        new Bugzilla.InlineCommentEditor($changeSet);
-      });
+      Bugzilla.InlineCommentEditor.activate($changeSet);
     });
   },
   { once: true },
