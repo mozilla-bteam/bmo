@@ -916,6 +916,11 @@ Bugzilla.BugModal.InstantUpdater = class InstantUpdater {
   initialFormData = null;
 
   /**
+   * Fields to ignore when detecting changes.
+   */
+  IGNORED_FIELDS = ['delta_ts', 'token', 'editing', 'defined_groups'];
+
+  /**
    * Selectors for elements whose `value` attributes need to be updated.
    */
   VALUE_REPLACE_SELECTORS = ['input[name="delta_ts"]', 'input[name="token"]'];
@@ -950,7 +955,7 @@ Bugzilla.BugModal.InstantUpdater = class InstantUpdater {
 
     // Detect changed fields
     currentFormData.forEach((value, key) => {
-      if (this.$form[key]?.type !== 'hidden' && this.initialFormData.get(key) !== value) {
+      if (!this.IGNORED_FIELDS.includes(key) && this.initialFormData.get(key) !== value) {
         changedFields[key] = value;
       }
     });
