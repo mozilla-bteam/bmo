@@ -918,7 +918,7 @@ Bugzilla.BugModal.InstantUpdater = class InstantUpdater {
   /**
    * Fields to ignore when detecting changes.
    */
-  IGNORED_FIELDS = ['delta_ts', 'token', 'editing', 'defined_groups'];
+  IGNORED_FIELDS = ['delta_ts', 'token', 'editing'];
 
   /**
    * Selectors for elements whose `value` attributes need to be updated.
