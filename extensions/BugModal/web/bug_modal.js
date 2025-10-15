@@ -121,9 +121,8 @@ $(function() {
 
     /**
      * Instance of the instant update handler.
-     * @type {Bugzilla.BugModal.InstantUpdater | undefined}
      */
-    let instantUpdater = undefined;
+    const instantUpdater = isNewBug ? undefined : new Bugzilla.BugModal.InstantUpdater($form);
 
     /**
      * Flag indicating whether the user is in Edit mode or not. This affects the behavior of the
@@ -134,16 +133,6 @@ $(function() {
     // update relative dates
     var relative_timer_duration = 60000;
     var relative_timer_id = window.setInterval(relativeTimer, relative_timer_duration);
-
-    if (!isNewBug) {
-      window.addEventListener(
-        'load',
-        () => {
-          instantUpdater = new Bugzilla.BugModal.InstantUpdater($form);
-        },
-        { once: true }
-      );
-    }
 
     window.addEventListener('visibilitychange', () => {
       if (document.hidden) {
