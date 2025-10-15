@@ -806,8 +806,8 @@ $(function() {
                     event.stopPropagation();
                     await instantUpdater.submit();
                     clearSavedBugComment();
-                } catch (ex) {
-                    document.body.insertAdjacentText('beforeend', `Failed to update the bug: ${ex.message}`);
+                } catch (error) {
+                    document.body.insertAdjacentText('beforeend', `Failed to update the bug: ${error.message}`);
                     // Fallback to a full form submission
                     $form.submit();
                 }
