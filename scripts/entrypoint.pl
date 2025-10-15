@@ -153,7 +153,7 @@ sub cmd_test_webservices {
 }
 
 sub cmd_test_selenium {
-  my $file_pattern = '1_test_bug_edit.t';
+  my $file_pattern = '*test_*.t';
   if ($ENV{SELENIUM_GROUP}) {
     $file_pattern = $ENV{SELENIUM_GROUP} . '_test_*.t';
   }

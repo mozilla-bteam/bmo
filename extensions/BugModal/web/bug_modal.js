@@ -806,10 +806,9 @@ $(function() {
                     event.stopPropagation();
                     await instantUpdater.submit();
                     clearSavedBugComment();
-                } catch (ex) {
-                    document.querySelector('#field-value-short_desc').innerHTML = `Failed to update the bug: ${ex.message}`;
+                } catch {
                     // Fallback to a full form submission
-                    // $form.submit();
+                    $form.submit();
                 }
             }
 
