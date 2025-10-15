@@ -798,8 +798,9 @@ $(function() {
             $('.save-btn').attr('disabled', true);
 
             if (editMode) {
+                document.body.insertAdjacentText('beforeend', 'Edit mode');
                 // Submit the form normally as the user has probably changed multiple fields
-                $form.submit();
+                // $form.submit();
             } else {
                 try {
                     // Try to do an instant update via the API
@@ -809,7 +810,7 @@ $(function() {
                 } catch (error) {
                     document.body.insertAdjacentText('beforeend', `Failed to update the bug: ${error.message}`);
                     // Fallback to a full form submission
-                    $form.submit();
+                    // $form.submit();
                 }
             }
 
