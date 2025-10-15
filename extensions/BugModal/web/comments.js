@@ -967,7 +967,7 @@ Bugzilla.BugModal.InstantUpdater = class InstantUpdater {
       throw new Error(`Unsupported field changes detected: ${changedKeys.join(', ')}`);
     }
 
-    // Show a placeholder comment immediately. Don't `await` this because the rendering doesn’t
+    // Show a placeholder comment immediately. Don't `await` this because the HTML rendering doesn’t
     // block the following operations.
     this.#showPlaceholder();
 
