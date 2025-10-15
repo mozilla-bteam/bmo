@@ -964,7 +964,7 @@ Bugzilla.BugModal.InstantUpdater = class InstantUpdater {
 
     // Only the `comment` field is supported for instant update at the moment
     if (changedKeys.length !== 1 || changedKeys[0] !== 'comment') {
-      throw new Error('Unsupported field changes detected.');
+      throw new Error(`Unsupported field changes detected: ${changedKeys.join(', ')}`);
     }
 
     // Show a placeholder comment immediately. Don't `await` this because the rendering doesn’t
