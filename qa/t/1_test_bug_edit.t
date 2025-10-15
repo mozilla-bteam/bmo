@@ -498,7 +498,7 @@ sleep(1); # FIXME: Delay for slow page performance
 $sel->type_ok('comment', 'Awesome comment that should be added instantly');
 $sel->click_ok('bottom-save-btn', 'Save changes');
 check_page_load($sel, qq{http://HOSTNAME/show_bug.cgi?id=$bug2_id});
-diag $sel->driver->execute_script('return document.body.innerHTML;');
+diag $sel->driver->execute_script("return document.querySelector('#field-value-short_desc').innerHTML;");
 ok(!$sel->is_text_present('Email sent to 1 recipient'), 'Form not submitted');
 $sel->is_text_present_ok('Awesome comment that should be added instantly',
   'Comment added instantly');
