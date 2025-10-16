@@ -644,13 +644,13 @@ sub set_intermittent_reviewers {
 
   my @blocking_projects;
   foreach my $reviewer (@{$revision->reviews || []}) {
-    next if !$reviewer->{is_project} && !$reviewer->{is_blocking};
+    next if !$reviewer->{is_project} || !$reviewer->{is_blocking};
     push @blocking_projects, $reviewer->{user};
   }
 
   INFO('Blocking projects found: ' . (@blocking_projects ? (join ', ', map { $_->name } @blocking_projects) : 'None'));
 
-  # Return unless the revision has both intemittent-reviewers and taskgraph-reviewers
+  # Return unless the revision has both intermittent-reviewers and taskgraph-reviewers
   my $has_intermittent = any { $_->name eq 'intermittent-reviewers' } @blocking_projects;
   my $has_taskgraph    = any { $_->name eq 'taskgraph-reviewers' } @blocking_projects;
   if (!$has_intermittent || !$has_taskgraph) {
