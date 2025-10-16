@@ -12,7 +12,7 @@
 %]
 
 [% jira_webhook_sync_config_desc = BLOCK %]
-This parameter is a JSON object. It has one or more valid keys, whose values are whiteboard tags what will be added to
+This parameter is a JSON object. It has one or more valid keys, whose values are whiteboard tags that will be added to
 outgoing webhook payloads if the additional criteria matches. Each whiteboard tag key is JSON object which includes
 criteria names such as product, component, etc. that must match the [% terms.bug %] report being processed for the
 whiteboard tag to be added. For <b>any value</b> for the field, then leave the key off. For this to all work, you will also

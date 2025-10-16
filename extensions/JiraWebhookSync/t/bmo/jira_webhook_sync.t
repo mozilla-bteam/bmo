@@ -75,7 +75,7 @@ my $bug_id_1 = create_bug($sel, $bug_summary);
 # Give run push extension to pick up the new events
 Bugzilla->push_ext->push();
 
-# Call the endpoint to get back the jsopn that was sent
+# Call the endpoint to get back the json that was sent
 my $t = Test::Mojo->new();
 $t->get_ok('http://externalapi.test:8001/webhooks/last_payload')
   ->status_is(200)
@@ -99,7 +99,7 @@ logout($sel);
 # Give run push extension to pick up the new events
 Bugzilla->push_ext->push();
 
-# Call the endpoint to get back the jsopn that was sent
+# Call the endpoint to get back the json that was sent
 $t->get_ok('http://externalapi.test:8001/webhooks/last_payload')
   ->status_is(200)
   ->json_is('/event/routing_key', 'bug.create')
