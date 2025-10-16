@@ -1,0 +1,28 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[%
+   title = "Jira Webhook Sync"
+   desc = "Settings for Jira Webhook Sync"
+%]
+
+[% jira_webhook_sync_config_desc = BLOCK %]
+This parameter is a JSON object. It has one or more valid keys, whose values are whiteboard tags what will be added to
+outgoing webhook payloads if the additional criteria matches. Each whiteboard tag key is JSON object which includes
+criteria names such as product, component, etc. that must match the [% terms.bug %] report being processed for the
+whiteboard tag to be added. For <b>any value</b> for the field, then leave the key off. For this to all work, you will also
+need to add the proper action to the <a href="https://github.com/mozilla/jira-bugzilla-integration/tree/main/config">
+JBI config files</a>.
+[% END %]
+
+[%
+  param_descs = {
+    jira_webhook_sync_hostname => "Only add whiteboard tag if the Jira hostname matches. Leave this blank to disable this feature.",
+    jira_webhook_sync_config => jira_webhook_sync_config_desc
+  }
+%]

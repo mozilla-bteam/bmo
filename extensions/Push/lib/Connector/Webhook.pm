@@ -14,9 +14,10 @@ use warnings;
 use base 'Bugzilla::Extension::Push::Connector::Base';
 
 use Bugzilla;
+use Bugzilla::Attachment;
 use Bugzilla::Bug;
 use Bugzilla::Constants;
-use Bugzilla::Attachment;
+use Bugzilla::Hook;
 use Bugzilla::Extension::Webhooks::Webhook;
 use Bugzilla::Extension::Push::Constants;
 use Bugzilla::Extension::Push::Util;
@@ -176,6 +177,9 @@ sub send {
     if ($webhook->api_key_header && $webhook->api_key_value) {
       $headers->{$webhook->api_key_header} = $webhook->api_key_value;
     }
+
+    Bugzilla::Hook::process('webhook_before_send',
+      {webhook => $webhook, payload => $payload});
 
     my $tx = mojo_user_agent()->post($webhook->url, $headers => json => $payload);
     if (!$tx->res->is_success) {
