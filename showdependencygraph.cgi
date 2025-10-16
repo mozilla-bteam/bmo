@@ -75,7 +75,7 @@ my $add_link = sub {
         = $dbh->selectrow_array($sth, undef, $dependson);
 
       $link_text .= $dependson;
-      $link_text .= ($dependson_status eq 'RESOLVED') ? '[' : '([';
+      $link_text .= $dependson_resolution ? '[' : '([';
 
       my $dependson_text = $dependson;
       if ($show_summary && $user->can_see_bug($dependson)) {
@@ -85,7 +85,7 @@ my $add_link = sub {
       }
 
       $link_text .= qq{"$dependson_text"};
-      $link_text .= ($dependson_status eq 'RESOLVED') ? ']' : '])';
+      $link_text .= $dependson_resolution ? ']' : '])';
       $link_text .= ' --> ';
     }
 
@@ -93,7 +93,7 @@ my $add_link = sub {
       = $dbh->selectrow_array($sth, undef, $blocked);
 
     $link_text .= $blocked;
-    $link_text .= ($blocked_status eq 'RESOLVED') ? '[' : '([';
+    $link_text .= $blocked_resolution ? '[' : '([';
 
     my $blocked_text = $blocked;
     if ($show_summary && $user->can_see_bug($blocked)) {
@@ -103,12 +103,12 @@ my $add_link = sub {
     }
 
     $link_text .= qq{"$blocked_text"};
-    $link_text .= ($blocked_status eq 'RESOLVED') ? ']' : '])';
+    $link_text .= $blocked_resolution ? ']' : '])';
     $link_text .= "\n";
 
     if ($dependson && !$seen{$dependson}) {
       $link_text
-        .= ($dependson_status eq 'RESOLVED')
+        .= $dependson_resolution
         ? "class $dependson resolved\n"
         : "class $dependson open\n";
 
@@ -122,7 +122,7 @@ my $add_link = sub {
 
     if (!$seen{$blocked}) {
       $link_text
-        .= ($blocked_status eq 'RESOLVED')
+        .= $blocked_resolution
         ? "class $blocked resolved\n"
         : "class $blocked open\n";
 

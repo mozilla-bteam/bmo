@@ -1276,17 +1276,18 @@
           <button type="button" class="secondary" id="user-story-edit-btn" aria-label="Edit User Story">Edit</button>
         [% END %]
         [% IF bug.cf_user_story != "" && bug.check_can_change_field('longdesc', 0, 1).allowed %]
-          <button type="button" class="secondary" id="user-story-reply-btn" aria-label="Reply to User Story">Reply</button>
+          <button type="button" class="secondary" id="user-story-reply-btn" aria-label="Reply to User Story"
+                  data-user-story="[% bug.cf_user_story FILTER html %]">Reply</button>
+        [% END %]
+        [% IF bug.check_can_change_field('cf_user_story', 0, 1).allowed %]
+          <textarea id="cf_user_story" name="cf_user_story" style="display:none" rows="10" cols="80"
+                   aria-label="User Story">
+            [%~ bug.cf_user_story FILTER html ~%]
+          </textarea>
         [% END %]
       </div>
     [% END %]
     <pre id="user-story">[% bug.cf_user_story FILTER quoteUrls(bug) %]</pre>
-    [% IF user.id %]
-      <textarea id="cf_user_story" name="cf_user_story" style="display:none" rows="10" cols="80"
-                aria-label="User Story">
-        [%~ bug.cf_user_story FILTER html ~%]
-      </textarea>
-    [% END %]
   [% END %]
 [% END %]
 
