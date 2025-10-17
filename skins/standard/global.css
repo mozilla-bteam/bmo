@@ -735,6 +735,10 @@ input[type="submit"]:not(.secondary):active {
   background-color: var(--pressed-primary-button-background-color);
 }
 
+button.primary:focus-visible {
+  border-color: var(--primary-button-foreground-color) !important;
+}
+
 button.danger {
   border-color: var(--danger-button-border-color);
   color: var(--danger-button-foreground-color);
