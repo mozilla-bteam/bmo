@@ -21,12 +21,12 @@ use Bugzilla::Util qw(mojo_user_agent trim);
 use Bugzilla::Extension::PhabBugz::Constants;
 use Bugzilla::Extension::PhabBugz::Types qw(:types);
 
-use List::Util      qw(first none);
+use List::Util qw(any first none);
 use Try::Tiny;
 use Type::Params qw( compile );
 use Type::Utils;
 use Types::Standard qw( :types );
-use Mojo::JSON qw(encode_json);
+use Mojo::JSON      qw(encode_json);
 
 use base qw(Exporter);
 
