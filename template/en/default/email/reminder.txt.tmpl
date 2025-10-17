@@ -16,7 +16,7 @@ This email is a reminder you set on [% reminder.creation_ts FILTER time('%Y-%m-%
 
 The reminder was about the following [% terms.bug %]:
 
-[%+ terms.Bug +%] [%+ reminder.bug.id %] Summary: [% IF reminder.bug.groups_in.size %](secure bug)[% ELSE %][% reminder.bug.short_desc FILTER html %][% END %]
+[%+ terms.Bug +%] [%+ reminder.bug.id %] [% IF reminder.bug.groups_in.size %](secure bug)[% ELSE %]- [%+ reminder.bug.short_desc FILTER html %][% END %]
 [%+ urlbase %]show_bug.cgi?id=[% reminder.bug.id %]
 
 Thank you for using [%terms.Bug %] Reminders!
