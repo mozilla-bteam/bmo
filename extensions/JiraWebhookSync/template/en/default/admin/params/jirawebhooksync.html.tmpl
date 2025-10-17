@@ -18,6 +18,20 @@ criteria names such as product, component, etc. that must match the [% terms.bug
 whiteboard tag to be added. For <b>any value</b> for the field, then leave the key off. For this to all work, you will also
 need to add the proper action to the <a href="https://github.com/mozilla/jira-bugzilla-integration/tree/main/config">
 JBI config files</a>.
+<p>
+  <b>Example:</b><br>
+  <code>
+  {
+    "JIRA-TAG-1": {
+      "product": "Test Product",
+      "component": "Test Component"
+    },
+    "JIRA-TAG-2": {
+      "product": "Another Product"
+    }
+  }
+  </code>
+</p>
 [% END %]
 
 [%

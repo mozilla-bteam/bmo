@@ -14,7 +14,10 @@ use warnings;
 use base qw(Bugzilla::Extension);
 
 use Bugzilla::Logging;
+use Bugzilla::Util qw(trim);
+
 use JSON::MaybeXS qw(decode_json);
+use List::Util    qw(uniq);
 use Mojo::URL;
 use Mojo::Util qw(dumper);
 
@@ -47,44 +50,54 @@ sub webhook_before_send {
 
   my $config = decode_json($params->{jira_webhook_sync_config});
 
+  my @new_tags;
   foreach my $whiteboard_tag (keys %{$config}) {
     INFO('Processing whiteboard tag in config: ' . $whiteboard_tag);
 
-    my $criteria = $config->{$whiteboard_tag};
-    my $matched  = 0;
-
-    if (exists $criteria->{product}
-      && $criteria->{product} eq $payload->{bug}->{product})
-    {
-      INFO('Product matched: ' . $criteria->{product});
-      if (!exists $criteria->{component}) {
-        $matched = 1;    # Matches any component
-      }
-      else {
-        if ($criteria->{component} eq $payload->{bug}->{component}) {
-          INFO('Component matched: ' . $criteria->{component});
-          $matched = 1;
-        }
-      }
-    }
-
-    if ($matched) {
-      $whiteboard = _add_whiteboard_tag($whiteboard, $whiteboard_tag);
+    if (_bug_matches_rule($payload->{bug}, $config->{$whiteboard_tag})) {
+      INFO('Bug matches rule for tag: ' . $whiteboard_tag);
+      push @new_tags, $whiteboard_tag;
     }
   }
 
-  $payload->{bug}->{whiteboard} = $whiteboard;
+  $payload->{bug}->{whiteboard}
+    = _add_whiteboard_tags($whiteboard, \@new_tags);
 }
 
 # Adds a whiteboard tag to the whiteboard string if it doesn't already exist.
 # Returns the whiteboard value with the tag in [brackets] format.
 # If the tag already exists, returns the whiteboard unchanged.
-sub _add_whiteboard_tag {
-  my ($whiteboard, $new_tag) = @_;
-  INFO("whiteboard merge: $whiteboard, $new_tag");
-  return "[$new_tag]" if !$whiteboard;                         # Blank whiteboard value
-  return $whiteboard  if $whiteboard =~ /\[\Q$new_tag\E\]/;    # Whiteboard already has tag
-  return $whiteboard . " [$new_tag]";                          # Append new tag to the end
+sub _add_whiteboard_tags {
+  my ($whiteboard, $new_tags) = @_;
+
+  $new_tags = [uniq @{$new_tags}];    # Remove duplicates
+
+  foreach my $new_tag (@{$new_tags}) {
+    INFO("whiteboard merge: $whiteboard, $new_tag");
+    next if $whiteboard =~ /\[\Q$new_tag\E\]/;    # Whiteboard already has tag
+    $whiteboard .= " [$new_tag]";                 # Append new tag to the end
+  }
+
+  return trim($whiteboard); # Trim whitespace before returning
+}
+
+# Checks if a bug matches the criteria defined in a rule.
+sub _bug_matches_rule {
+  my ($bug, $rule) = @_;
+
+  return 0 unless exists $rule->{product};
+  return 0 unless $rule->{product} eq $bug->{product};
+
+  INFO('Product matched: ' . $rule->{product});
+
+  return 1 if !exists $rule->{component};
+
+  if ($rule->{component} eq $bug->{component}) {
+    INFO('Component matched: ' . $rule->{component});
+    return 1;
+  }
+
+  return 0;
 }
 
 __PACKAGE__->NAME;
