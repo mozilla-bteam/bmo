@@ -29,9 +29,9 @@
     <p>
       <a href="[% urlbase FILTER none %]show_bug.cgi?id=[% reminder.bug.id FILTER uri %]">
         [% terms.Bug +%] [%+ reminder.bug.id FILTER html %]
-        [% IF reminder.bug.groups_in.size %]
+        [% IF reminder.bug.groups_in.size +%]
           (secure bug)
-        [% ELSE %]
+        [% ELSE +%]
           - [%+ reminder.bug.short_desc FILTER html %]
         [% END %]
       </a>
