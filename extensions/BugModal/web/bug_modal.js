@@ -1546,7 +1546,6 @@ $(function() {
             file_name: 'pasted.txt',
             summary,
             content_type: 'text/plain',
-            comment: event.target.value.trim(),
           });
 
           // Reload the page once upload is complete
