@@ -15,7 +15,7 @@ use warnings;
 
 use lib qw(. lib local/lib/perl5 t);
 use Support::Files;
-use Test::More tests => 20;
+use Test::More tests => 52;
 use DateTime;
 
 BEGIN {
@@ -114,3 +114,56 @@ my ($removed, $added) = diff_arrays(\@old_array, \@new_array);
 is_deeply($removed, [qw(gamma alpha gamma)],
   'diff_array(\@old, \@new) (check removal)');
 is_deeply($added, [qw(delta)], 'diff_array(\@old, \@new) (check addition)');
+
+# time_ago():
+# Test with seconds
+is(time_ago(5), 'Just now', 'time_ago(5) returns "Just now"');
+is(time_ago(9), 'Just now', 'time_ago(9) returns "Just now"');
+is(time_ago(10), '10 seconds ago', 'time_ago(10) returns "10 seconds ago"');
+is(time_ago(30), '30 seconds ago', 'time_ago(30) returns "30 seconds ago"');
+is(time_ago(44), '44 seconds ago', 'time_ago(44) returns "44 seconds ago"');
+
+# Test minute boundaries
+is(time_ago(45), '1 minute ago', 'time_ago(45) returns "1 minute ago"');
+is(time_ago(60), '1 minute ago', 'time_ago(60) returns "1 minute ago"');
+is(time_ago(90), '1 minute ago', 'time_ago(90) returns "1 minute ago"');
+is(time_ago(119), '1 minute ago', 'time_ago(119) returns "1 minute ago"');
+is(time_ago(120), '2 minutes ago', 'time_ago(120) returns "2 minutes ago"');
+
+# Test hour boundaries - critical for the bug fix
+is(time_ago(60 * 44), '44 minutes ago', 'time_ago(44 minutes) returns "44 minutes ago"');
+is(time_ago(60 * 60), '1 hour ago', 'time_ago(60 minutes) returns "1 hour ago"');
+is(time_ago(60 * 90), '1 hour ago', 'time_ago(90 minutes) returns "1 hour ago"');
+is(time_ago(60 * 119), '1 hour ago', 'time_ago(119 minutes) returns "1 hour ago"');
+is(time_ago(60 * 120), '2 hours ago', 'time_ago(2 hours) returns "2 hours ago"');
+
+# Test day boundaries - this is where the bug was most visible
+is(time_ago(60 * 60 * 23), '23 hours ago', 'time_ago(23 hours) returns "23 hours ago"');
+is(time_ago(60 * 60 * 24), '1 day ago', 'time_ago(24 hours) returns "1 day ago"');
+is(time_ago(60 * 60 * 36), '1 day ago', 'time_ago(36 hours) returns "1 day ago"');
+is(time_ago(60 * 60 * 47), '1 day ago', 'time_ago(47 hours) returns "1 day ago"');
+is(time_ago(60 * 60 * 48), '2 days ago', 'time_ago(48 hours) returns "2 days ago"');
+is(time_ago(60 * 60 * 72), '3 days ago', 'time_ago(72 hours) returns "3 days ago"');
+
+# Test month boundaries
+is(time_ago(60 * 60 * 24 * 29), '29 days ago', 'time_ago(29 days) returns "29 days ago"');
+is(time_ago(60 * 60 * 24 * 30), '1 month ago', 'time_ago(30 days) returns "1 month ago"');
+is(time_ago(60 * 60 * 24 * 45), '1 month ago', 'time_ago(45 days) returns "1 month ago"');
+is(time_ago(60 * 60 * 24 * 59), '1 month ago', 'time_ago(59 days) returns "1 month ago"');
+is(time_ago(60 * 60 * 24 * 60), '2 months ago', 'time_ago(60 days) returns "2 months ago"');
+
+# Test year boundaries
+is(time_ago(60 * 60 * 24 * 365), '1 year ago', 'time_ago(365 days) returns "1 year ago"');
+is(time_ago(60 * 60 * 24 * 547), '1 year ago', 'time_ago(547 days) returns "1 year ago"');
+is(time_ago(60 * 60 * 24 * 731), '2 years ago', 'time_ago(731 days) returns "2 years ago"');
+
+# Test with DateTime object
+my $now = DateTime->now();
+my $past = $now->clone->subtract(hours => 25);
+is(time_ago($past), '1 day ago', 'time_ago(DateTime 25 hours ago) returns "1 day ago"');
+
+$past = $now->clone->subtract(days => 2);
+is(time_ago($past), '2 days ago', 'time_ago(DateTime 2 days ago) returns "2 days ago"');
+
+$past = $now->clone->subtract(months => 1);
+like(time_ago($past), qr/^(1 month|2[89]|3[01] days) ago$/, 'time_ago(DateTime 1 month ago) is reasonable');

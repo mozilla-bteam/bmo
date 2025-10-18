@@ -339,34 +339,35 @@ function bz_toggleClass(anElement, aClass) {
     anElement?.classList.toggle(aClass);
 }
 
-/* Returns a string representation of a duration.
- *
- * @param ss   Duration in seconds
- * or
- * @param date Date object
+/**
+ * Returns a string representation of a duration.
+ * @param {number | Date} param Duration in seconds or a Date object.
+ * @returns {string} Human-readable time ago string.
  */
-function timeAgo(param) {
-    var ss = param.constructor === Date ? Math.round((new Date() - param) / 1000) : param;
-    var mm = Math.round(ss / 60),
-        hh = Math.round(ss / (60 * 60)),
-        dd = Math.round(ss / (60 * 60 * 24)),
-        // They are not the best definition of month and year,
-        // but they should be good enough to be used here.
-        mo = Math.round(ss / (60 * 60 * 24 * 30)),
-        yy = Math.round(ss / (60 * 60 * 24 * 365.2422));
+const timeAgo = (param) => {
+    const ss = param.constructor === Date ? Math.round((new Date() - param) / 1000) : param;
+    // Use Math.floor for intermediate calculations to avoid rounding issues
+    const mm = Math.floor(ss / 60);
+    const hh = Math.floor(ss / (60 * 60));
+    const dd = Math.floor(ss / (60 * 60 * 24));
+    // They are not the best definition of month and year,
+    // but they should be good enough to be used here.
+    const mo = Math.floor(ss / (60 * 60 * 24 * 30));
+    const yy = Math.floor(ss / (60 * 60 * 24 * 365.2422));
+
     if (ss < 10) return 'Just now';
-    if (ss < 45) return ss + ' seconds ago';
-    if (ss < 90) return '1 minute ago';
-    if (mm < 45) return mm + ' minutes ago';
-    if (mm < 90) return '1 hour ago';
-    if (hh < 24) return hh + ' hours ago';
-    if (hh < 36) return '1 day ago';
-    if (dd < 30) return dd + ' days ago';
-    if (dd < 45) return '1 month ago';
-    if (mo < 12) return mo + ' months ago';
-    if (mo < 18) return '1 year ago';
-    return yy + ' years ago';
-}
+    if (ss < 45) return `${ss} seconds ago`;
+    if (mm < 2) return '1 minute ago';
+    if (mm < 45) return `${mm} minutes ago`;
+    if (hh < 2) return '1 hour ago';
+    if (hh < 24) return `${hh} hours ago`;
+    if (dd < 2) return '1 day ago';
+    if (dd < 30) return `${dd} days ago`;
+    if (mo < 2) return '1 month ago';
+    if (mo < 12) return `${mo} months ago`;
+    if (yy < 2) return '1 year ago';
+    return `${yy} years ago`;
+};
 
 /**
  * Format the given date as Bugzilla’s standard date format.
