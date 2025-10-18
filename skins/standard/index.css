@@ -6,75 +6,146 @@
  * defined by the Mozilla Public License, v. 2.0.
  */
 
+#bugzilla-body:has(#home) {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100dvh - var(--global-header-height));
+}
+
+#home {
+  --content-margin: 48px;
+  --box-padding: 32px;
+  --title-font-size: 48px;
+  --description-font-size: 20px;
+  --heading-font-size: 24px;
+}
+
 #welcome-admin a {
   font-weight: bold;
 }
 
-#welcome,
-.options {
-  margin: 64px 0 0;
-}
-
 #welcome {
+  margin: var(--content-margin);
   text-align: center;
 }
 
 #welcome h1 {
   margin: 0;
+  font-size: var(--title-font-size);
 }
 
 #welcome p {
   margin: 8px 0 0;
+  color: var(--secondary-label-color);
+  font-size: var(--description-font-size);
 }
 
 #content {
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: var(--content-margin);
+  margin-block: var(--content-margin);
+  margin-inline: auto;
+  max-width: 1024px;
 }
 
 .options {
   display: flex;
   flex-direction: column;
-  gap: 32px;
-  border-top: 1px solid var(--secondary-region-border-color);
-  border-bottom: 1px solid var(--secondary-region-border-color);
+  gap: var(--box-padding);
+  box-sizing: border-box;
   max-width: 600px;
 }
 
-.option {
-  display: flex;
-  gap: 20px;
+.options section {
+  display: flow-root;
+  padding-left: 64px;
 }
 
-.option .icon img,
-.option .icon svg {
+.options h2 {
+  margin: 0;
+  font-size: var(--heading-font-size);
+  font-weight: 500;
+}
+
+.options h2 :is(img, svg) {
+  float: left;
+  margin-left: -64px;
   width: 48px;
   height: 48px;
 }
 
-.option .icon svg path {
-  fill: var(--application-foreground-color);
+.options h2 svg path {
+  fill: currentColor;
 }
 
-.option .title {
-  font-size: 24px;
-  font-weight: bold;
-  margin-bottom: 4px;
-}
-
-.option .title a,
-.option .title a:visited {
+.options h2 :is(a:link, a:visited) {
   color: var(--application-foreground-color);
 }
 
-.option .desc-container {
-  flex-grow: 1;
+.options h2 :is(a:hover, a:focus) {
+  color: var(--hovered-link-text-color);
+}
+
+.options p {
+  margin: 4px 0;
+  color: var(--secondary-label-color);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.downloads {
+  border-radius: 16px;
+  padding: var(--box-padding);
+  background-color: var(--primary-region-background-color);
+}
+
+.downloads h2 {
+  font-style: italic;
+  font-weight: 500;
+}
+
+.downloads h2 strong {
+  font-weight: inherit;
+}
+
+.cookies {
+  text-align: center;
 }
 
 @media screen and (width < 768px) {
-  #welcome,
-  .options {
-    margin: 48px 0 0;
+  #home {
+    --content-margin: 24px;
+    --box-padding: 24px;
+    --title-font-size: 36px;
+    --description-font-size: 16px;
+    --heading-font-size: 20px;
+  }
+}
+
+@media screen and (768px <= width < 1024px) {
+  .community {
+    padding-inline: var(--box-padding);
+  }
+}
+
+@media screen and (1024px <= width) {
+  #content {
+    flex-direction: row;
+    padding-inline: 32px;
+  }
+
+  .downloads {
+    flex: none;
+    width: 360px;
+  }
+
+  .downloads h2 span {
+    display: block;
+    font-size: 16px;
+    font-weight: 400;
   }
 }
