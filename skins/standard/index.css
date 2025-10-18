@@ -6,39 +6,66 @@
  * defined by the Mozilla Public License, v. 2.0.
  */
 
+.material-icon {
+  font-size: var(--icon-size-medium);
+    line-height: 1;
+    font-family: var(--icon-font-family);
+    font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+    vertical-align: middle;
+    pointer-events: none;
+}
+
+#bugzilla-body:has(#home) {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100dvh - var(--global-header-height));
+}
+
+#home {
+  --content-margin: 48px;
+  --box-padding: 32px;
+  --title-font-size: 48px;
+  --description-font-size: 20px;
+  --heading-font-size: 24px;
+}
+
 #welcome-admin a {
   font-weight: bold;
 }
 
-#welcome,
-.options {
-  margin: 64px 0 0;
-}
-
 #welcome {
+  margin: var(--content-margin);
   text-align: center;
 }
 
 #welcome h1 {
   margin: 0;
+  font-size: var(--title-font-size);
 }
 
 #welcome p {
   margin: 8px 0 0;
+  color: var(--secondary-label-color);
+  font-size: var(--description-font-size);
 }
 
 #content {
   display: flex;
   flex-direction: column;
   align-items: center;
+  margin-block: var(--content-margin);
+  margin-inline: auto;
+  max-width: 1024px;
 }
 
 .options {
   display: flex;
   flex-direction: column;
-  gap: 32px;
-  border-top: 1px solid var(--secondary-region-border-color);
-  border-bottom: 1px solid var(--secondary-region-border-color);
+  gap: var(--box-padding);
+  box-sizing: border-box;
+  padding: var(--box-padding);
   max-width: 600px;
 }
 
@@ -47,8 +74,7 @@
   gap: 20px;
 }
 
-.option .icon img,
-.option .icon svg {
+.option .icon :is(img, svg) {
   width: 48px;
   height: 48px;
 }
@@ -58,9 +84,9 @@
 }
 
 .option .title {
-  font-size: 24px;
-  font-weight: bold;
   margin-bottom: 4px;
+  font-size: var(--heading-font-size);
+  font-weight: 500;
 }
 
 .option .title a,
@@ -68,13 +94,61 @@
   color: var(--application-foreground-color);
 }
 
+.option .title a:hover,
+.option .title a:focus {
+  color: var(--hovered-link-text-color);
+}
+
 .option .desc-container {
   flex-grow: 1;
 }
 
+.option .desc {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--secondary-label-color);
+}
+
+.downloads {
+  border-radius: 16px;
+  background-color: var(--primary-region-background-color);
+}
+
+.downloads .title {
+  font-size: 16px;
+  font-style: italic;
+  font-weight: normal;
+}
+
+.downloads .title span {
+  display: block;
+  font-size: var(--heading-font-size);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
 @media screen and (width < 768px) {
-  #welcome,
-  .options {
-    margin: 48px 0 0;
+  #home {
+    --content-margin: 24px;
+    --box-padding: 24px;
+    --title-font-size: 36px;
+    --description-font-size: 16px;
+    --heading-font-size: 20px;
+  }
+
+  .community {
+    padding-inline: 0;
+  }
+}
+
+@media screen and (1200px <= width) {
+  #content {
+    flex-direction: row;
+    padding-inline: var(--content-margin);
+  }
+
+  .downloads {
+    flex: none;
+    width: 360px;
   }
 }

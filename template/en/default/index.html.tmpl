@@ -17,13 +17,15 @@
    responsive = 1
 %]
 
-<div id="content">
-  <header id="welcome">
-    <h1>Welcome to [% terms.Bugzilla %]</h1>
-    <p>The issue tracker for Firefox and other Mozilla products.</p>
-  </header>
+<div id="home">
 
-  <div class="options">
+<header id="welcome">
+  <h1>Welcome to [% terms.Bugzilla %]</h1>
+  <p>The issue tracker for Firefox and other Mozilla products.</p>
+</header>
+
+<div id="content">
+  <div class="options community">
 
     <div class="option">
       <div class="icon">
@@ -122,7 +124,7 @@
 
   </div>
 
-  <div class="options">
+  <div class="options downloads">
 
     <div class="option">
       <div class="icon">
@@ -133,7 +135,7 @@
       <div class="desc-container">
         <div class="title">
           <a href="https://www.mozilla.org/firefox/channel/desktop/#beta">
-            Download Firefox Beta
+            Download <span>Firefox Beta</span>
           </a>
         </div>
         <div class="desc">
@@ -152,7 +154,7 @@
       <div class="desc-container">
         <div class="title">
           <a href="https://www.mozilla.org/firefox/channel/desktop/#nightly">
-            Download Firefox Nightly
+            Download <span>Firefox Nightly</span>
           </a>
         </div>
         <div class="desc">
@@ -168,6 +170,8 @@
     <a href="[% basepath FILTER none %]page.cgi?id=cookies.html">Manage Cookie Preferences</a>
   </div>
   [% END %]
+</div>
+
 </div>
 
 [% PROCESS global/footer.html.tmpl %]
