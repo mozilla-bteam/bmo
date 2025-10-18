@@ -6,15 +6,6 @@
  * defined by the Mozilla Public License, v. 2.0.
  */
 
-.material-icon {
-  font-size: var(--icon-size-medium);
-    line-height: 1;
-    font-family: var(--icon-font-family);
-    font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
-    vertical-align: middle;
-    pointer-events: none;
-}
-
 #bugzilla-body:has(#home) {
   display: flex;
   flex-direction: column;
