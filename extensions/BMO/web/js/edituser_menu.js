@@ -109,7 +109,8 @@ function show_usermenu(vcard) {
 }
 
 $(function() {
-  $('.show_usermenu').on("click", function (event) {
+  // Use event delegation so these still work after dynamic HTML updates
+  $('body').on('click', '.show_usermenu', function () {
     return show_usermenu($(this)[0]);
   });
 });
