@@ -125,36 +125,36 @@ is(time_ago(44), '44 seconds ago', 'time_ago(44) returns "44 seconds ago"');
 
 # Test minute boundaries
 is(time_ago(45), '1 minute ago', 'time_ago(45) returns "1 minute ago"');
-is(time_ago(89), '1 minute ago', 'time_ago(89) returns "1 minute ago"');
+is(time_ago(60), '1 minute ago', 'time_ago(60) returns "1 minute ago"');
 is(time_ago(90), '1 minute ago', 'time_ago(90) returns "1 minute ago"');
+is(time_ago(119), '1 minute ago', 'time_ago(119) returns "1 minute ago"');
 is(time_ago(120), '2 minutes ago', 'time_ago(120) returns "2 minutes ago"');
-is(time_ago(150), '2 minutes ago', 'time_ago(150) returns "2 minutes ago"');
 
 # Test hour boundaries - critical for the bug fix
 is(time_ago(60 * 44), '44 minutes ago', 'time_ago(44 minutes) returns "44 minutes ago"');
-is(time_ago(60 * 45), '1 hour ago', 'time_ago(45 minutes) returns "1 hour ago"');
-is(time_ago(60 * 89), '1 hour ago', 'time_ago(89 minutes) returns "1 hour ago"');
+is(time_ago(60 * 60), '1 hour ago', 'time_ago(60 minutes) returns "1 hour ago"');
 is(time_ago(60 * 90), '1 hour ago', 'time_ago(90 minutes) returns "1 hour ago"');
+is(time_ago(60 * 119), '1 hour ago', 'time_ago(119 minutes) returns "1 hour ago"');
 is(time_ago(60 * 120), '2 hours ago', 'time_ago(2 hours) returns "2 hours ago"');
 
 # Test day boundaries - this is where the bug was most visible
 is(time_ago(60 * 60 * 23), '23 hours ago', 'time_ago(23 hours) returns "23 hours ago"');
 is(time_ago(60 * 60 * 24), '1 day ago', 'time_ago(24 hours) returns "1 day ago"');
-is(time_ago(60 * 60 * 35), '1 day ago', 'time_ago(35 hours) returns "1 day ago"');
 is(time_ago(60 * 60 * 36), '1 day ago', 'time_ago(36 hours) returns "1 day ago"');
-is(time_ago(60 * 60 * 37), '1 day ago', 'time_ago(37 hours) returns "1 day ago"');
+is(time_ago(60 * 60 * 47), '1 day ago', 'time_ago(47 hours) returns "1 day ago"');
 is(time_ago(60 * 60 * 48), '2 days ago', 'time_ago(48 hours) returns "2 days ago"');
+is(time_ago(60 * 60 * 72), '3 days ago', 'time_ago(72 hours) returns "3 days ago"');
 
 # Test month boundaries
 is(time_ago(60 * 60 * 24 * 29), '29 days ago', 'time_ago(29 days) returns "29 days ago"');
 is(time_ago(60 * 60 * 24 * 30), '1 month ago', 'time_ago(30 days) returns "1 month ago"');
-is(time_ago(60 * 60 * 24 * 44), '1 month ago', 'time_ago(44 days) returns "1 month ago"');
 is(time_ago(60 * 60 * 24 * 45), '1 month ago', 'time_ago(45 days) returns "1 month ago"');
+is(time_ago(60 * 60 * 24 * 59), '1 month ago', 'time_ago(59 days) returns "1 month ago"');
 is(time_ago(60 * 60 * 24 * 60), '2 months ago', 'time_ago(60 days) returns "2 months ago"');
 
 # Test year boundaries
 is(time_ago(60 * 60 * 24 * 365), '1 year ago', 'time_ago(365 days) returns "1 year ago"');
-is(time_ago(60 * 60 * 24 * 400), '1 year ago', 'time_ago(400 days) returns "1 year ago"');
+is(time_ago(60 * 60 * 24 * 547), '1 year ago', 'time_ago(547 days) returns "1 year ago"');
 is(time_ago(60 * 60 * 24 * 730), '2 years ago', 'time_ago(730 days) returns "2 years ago"');
 
 # Test with DateTime object
