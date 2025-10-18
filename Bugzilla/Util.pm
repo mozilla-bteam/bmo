@@ -649,13 +649,14 @@ sub time_ago {
 
   # DateTime object or seconds
   my $ss = ref($param) ? time() - $param->epoch : $param;
-  my $mm = round($ss / 60);
-  my $hh = round($ss / (60 * 60));
-  my $dd = round($ss / (60 * 60 * 24));
+  # Use floor for intermediate calculations to avoid rounding issues
+  my $mm = floor($ss / 60);
+  my $hh = floor($ss / (60 * 60));
+  my $dd = floor($ss / (60 * 60 * 24));
   # They are not the best definition of month and year,
   # but they should be good enough to be used here.
-  my $mo = round($ss / (60 * 60 * 24 * 30));
-  my $yy = round($ss / (60 * 60 * 24 * 365.2422));
+  my $mo = floor($ss / (60 * 60 * 24 * 30));
+  my $yy = floor($ss / (60 * 60 * 24 * 365.2422));
 
   return 'Just now'           if $ss < 10;
   return $ss . ' seconds ago' if $ss < 45;
@@ -976,7 +977,7 @@ sub extract_nicks {
 
 # This routine is used to determine the latest versions for a
 # given product from an external system. We need to fail gracefully
-# if the external system is down for any reason. If the call fails, 
+# if the external system is down for any reason. If the call fails,
 # then return undefined and let the caller decide what to do.
 sub fetch_product_versions {
   my ($product) = @_;
