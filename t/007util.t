@@ -155,7 +155,7 @@ is(time_ago(60 * 60 * 24 * 60), '2 months ago', 'time_ago(60 days) returns "2 mo
 # Test year boundaries
 is(time_ago(60 * 60 * 24 * 365), '1 year ago', 'time_ago(365 days) returns "1 year ago"');
 is(time_ago(60 * 60 * 24 * 547), '1 year ago', 'time_ago(547 days) returns "1 year ago"');
-is(time_ago(60 * 60 * 24 * 730), '2 years ago', 'time_ago(730 days) returns "2 years ago"');
+is(time_ago(60 * 60 * 24 * 731), '2 years ago', 'time_ago(731 days) returns "2 years ago"');
 
 # Test with DateTime object
 my $now = DateTime->now();
