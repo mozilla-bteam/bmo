@@ -42,6 +42,7 @@ use Bugzilla::Extension::PhabBugz::Util qw(
   request
   set_attachment_approval_flags
   set_phab_user
+  set_intermittent_reviewers
   set_reviewer_rotation
 );
 
@@ -774,6 +775,10 @@ sub process_revision_change {
   # Finish up
   $bug->update($timestamp);
   $revision->update();
+
+  # 1981211 - If reviewer is #intermittent-reviewers and #taskgraph-reviewers do not allow other
+  # group reviewers as blocking. Instead move any other blocking reviewers to the subscriber list.
+  set_intermittent_reviewers($revision);
 
   ### Phabricator Reviewer Rotation
   # This should happen after all of the above changes and Herald has had a chance to run.
