@@ -658,8 +658,8 @@ sub set_intermittent_reviewers {
     return;
   }
 
-  # Now we need to remove the intermittent-reviewers project and the taskgraph-reviewers project,
-  # and move any remaining to the subscribers list
+  # Now we need to remove any blocking project that is not intermittent-reviewers and
+  # taskgraph-reviewers project and move them to the subscribers list
   foreach my $project (@blocking_projects) {
     next if $project->name eq 'intermittent-reviewers' || $project->name eq 'taskgraph-reviewers';
 
