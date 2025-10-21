@@ -21,12 +21,12 @@ use Bugzilla::Util qw(mojo_user_agent trim);
 use Bugzilla::Extension::PhabBugz::Constants;
 use Bugzilla::Extension::PhabBugz::Types qw(:types);
 
-use List::Util      qw(first none);
+use List::Util qw(any first none);
 use Try::Tiny;
 use Type::Params qw( compile );
 use Type::Utils;
 use Types::Standard qw( :types );
-use Mojo::JSON qw(encode_json);
+use Mojo::JSON      qw(encode_json);
 
 use base qw(Exporter);
 
@@ -41,6 +41,7 @@ our @EXPORT = qw(
   set_attachment_approval_flags
   set_phab_user
   set_reviewer_rotation
+  set_intermittent_reviewers
 );
 
 use constant LEGACY_APPROVAL_MAPPING => {
@@ -625,6 +626,51 @@ sub get_review_users {
       . (@review_users ? (join ', ', map { $_->name } @review_users) : 'None'));
 
   return @review_users;
+}
+
+# 1981211 - If reviewer is #intermittent-reviewers and #taskgraph-reviewers do not allow other
+# group reviewers as blocking. Instead move any other blocking reviewers to the subscriber list.
+sub set_intermittent_reviewers {
+  my ($revision) = @_;
+
+  INFO('D' . $revision->id . ': Setting intermittent reviewers');
+
+  # Load a fresh version of the revision with Heralds changes.
+  $revision = Bugzilla::Extension::PhabBugz::Revision->new_from_query(
+    {phids => [$revision->phid]});
+
+  # Look up all blocking projects currently on the revision
+  INFO('Retrieving blocking projects');
+
+  my @blocking_projects;
+  foreach my $reviewer (@{$revision->reviews || []}) {
+    next if !$reviewer->{is_project} || !$reviewer->{is_blocking};
+    push @blocking_projects, $reviewer->{user};
+  }
+
+  INFO('Blocking projects found: ' . (@blocking_projects ? (join ', ', map { $_->name } @blocking_projects) : 'None'));
+
+  # Return unless the revision has both intermittent-reviewers and taskgraph-reviewers
+  my $has_intermittent = any { $_->name eq 'intermittent-reviewers' } @blocking_projects;
+  my $has_taskgraph    = any { $_->name eq 'taskgraph-reviewers' } @blocking_projects;
+  if (!$has_intermittent || !$has_taskgraph) {
+    INFO('Intermittent or taskgraph reviewers project not found. Returning.');
+    return;
+  }
+
+  # Now we need to remove any blocking project that is not intermittent-reviewers and
+  # taskgraph-reviewers project and move them to the subscribers list
+  foreach my $project (@blocking_projects) {
+    next if $project->name eq 'intermittent-reviewers' || $project->name eq 'taskgraph-reviewers';
+
+    INFO('Removing blocking project ' . $project->name);
+    $revision->remove_reviewer($project->phid);
+
+    INFO('Adding blocking project ' . $project->name . ' to subscribers');
+    $revision->add_subscriber($project->phid);
+  }
+
+  $revision->update;
 }
 
 1;
