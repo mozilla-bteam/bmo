@@ -980,6 +980,7 @@ td.flag-requestee {
   clear: both;
   margin-top: 8px;
   box-shadow: var(--primary-region-box-shadow);
+  overflow-wrap: break-word;
 }
 
 .change-set:target {

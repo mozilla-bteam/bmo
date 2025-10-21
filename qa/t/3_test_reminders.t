@@ -75,7 +75,7 @@ $sel->is_text_present_ok($today,                     'Correct date displayed');
 # the reminder from the user preferences page.
 my $rv = system '/app/scripts/reminders.pl';
 ok($rv == 0, 'Reminders script exited without error');
-ok($sel->search_mailer_testfile(qr{Bug $bug1_id Summary: Test bug for reminders}),
+ok($sel->search_mailer_testfile(qr{Bug $bug1_id - Test bug for reminders}),
   'Email reminder found');
 $sel->open_ok('/userprefs.cgi?tab=reminders');
 $sel->title_is('User Preferences');

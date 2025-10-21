@@ -64,6 +64,31 @@ sub startup {
     }
   );
 
+  # Endpoint that just stores the JSON payload for later retrieval
+  $r->post(
+    '/webhooks/store_payload' => sub {
+      my $c    = shift;
+      my $data = decode_json($c->req->body);
+      $cache->{webhook_last_payload} = $data;
+      return $c->render(json => {ok => 1}, status => 200);
+    }
+  );
+
+  # Endpoint to retrieve the last stored webhook payload
+  $r->get(
+    '/webhooks/last_payload' => sub {
+      my $c    = shift;
+      my $data = $cache->{webhook_last_payload};
+      if (!$data) {
+        return $c->render(
+          json   => {error => 1, message => 'No payload stored'},
+          status => 404
+        );
+      }
+      return $c->render(json => $data, status => 200);
+    }
+  );
+
   # Mocked OAuth2 endpoints
   # $r->post(
   #   '/oauth/test/token' => sub {

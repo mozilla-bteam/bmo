@@ -16,7 +16,7 @@
   <body bgcolor="#ffffff">
     <h3>[[% terms.BugzillaTitle %]] [% terms.Bug %] Reminder</h3>
     <p>
-      This email is a reminder you set on 
+      This email is a reminder you set on
       <b>[% reminder.creation_ts FILTER time('%Y-%m-%d') FILTER html %]</b>
       with the following note:
     </p>
@@ -27,15 +27,14 @@
       The reminder was about the following [% terms.bug %]:
     </p>
     <p>
-      [%+ terms.Bug +%] [%+ reminder.bug.id FILTER html %] 
-      Summary: 
-      [% IF reminder.bug.groups_in.size %]
-        (secure bug)
-      [% ELSE %]
-        [% reminder.bug.short_desc FILTER html %]
-      [% END %]
-      <br>
-      [%+ urlbase FILTER none %]show_bug.cgi?id=[% reminder.bug.id FILTER uri %]
+      <a href="[% urlbase FILTER none %]show_bug.cgi?id=[% reminder.bug.id FILTER uri %]">
+        [% terms.Bug +%] [%+ reminder.bug.id FILTER html %]
+        [% IF reminder.bug.groups_in.size +%]
+          (secure bug)
+        [% ELSE +%]
+          - [%+ reminder.bug.short_desc FILTER html %]
+        [% END %]
+      </a>
     </p>
     <p>
       Thank you for using [%terms.Bug %] Reminders!<br>
