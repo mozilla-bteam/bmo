@@ -1551,17 +1551,23 @@ input[type="radio"]:checked {
 }
 
 #message-container .warning {
-  color: var(--error-message-foreground-color);
+  color: var(--neutral-banner-foreground-color);
   background-color: var(--error-message-background-color);
 }
 
+#message-container .warning a {
+  color: inherit;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
 #message-container .new_announcement {
-  color: var(--primary-label-color);
+  color: var(--neutral-banner-foreground-color);
   background-color: var(--informative-message-background-color);
 }
 
 #message-container .new_announcement p.warning {
-  color: var(--error-message-foreground-color);
+  color: var(--neutral-banner-foreground-color);
 }
 
 /* Reset legacy style */
