@@ -423,7 +423,8 @@ sub view {
   print $cgi->header(
     -type                => $contenttype,
     -content_disposition => "$disposition; filename*=$filename_star",
-    -content_length      => $attachment->datasize
+    -content_length      => $attachment->datasize,
+    -Cache_Control       => 'no-store, private'
   );
   disable_utf8();
   print $attachment->data;
