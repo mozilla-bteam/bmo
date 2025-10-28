@@ -119,11 +119,12 @@ my ($attach_id) = keys %{$t->tx->res->json->{attachments}};
 ### Section 4: Export data to test files
 
 my @cmd = (
-  './extensions/BMO/bin/export_bmo_etl.pl',
-  '--test', '--snapshot-date', $snapshot_date,
+  './extensions/BMO/bin/bugzilla-etl.pl',
+  '--test', '--snapshot-date', $snapshot_date, 'once'
 );
 
 my ($output, $error, $rv) = capture { system @cmd; };
+say "$output\n$error";
 ok(!$rv, 'Data exported to test files without error');
 ok(glob(bz_locations()->{'datadir'} . '/' . $snapshot_date . '-bugs-*.json'),
   'Export test files exist');
@@ -131,11 +132,12 @@ ok(glob(bz_locations()->{'datadir'} . '/' . $snapshot_date . '-bugs-*.json'),
 ### Section 5: Export data to BigQuery test instance
 
 @cmd = (
-  './extensions/BMO/bin/export_bmo_etl.pl',
-  '--snapshot-date', $snapshot_date,
+  './extensions/BMO/bin/bugzilla-etl.pl',
+  '--snapshot-date', $snapshot_date, 'once'
 );
 
 ($output, $error, $rv) = capture { system @cmd; };
+say "$output\n$error";
 ok(!$rv, 'Data exported to BigQuery test instance without error');
 
 ### Section 6: Retrieve data from BigQuery instance and verify
