@@ -1,0 +1,21 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[% IF error == "jira_id_required" %]
+  [% title = "Jira ID Required" %]
+  A Jira issue ID is required.
+
+[% ELSIF error == "jira_id_already_exists" %]
+  [% title = "Jira ID Already Exists" %]
+  The Jira issue ID '[% jira_id FILTER html %]' is already mapped to another [% terms.bug %].
+
+[% ELSIF error == "jira_project_key_required" %]
+  [% title = "Jira Project Key Required" %]
+  A Jira project key is required.
+
+[% END %]
