@@ -8,7 +8,7 @@
 
 [% IF error == "jira_bug_id_required" %]
   [% title = "Bug ID Required" %]
-  A bug ID is required for the Jira issue.
+  A [% terms.bug %] ID is required for the Jira issue.
 
 [% ELSIF error == "jira_id_required" %]
   [% title = "Jira ID Required" %]

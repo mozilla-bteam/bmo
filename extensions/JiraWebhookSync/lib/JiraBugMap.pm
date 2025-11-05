@@ -43,8 +43,8 @@ use constant UPDATE_COLUMNS => qw(
 
 use constant VALIDATORS => {
   bug_id           => \&_check_bug_id,
-  # jira_id          => \&_check_jira_id,
-  # jira_project_key => \&_check_jira_project_key,
+  jira_id          => \&_check_jira_id,
+  jira_project_key => \&_check_jira_project_key,
 };
 
 use constant VALIDATOR_DEPENDENCIES => {
