@@ -37,7 +37,6 @@ sub db_schema_abstract_schema {
       },
       jira_id          => {TYPE => 'VARCHAR(255)', NOTNULL => 1,},
       jira_project_key => {TYPE => 'VARCHAR(100)', NOTNULL => 1,},
-      created_at       => {TYPE => 'DATETIME',     NOTNULL => 1,},
     ],
     INDEXES => [
       jira_bug_map_bug_id_idx => {FIELDS => ['bug_id', 'jira_id'], TYPE => 'UNIQUE',},
@@ -59,47 +58,33 @@ sub config_add_panels {
 # that require the see_also value to not exist to prevent duplicate jira tickets.
 sub bug_start_of_update {
   my ($self, $args) = @_;
-  my $old_bug = $args->{old_bug};
   my $new_bug = $args->{bug};
-  my $changes = $args->{changes};
-
-  # If no see_also change, nothing to do
-  return if !$changes->{see_also};
 
   foreach my $see_also (@{$new_bug->see_also}) {
 
     # Check if this see_also URL corresponds to a Jira ticket
     my ($jira_id, $project_key)
       = Bugzilla::Extension::JiraWebhookSync::JiraBugMap->extract_jira_info(
-      $see_also);
+      $see_also->name);
 
     next unless $jira_id && $project_key;
 
     INFO("Intercepting see_also for Jira ticket: $jira_id (project: $project_key)");
 
-    # Remove the see_also entry from the new bug object
-    $new_bug->remove_see_also($see_also);
-
-    # Remove the see_also entry from the changes hash to prevent it from being added
-    my @old_see_also = split /[,\s]+/, $changes->{see_also}->[0];
-    my @new_see_also = grep { $_ ne $see_also } split /[,\s]+/,
-      $changes->{see_also}->[1];
-
-    # Update the changes hash
-    $changes->{see_also} = [(join ', ', @old_see_also), (join ', ', @new_see_also)];
-
     # Add the jira id and project key to the jira_bug_map table unless it already exists
     my $existing_map
-      = Bugzilla::Extension::JiraWebhookSync::JiraBugMap->get_by_bug_id(
-      $new_bug->id);
+      = Bugzilla::Extension::JiraWebhookSync::JiraBugMap->get_by_bug_id($new_bug->id);
     if (!$existing_map) {
+      INFO('Creating new Jira mapping for bug ' . $new_bug->id);
       Bugzilla::Extension::JiraWebhookSync::JiraBugMap->create({
         bug_id           => $new_bug->id,
         jira_id          => $jira_id,
         jira_project_key => $project_key,
       });
-      INFO('Created new Jira mapping for bug ' . $new_bug->id);
     }
+
+    # Remove the see_also entry from the new bug object
+    $new_bug->remove_see_also($see_also);
   }
 }
 
@@ -123,6 +108,8 @@ sub webhook_before_send {
 
   # Get the bug object from the payload
   my $bug_id = $payload->{bug}->{id};
+
+  INFO("Processing webhook for bug $bug_id to Jira host $hostname");
 
   # Check if there's a Jira mapping for this bug
   my $jira_map

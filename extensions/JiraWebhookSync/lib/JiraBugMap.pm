@@ -13,9 +13,10 @@ use warnings;
 
 use base qw(Bugzilla::Object);
 
+use Bugzilla;
 use Bugzilla::Bug;
 use Bugzilla::Error;
-use Bugzilla::Util qw(trim);
+use Bugzilla::Util qw(detaint_natural trim);
 
 use JSON::MaybeXS qw(decode_json);
 use List::Util qw(none);
@@ -33,7 +34,6 @@ use constant DB_COLUMNS => qw(
   bug_id
   jira_id
   jira_project_key
-  created_at
 );
 
 use constant UPDATE_COLUMNS => qw(
@@ -43,8 +43,8 @@ use constant UPDATE_COLUMNS => qw(
 
 use constant VALIDATORS => {
   bug_id           => \&_check_bug_id,
-  jira_id          => \&_check_jira_id,
-  jira_project_key => \&_check_jira_project_key,
+  # jira_id          => \&_check_jira_id,
+  # jira_project_key => \&_check_jira_project_key,
 };
 
 use constant VALIDATOR_DEPENDENCIES => {
@@ -79,18 +79,10 @@ sub set_jira_project_key { $_[0]->set('jira_project_key', $_[1]); }
 sub _check_bug_id {
   my ($invocant, $bug_id) = @_;
 
-  my $bug;
-  if (blessed $bug_id) {
-    # We got a bug object passed in
-    $bug = $bug_id;
-    $bug->check_is_visible;
-  }
-  else {
-    # We got a bug id passed in
-    $bug = Bugzilla::Bug->check({id => $bug_id});
-  }
+  $bug_id = trim($bug_id);
+  detaint_natural($bug_id) || ThrowUserError('jira_bug_id_required');
 
-  return $bug->id;
+  return $bug_id;
 }
 
 sub _check_jira_id {
@@ -98,12 +90,6 @@ sub _check_jira_id {
 
   $jira_id = trim($jira_id);
   $jira_id || ThrowUserError('jira_id_required');
-
-  # Check if this jira_id already exists for a different bug
-  my $existing = $invocant->new({name => $jira_id});
-  if ($existing && (!ref $invocant || $existing->id != $invocant->id)) {
-    ThrowUserError('jira_id_already_exists', {jira_id => $jira_id});
-  }
 
   return $jira_id;
 }
@@ -120,16 +106,6 @@ sub _check_jira_project_key {
 ###############################
 ####      Methods         #####
 ###############################
-
-# Override create to set created_at
-sub create {
-  my $class = shift;
-  my $params = shift;
-
-  $params->{created_at} = Bugzilla->dbh->selectrow_array('SELECT NOW()');
-
-  return $class->SUPER::create($params);
-}
 
 # Get mapping by bug_id
 sub get_by_bug_id {
@@ -177,7 +153,7 @@ sub extract_jira_info {
 
     # URL format: /browse/PROJ-123
     $jira_id = $1;
-    ($project_key) = $jira_id =~ /^([[:upper:]]*)-/;
+    ($project_key) = $jira_id =~ /^([[:upper:]]+)-/;
   }
   elsif ($url->path =~ m{/issues/([[:upper:]]+-\d+)}) {
 

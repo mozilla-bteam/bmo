@@ -78,7 +78,7 @@ sub startup {
   $r->get(
     '/webhooks/last_payload' => sub {
       my $c    = shift;
-      my $data = $cache->{webhook_last_payload};
+      my $data = delete $cache->{webhook_last_payload};
       if (!$data) {
         return $c->render(
           json   => {error => 1, message => 'No payload stored'},
