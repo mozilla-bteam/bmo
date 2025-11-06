@@ -58,7 +58,6 @@ use constant VALIDATOR_DEPENDENCIES => {
 sub bug_id           { return $_[0]->{bug_id}; }
 sub jira_id          { return $_[0]->{jira_id}; }
 sub jira_project_key { return $_[0]->{jira_project_key}; }
-sub created_at       { return $_[0]->{created_at}; }
 
 sub bug {
   my ($self) = @_;
@@ -143,7 +142,7 @@ sub extract_jira_info {
 
   my ($project_key, $jira_id);
 
-  if ($url->path =~ m{^([[:upper:]]+)-\d+$}) {
+  if ($url->path =~ m{^/?([[:upper:]]+)-\d+$}) {
 
     # Direct format: PROJ-123
     $jira_id     = $url->path;

@@ -126,9 +126,6 @@ $t->put_ok($config->{browser_url}
   ->json_is('/bugs/0/id', $bug_id_1)
   ->json_hasnt('/bugs/0/changes/see_also');
 
-$result = $t->tx->res->json;
-diag('Update result: ' . dumper($result));
-
 # Give run push extension to pick up the new events
 Bugzilla->push_ext->push();
 
