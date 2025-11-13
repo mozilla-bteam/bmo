@@ -27,6 +27,12 @@ sub get_param_list {
       default => '{}',
       checker => \&check_config,
     },
+    {
+      name    => 'jira_webhook_sync_project_keys',
+      type    => 'l',
+      default => '[]',
+      checker => \&check_project_keys,
+    },
   );
 
   return @params;
@@ -37,6 +43,14 @@ sub check_config {
   my $val    = eval { decode_json($config) };
   return 'failed to parse JSON' unless defined $val;
   return 'value is not HASH'    unless ref $val && ref $val eq 'HASH';
+  return '';
+}
+
+sub check_project_keys {
+  my $config = shift;
+  my $val    = eval { decode_json($config) };
+  return 'failed to parse JSON' unless defined $val;
+  return 'value is not ARRAY'   unless ref $val && ref $val eq 'ARRAY';
   return '';
 }
 
