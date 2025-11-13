@@ -16,6 +16,7 @@ use base qw(Bugzilla::Object);
 use Bugzilla;
 use Bugzilla::Bug;
 use Bugzilla::Error;
+use Bugzilla::Logging;
 use Bugzilla::Util qw(detaint_natural trim);
 
 use JSON::MaybeXS qw(decode_json);
@@ -133,41 +134,21 @@ sub extract_jira_info {
 
   # Only return values if the hostname matches
   my $url = Mojo::URL->new($see_also);
-  return undef if $url->host ne $params->{jira_webhook_sync_hostname};
+  return (undef, undef) if $url->host ne $params->{jira_webhook_sync_hostname};
 
-  # Match patterns like:
-  # - https://jira.example.com/PROJ-123
-  # - https://jira.example.com/browse/PROJ-123
-  # - https://jira.example.com/projects/PROJ/issues/PROJ-123
-
+  # Match pattern
+  # https://jira.example.com/browse/PROJ-123
   my ($project_key, $jira_id);
-
-  if ($url->path =~ m{^/?([[:upper:]]+)-\d+$}) {
-
-    # Direct format: PROJ-123
-    $jira_id     = $url->path;
-    $project_key = $1;
-  }
-  elsif ($url->path =~ m{/browse/([[:upper:]]+-\d+)}) {
-
-    # URL format: /browse/PROJ-123
+  if ($url->path =~ m{^/browse/([[:upper:]]+-\d+)$}) {
     $jira_id = $1;
     ($project_key) = $jira_id =~ /^([[:upper:]]+)-/;
-  }
-  elsif ($url->path =~ m{/issues/([[:upper:]]+-\d+)}) {
 
-    # URL format: /issues/PROJ-123
-    $jira_id = $1;
-    ($project_key) = $jira_id =~ /^([[:upper:]]+)-/;
-  }
-
-  return undef unless $jira_id && $project_key;
-
-  # Return undef if project key is not in configured list
-  if (none { $_ eq $project_key }
-    @{decode_json($params->{jira_webhook_sync_project_keys} || '[]')})
-  {
-    return undef;
+    # Return undef if project key is not in configured list
+    if (none { $_ eq $project_key }
+      @{decode_json($params->{jira_webhook_sync_project_keys} || '[]')})
+    {
+      return (undef, undef);
+    }
   }
 
   return ($jira_id, $project_key);
