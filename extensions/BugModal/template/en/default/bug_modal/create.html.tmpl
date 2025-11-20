@@ -59,7 +59,8 @@
   FOREACH c = product.components;
     NEXT IF NOT c.is_active;
 
-    component_descriptions.push(c.description);
+    filtered_description = c.description FILTER html_light;
+    component_descriptions.push(filtered_description);
     default_bug_types.push(c.default_bug_type);
     default_assignees.push(c.default_assignee.login);
     default_ccs.push(c.initial_cc.login);
