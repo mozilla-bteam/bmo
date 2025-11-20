@@ -132,12 +132,9 @@ sub extract_jira_info {
   my ($class, $see_also) = @_;
   my $params = Bugzilla->params;
 
-  # Only return values if the hostname matches
-  my $url = Mojo::URL->new($see_also);
-  return (undef, undef) if $url->host ne $params->{jira_webhook_sync_hostname};
-
   # Match pattern
   # https://jira.example.com/browse/PROJ-123
+  my $url = Mojo::URL->new($see_also);
   my ($project_key, $jira_id);
   if ($url->path =~ m{^/browse/([[:upper:]]+-\d+)$}) {
     $jira_id = $1;

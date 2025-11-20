@@ -18,8 +18,6 @@ use Bugzilla;
 use ok 'Bugzilla::Extension::JiraWebhookSync::JiraBugMap';
 
 # Unit tests for extract_jira_info method
-
-local Bugzilla->params->{jira_webhook_sync_hostname}     = 'externalapi.test';
 local Bugzilla->params->{jira_webhook_sync_project_keys} = '["FOO","BAZ"]';
 
 # Success
@@ -44,11 +42,6 @@ ok(
   'https://externalapi.test/browse/FOO-100/some/more/path');
 ok(!defined $jira_id && !defined $project_key,
   'No Jira ID or Project Key extracted for improperly formatted url');
-($jira_id, $project_key)
-  = Bugzilla::Extension::JiraWebhookSync::JiraBugMap->extract_jira_info(
-  'https://jira.com/browse/browse/FOO-100');
-ok(!defined $jira_id && !defined $project_key,
-  'No Jira ID or Project Key extracted for wrong hostname');
 ($jira_id, $project_key)
   = Bugzilla::Extension::JiraWebhookSync::JiraBugMap->extract_jira_info(
   'https://externalapi.test/browse/BAR-100');
