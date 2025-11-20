@@ -231,6 +231,7 @@
       this group will be removed.</p>
 
     <input type="hidden" name="action" value="confirm_remove">
+    <input type="hidden" name="token" value="[% confirm_remove_token FILTER html %]">
     <input type="hidden" name="group_id" value="[% group.id FILTER html %]">
   </fieldset>
 </form>
