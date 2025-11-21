@@ -13,6 +13,7 @@
    title = "$terms.Bugzilla Main Page"
    header = "Main Page"
    style_urls = [ 'skins/standard/index.css' ]
+   javascript_urls = [ 'extensions/BMO/web/js/home.js' ]
    og_image = "extensions/OpenGraph/web/moz-social-bw-rgb-1200x1200.png"
    responsive = 1
 %]
@@ -115,27 +116,60 @@
       </section>
     </div>
     <div class="options downloads">
-      <section>
-        <h2>
-          <a href="https://www.mozilla.org/firefox/channel/desktop/#beta">
-            <img src="/images/index/firefox-beta.svg" alt="" aria-hidden="true" />
-            <span>Download</span> Firefox Beta
-          </a>
-        </h2>
-        <p>Test about-to-be-released features in the most stable pre-release build.</p>
-      </section>
-      <section>
-        <h2>
-          <a href="https://www.mozilla.org/firefox/channel/desktop/#nightly">
-            <img src="/images/index/firefox-nightly.svg" alt="" aria-hidden="true" />
-            <span>Download</span> Firefox Nightly
-          </a>
-        </h2>
-        <p>
-          Get a sneak peek at our next generation web browser, and help us make it the best browser
-          it can be: try Firefox Nightly.
-        </p>
-      </section>
+      <div id="downloads-firefox-desktop" class="downloads-group">
+        <section>
+          <h2>
+            <a href="https://www.firefox.com/channel/desktop/#beta">
+              <img src="/images/index/firefox-beta.svg" alt="" aria-hidden="true" />
+              <span>Download</span> Firefox Beta
+            </a>
+          </h2>
+          <p>Test about-to-be-released features in the most stable pre-release build.</p>
+        </section>
+        <section>
+          <h2>
+            <a href="https://www.firefox.com/channel/desktop/#nightly">
+              <img src="/images/index/firefox-nightly.svg" alt="" aria-hidden="true" />
+              <span>Download</span> Firefox Nightly
+            </a>
+          </h2>
+          <p>
+            Get a sneak peek at our next generation web browser, and help us make it the best browser
+            it can be: try Firefox Nightly.
+          </p>
+        </section>
+      </div>
+      <div id="downloads-firefox-android" class="downloads-group" hidden>
+        <section>
+          <h2>
+            <a href="https://www.firefox.com/channel/android/#beta">
+              <img src="/images/index/firefox-beta.svg" alt="" aria-hidden="true" />
+              <span>Download</span> Firefox Beta
+            </a>
+          </h2>
+          <p>Try the latest Android features, before they get released to the rest of the world.</p>
+        </section>
+        <section>
+          <h2>
+            <a href="https://www.firefox.com/channel/android/#nightly">
+              <img src="/images/index/firefox-nightly.svg" alt="" aria-hidden="true" />
+              <span>Download</span> Firefox Nightly
+            </a>
+          </h2>
+          <p>Check out new Android features in their earliest stages. Enjoy at your own risk.</p>
+        </section>
+      </div>
+      <div id="downloads-firefox-ios" class="downloads-group" hidden>
+        <section>
+          <h2>
+            <a href="https://www.firefox.com/channel/ios/#testflight">
+              <img src="/images/index/firefox-beta.svg" alt="" aria-hidden="true" />
+              <span>Download</span> Firefox TestFlight
+            </a>
+          </h2>
+          <p>Test beta versions of Firefox for iOS via Apple’s TestFlight program.</p>
+        </section>
+      </div>
     </div>
   </div>
   [% IF Param('cookie_consent_enabled') && Bugzilla.cgi.cookie_consent_required %]
