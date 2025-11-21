@@ -75,6 +75,14 @@
   padding-left: 64px;
 }
 
+.options .downloads-group {
+  display: contents;
+}
+
+.options .downloads-group[hidden] section {
+  display: none;
+}
+
 .options h2 {
   margin: 0;
   font-size: var(--heading-font-size);
