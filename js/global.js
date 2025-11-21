@@ -366,6 +366,8 @@ window.addEventListener('DOMContentLoaded', () => {
   $showSearchBoxButton.addEventListener('click', () => {
     $headerWrapper.classList.add('searching');
     $searchBox.focus();
+    // Move cursor to the end
+    $searchBox.setSelectionRange(-1, -1);
 
     // Show the dropdown
     window.requestAnimationFrame(() => {
