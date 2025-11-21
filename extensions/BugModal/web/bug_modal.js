@@ -1516,7 +1516,11 @@ $(function() {
             saveBugComment(event.target.value);
         });
 
+    const { bug_id: bugId } = BUGZILLA;
+    const isNewBug = bugId === undefined;
+    const attachmentInputIds = ['att-file', 'att-data', 'att-textarea', 'att-description'];
     const comment = document.querySelector('#comment', '#add-comment');
+
     if (comment.classList.contains('attach-long-paste')) {
       // Convert long paste into an attachment
       comment.addEventListener('paste', async event => {
@@ -1525,12 +1529,28 @@ $(function() {
 
         if (lines < 50) {
           return;
-       }
+        }
 
         const extract = text.replace(/(?:\r\n|\r|\n)/, ' ').trim().substr(0, 20);
+        const message = `You’re pasting ${lines} lines of text starting with “${extract}”.`;
+
+        if (isNewBug && attachmentInputIds.some(id => !!document.getElementById(id).value)) {
+          // We can’t attach because there are already attachments being added
+          const confirmed = window.confirm(
+            `${message} However, there is already a file being attached to this bug, so the pasted text can’t be ` +
+            `uploaded as an attachment. Click OK and attach it as a file after submitting the bug, or click Cancel ` +
+            `to paste it anyway.`
+          );
+
+          if (confirmed) {
+            event.preventDefault();
+          }
+
+          return;
+        }
+
         const summary = (window.prompt(
-          `You’re pasting ${lines} lines of text starting with “${extract}”. ` +
-          'Enter the summary below and click OK to upload it as an attachment. Click Cancel to paste it normally.'
+          `${message} Enter the summary below to upload it as an attachment, or click Cancel to paste it anyway.`
         ) || '').trim();
 
         if (!summary) {
@@ -1539,8 +1559,18 @@ $(function() {
 
         event.preventDefault();
 
+        if (isNewBug) {
+          // Expand the attachment module
+          document.querySelector('#attach-new-file').click();
+          // Fill in the attachment fields in the new bug form
+          document.querySelector('#att-textarea').value = text;
+          document.querySelector('#att-description').value = summary;
+
+          return;
+        }
+
         try {
-          await Bugzilla.API.post(`bug/${BUGZILLA.bug_id}/attachment`, {
+          await Bugzilla.API.post(`bug/${bugId}/attachment`, {
             // https://developer.mozilla.org/en-US/docs/Web/API/WindowBase64/Base64_encoding_and_decoding
             data: btoa(encodeURIComponent(text).replace(/%([0-9A-F]{2})/g, (m, p1) => String.fromCharCode(`0x${p1}`))),
             file_name: 'pasted.txt',
@@ -1549,7 +1579,7 @@ $(function() {
           });
 
           // Reload the page once upload is complete
-          location.replace(`${BUGZILLA.config.basepath}show_bug.cgi?id=${BUGZILLA.bug_id}`);
+          location.replace(`${BUGZILLA.config.basepath}show_bug.cgi?id=${bugId}`);
         } catch ({ message }) {
           window.alert(`Couldn’t upload the text as an attachment. Please try again later. Error: ${message}`);
         }
