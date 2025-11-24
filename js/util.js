@@ -990,14 +990,16 @@ Bugzilla.Toast = class Toast {
    * @param {boolean} [options.html=false] Whether the message is HTML or plain text. This method
    * doesn’t sanitize the HTML, so it should be used with caution.
    * @param {number} [options.duration=2500] Duration in milliseconds to show the toast.
+   * @param {'top' | 'bottom'} [options.position='top'] Position of the toast.
    * @requires jQuery
    */
-  static show(message, { html = false, duration = 2500 } = {}) {
+  static show(message, { html = false, duration = 2500, position = 'top' } = {}) {
     let $toast = document.querySelector('#toast');
 
     if (!$toast) {
       $toast = document.createElement('div');
       $toast.id = 'toast';
+      $toast.classList.add(position);
       $toast.setAttribute('role', 'alert');
       $toast.style.display = 'none';
       $toast.addEventListener('click', () => {
