@@ -38,7 +38,6 @@ use constant DB_COLUMNS => qw(
 );
 
 use constant UPDATE_COLUMNS => qw(
-  jira_id
   jira_url
   jira_project_key
 );
@@ -87,12 +86,12 @@ sub _check_bug_id {
 }
 
 sub _check_jira_url {
-  my ($invocant, $jira_id) = @_;
+  my ($invocant, $jira_url) = @_;
 
-  $jira_id = trim($jira_id);
-  $jira_id || ThrowUserError('jira_url_required');
+  $jira_url = trim($jira_url);
+  $jira_url || ThrowUserError('jira_url_required');
 
-  return $jira_id;
+  return $jira_url;
 }
 
 sub _check_jira_project_key {
@@ -126,10 +125,10 @@ sub extract_jira_project_key {
   # Match pattern
   # https://jira.example.com/browse/PROJ-123
   my $url = Mojo::URL->new($see_also);
-  my ($project_key, $jira_id);
-  if ($url->path =~ m{^/browse/([[:upper:]]+-\d+)$}) {
-    $jira_id = $1;
-    ($project_key) = $jira_id =~ /^([[:upper:]]+)-/;
+  my $project_key = undef;
+  if ($url->path =~ m{^/browse/([[:upper:]]+)-\d+$}) {
+    $project_key = $1;
+    return undef if !$project_key;
 
     # Return undef if project key is not in configured list
     if (none { $_ eq $project_key }

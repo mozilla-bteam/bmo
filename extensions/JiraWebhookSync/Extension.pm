@@ -144,7 +144,7 @@ sub webhook_before_send {
 
     # Add the Jira URL to the see_also array in the payload if not already present
     $payload->{bug}->{see_also} ||= [];
-    if (none { $_ => $jira_map->jira_url } @{$payload->{bug}->{see_also}}) {
+    if (none { $_ eq $jira_map->jira_url } @{$payload->{bug}->{see_also}}) {
       push @{$payload->{bug}->{see_also}}, $jira_map->jira_url;
     }
   }
