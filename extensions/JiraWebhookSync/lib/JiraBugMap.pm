@@ -33,23 +33,24 @@ use constant DB_TABLE => 'jira_bug_map';
 use constant DB_COLUMNS => qw(
   id
   bug_id
-  jira_id
   jira_project_key
+  jira_url
 );
 
 use constant UPDATE_COLUMNS => qw(
   jira_id
+  jira_url
   jira_project_key
 );
 
 use constant VALIDATORS => {
   bug_id           => \&_check_bug_id,
-  jira_id          => \&_check_jira_id,
+  jira_url         => \&_check_jira_url,
   jira_project_key => \&_check_jira_project_key,
 };
 
 use constant VALIDATOR_DEPENDENCIES => {
-  jira_id => ['jira_project_key'],
+  jira_url => ['jira_project_key'],
 };
 
 ###############################
@@ -57,7 +58,7 @@ use constant VALIDATOR_DEPENDENCIES => {
 ###############################
 
 sub bug_id           { return $_[0]->{bug_id}; }
-sub jira_id          { return $_[0]->{jira_id}; }
+sub jira_url         { return $_[0]->{jira_url}; }
 sub jira_project_key { return $_[0]->{jira_project_key}; }
 
 sub bug {
@@ -69,7 +70,7 @@ sub bug {
 ####       Mutators       #####
 ###############################
 
-sub set_jira_id          { $_[0]->set('jira_id',          $_[1]); }
+sub set_jira_url         { $_[0]->set('jira_url',         $_[1]); }
 sub set_jira_project_key { $_[0]->set('jira_project_key', $_[1]); }
 
 ###############################
@@ -85,11 +86,11 @@ sub _check_bug_id {
   return $bug_id;
 }
 
-sub _check_jira_id {
+sub _check_jira_url {
   my ($invocant, $jira_id) = @_;
 
   $jira_id = trim($jira_id);
-  $jira_id || ThrowUserError('jira_id_required');
+  $jira_id || ThrowUserError('jira_url_required');
 
   return $jira_id;
 }
@@ -117,18 +118,8 @@ sub get_by_bug_id {
   });
 }
 
-# Get mapping by jira_id
-sub get_by_jira_id {
-  my ($class, $jira_id) = @_;
-
-  return $class->new({
-    condition => 'jira_id = ?',
-    values    => [$jira_id],
-  });
-}
-
-# Extract Jira project key from a Jira URL or ID
-sub extract_jira_info {
+# Extract Jira project key from a Jira URL
+sub extract_jira_project_key {
   my ($class, $see_also) = @_;
   my $params = Bugzilla->params;
 
@@ -144,11 +135,11 @@ sub extract_jira_info {
     if (none { $_ eq $project_key }
       @{decode_json($params->{jira_webhook_sync_project_keys} || '[]')})
     {
-      return (undef, undef);
+      return undef;
     }
   }
 
-  return ($jira_id, $project_key);
+  return $project_key;
 }
 
 1;
