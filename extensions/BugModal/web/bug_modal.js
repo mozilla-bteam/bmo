@@ -117,12 +117,15 @@ $(function() {
     /**
      * Flag indicating whether we are creating a new bug or editing an existing one.
      */
-    const isNewBug = $form.matches('.enter_bug_form');
+    const isNewBug = BUGZILLA.bug_id === undefined;
 
     /**
      * Instance of the instant update handler.
      */
-    const instantUpdater = isNewBug ? undefined : new Bugzilla.BugModal.InstantUpdater($form);
+    const instantUpdater =
+      $form && !isNewBug
+        ? new Bugzilla.BugModal.InstantUpdater($form)
+        : undefined;
 
     /**
      * Flag indicating whether the user is in Edit mode or not. This affects the behavior of the
@@ -307,7 +310,7 @@ $(function() {
         });
 
     // show floating message after creating/updating a bug/attachment
-    const { changeSummary } = $form.dataset ?? {};
+    const { changeSummary } = $form?.dataset ?? {};
 
     if (changeSummary) {
         Bugzilla.Toast.show(changeSummary);
@@ -1551,7 +1554,6 @@ $(function() {
         });
 
     const { bug_id: bugId } = BUGZILLA;
-    const isNewBug = bugId === undefined;
     const attachmentInputIds = ['att-file', 'att-data', 'att-textarea', 'att-description'];
     const comment = document.querySelector('#comment', '#add-comment');
 
