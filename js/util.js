@@ -994,12 +994,6 @@ Bugzilla.Toast = class Toast {
    * @requires jQuery
    */
   static show(message, { html = false, duration = 2500, position = 'top' } = {}) {
-    // Do not show toast notifications during automated tests because it may interfere with the test
-    // runner, making tests fail unexpectedly.
-    if (navigator.webdriver) {
-      return;
-    }
-
     let $toast = document.querySelector('#toast');
 
     if (!$toast) {
