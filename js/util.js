@@ -1002,9 +1002,6 @@ Bugzilla.Toast = class Toast {
       $toast.classList.add(position);
       $toast.setAttribute('role', 'alert');
       $toast.style.display = 'none';
-      $toast.addEventListener('click', () => {
-        $toast.style.display = 'none';
-      });
       document.querySelector('#bugzilla-body').appendChild($toast);
     }
 

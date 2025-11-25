@@ -3135,6 +3135,7 @@ div.bz_comment_text pre {
   cursor: default;
   -webkit-user-select: none;
   user-select: none;
+  pointer-events: none;
   transform: translateX(-50%);
 }
 
