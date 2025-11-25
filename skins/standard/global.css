@@ -810,6 +810,19 @@ input[type="radio"]:checked {
   padding: 0;
 }
 
+/*
+ * Fix checkbox appearance in high contrast mode
+ * @see https://bugzilla.mozilla.org/show_bug.cgi?id=1994116
+ */
+@media (prefers-contrast: more) {
+  input[type="checkbox"] {
+    -moz-appearance: auto;
+    -webkit-appearance: auto;
+    appearance: auto;
+    background-image: none;
+  }
+}
+
 /**
  * Rich Form Widgets
  */
