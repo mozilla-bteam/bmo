@@ -940,6 +940,7 @@ Bugzilla.BugModal.InstantUpdater = class InstantUpdater {
     this.$placeholderTemplate = document.querySelector('#changeset-template');
     this.$commentTextArea = document.querySelector('#comment');
     this.initialFormData = new FormData($form);
+    this.commentSortOrder = BUGZILLA.user.settings?.comment_sort_order ?? 'oldest_to_newest';
   }
 
   /**
@@ -994,9 +995,15 @@ Bugzilla.BugModal.InstantUpdater = class InstantUpdater {
     this.$commentTextArea.hidden = true;
 
     const changeSets = [...document.querySelectorAll('.change-set')];
+    const lastChangeSetIndex =
+      this.commentSortOrder === 'newest_to_oldest'
+        ? 0
+        : this.commentSortOrder === 'newest_to_oldest_desc_first'
+        ? 1
+        : changeSets.length - 1;
 
     this.$placeholder = this.$placeholderTemplate.content.firstElementChild.cloneNode(true);
-    this.$lastChangeSet = changeSets[changeSets.length - 1];
+    this.$lastChangeSet = changeSets[lastChangeSetIndex];
 
     const rawComment = this.$commentTextArea.value;
     const commentCount = changeSets.filter(({ id }) => id.match(/^c\d+/)).length;
@@ -1012,8 +1019,11 @@ Bugzilla.BugModal.InstantUpdater = class InstantUpdater {
     // Insert the raw comment first; don’t use `innerHTML` here to avoid XSS
     $placeholderCommentBody.textContent = rawComment;
 
-    // Insert the placeholder after the last change set
-    this.$lastChangeSet.insertAdjacentElement('afterend', this.$placeholder);
+    // Insert the placeholder before or after the last change set
+    this.$lastChangeSet.insertAdjacentElement(
+      this.commentSortOrder === 'oldest_to_newest' ? 'afterend' : 'beforebegin',
+      this.$placeholder
+    );
 
     // Fetch the rendered HTML from the server
     const { html } = await Bugzilla.API.post('bug/comment/render', { text: rawComment });
@@ -1050,7 +1060,13 @@ Bugzilla.BugModal.InstantUpdater = class InstantUpdater {
     /** @type {HTMLElement[]} */
     const allChangeSets = [...updatedDoc.querySelectorAll('.change-set')];
     const lastChangeSetIndex = allChangeSets.findIndex(({ id }) => id === this.$lastChangeSet.id);
-    const newChangeSets = allChangeSets.slice(lastChangeSetIndex + 1);
+    const newChangeSetRange =
+      this.commentSortOrder === 'newest_to_oldest'
+        ? [0, lastChangeSetIndex]
+        : this.commentSortOrder === 'newest_to_oldest_desc_first'
+        ? [1, lastChangeSetIndex]
+        : [lastChangeSetIndex + 1];
+    const newChangeSets = allChangeSets.slice(...newChangeSetRange);
 
     // Replace the placeholder with the new change sets
     this.$placeholder.replaceWith(...newChangeSets);
