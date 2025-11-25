@@ -940,6 +940,7 @@ Bugzilla.BugModal.InstantUpdater = class InstantUpdater {
     this.$placeholderTemplate = document.querySelector('#changeset-template');
     this.$commentTextArea = document.querySelector('#comment');
     this.initialFormData = new FormData($form);
+    this.commentBoxPosition = BUGZILLA.user.settings?.comment_box_position ?? 'after_comments';
     this.commentSortOrder = BUGZILLA.user.settings?.comment_sort_order ?? 'oldest_to_newest';
   }
 
@@ -1093,6 +1094,10 @@ Bugzilla.BugModal.InstantUpdater = class InstantUpdater {
     // Update the status summary, including the timestamp
     this.CONTENT_REPLACE_SELECTORS.forEach((selector) => {
       document.querySelector(selector).innerHTML = updatedDoc.querySelector(selector).innerHTML;
+    });
+
+    Bugzilla.Toast.show('New comment added', {
+      position: this.commentBoxPosition === 'before_comments' ? 'top' : 'bottom',
     });
   }
 

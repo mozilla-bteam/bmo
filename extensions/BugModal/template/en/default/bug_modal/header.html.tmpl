@@ -113,6 +113,7 @@
     timezone: '[% user.timezone.name FILTER js %]',
     settings: {
       quote_replies: '[% user.settings.quote_replies.value FILTER js %]',
+      comment_box_position: '[% user.settings.comment_box_position.value FILTER js %]',
       comment_sort_order: '[% user.settings.comment_sort_order.value FILTER js %]',
       zoom_textareas: [% user.settings.zoom_textareas.value == "on" ? "true" : "false" %],
       remember_collapsed: [% user.settings.ui_remember_collapsed.value == "on" ? "true" : "false" %],
