@@ -1096,9 +1096,9 @@ Bugzilla.BugModal.InstantUpdater = class InstantUpdater {
       document.querySelector(selector).innerHTML = updatedDoc.querySelector(selector).innerHTML;
     });
 
-    // Bugzilla.Toast.show('New comment added', {
-    //   position: this.commentBoxPosition === 'before_comments' ? 'top' : 'bottom',
-    // });
+    Bugzilla.Toast.show('New comment added', {
+      position: this.commentBoxPosition === 'before_comments' ? 'top' : 'bottom',
+    });
   }
 
   /**
