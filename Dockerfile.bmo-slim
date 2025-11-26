@@ -47,6 +47,8 @@ RUN apt-get update \
        git \
        graphviz \
        libcap2-bin \
+       libcmark-gfm-dev \
+       libcmark-gfm-extensions-dev \
        rsync \
        $(cat /app/PACKAGES) \
     && rm -rf /var/cache/apt/* /var/lib/apt/lists/*

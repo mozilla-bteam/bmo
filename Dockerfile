@@ -17,7 +17,7 @@ ENV LOCALCONFIG_ENV=1
 
 RUN apt-get update \
     && apt-get upgrade -y \
-    && apt-get install -y rsync curl \
+    && apt-get install -y rsync curl libcmark-gfm-dev libcmark-gfm-extensions-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

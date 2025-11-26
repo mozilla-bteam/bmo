@@ -135,7 +135,8 @@ my %optional_features = (
   },
   alien_cmark => {
     description => 'Support GitHub-flavored markdown',
-    prereqs     => {runtime => {requires => {'Alien::libcmark_gfm' => '3'},},},
+    # Note: requires system libraries libcmark-gfm and libcmark-gfm-extensions
+    prereqs     => {runtime => {requires => {},},},
   },
   argon2 => {
     description => 'Support hashing passwords with Argon2',
