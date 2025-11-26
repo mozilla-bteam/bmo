@@ -20,7 +20,7 @@ use Bugzilla::Logging;
 use Bugzilla::Util qw(trim);
 
 use JSON::MaybeXS qw(decode_json);
-use List::Util    qw(uniq);
+use List::Util    qw(none uniq);
 use Mojo::URL;
 use Mojo::Util qw(dumper);
 
@@ -35,14 +35,36 @@ sub db_schema_abstract_schema {
         NOTNULL    => 1,
         REFERENCES => {TABLE => 'bugs', COLUMN => 'bug_id', DELETE => 'CASCADE',}
       },
-      jira_id          => {TYPE => 'VARCHAR(255)', NOTNULL => 1,},
+      jira_url => {TYPE => 'VARCHAR(255)', NOTNULL => 1,},
       jira_project_key => {TYPE => 'VARCHAR(100)', NOTNULL => 1,},
     ],
     INDEXES => [
-      jira_bug_map_bug_id_idx => {FIELDS => ['bug_id', 'jira_id'], TYPE => 'UNIQUE',},
+      jira_bug_map_bug_id_idx => {FIELDS => ['bug_id', 'jira_url'], TYPE => 'UNIQUE',},
       jira_bug_map_project_idx => ['jira_project_key'],
     ],
   };
+}
+
+sub install_update_db {
+  my ($self) = @_;
+  my $dbh = Bugzilla->dbh;
+
+  if (!$dbh->bz_column_info('jira_bug_map', 'jira_url')) {
+    $dbh->bz_add_column('jira_bug_map', 'jira_url', {TYPE => 'VARCHAR(255)'});
+
+    my $jira_rows
+      = $dbh->selectall_arrayref('SELECT id, jira_id FROM jira_bug_map');
+    foreach my $row (@{$jira_rows}) {
+      my ($id, $jira_id) = @{$row};
+      my $jira_url = "https://mozilla-hub.atlassian.net/browse/$jira_id";
+      $dbh->do('UPDATE jira_bug_map SET jira_url = ? WHERE id = ?', undef, $jira_url,
+        $id);
+    }
+
+    $dbh->bz_drop_column('jira_bug_map', 'jira_id');
+    $dbh->bz_alter_column('jira_bug_map', 'jira_url',
+      {TYPE => 'VARCHAR(255)', NOTNULL => 1});
+  }
 }
 
 # Adds the JiraWebhookSync configuration panel to the admin interface.
@@ -61,24 +83,27 @@ sub bug_start_of_update {
   my $new_bug = $args->{bug};
 
   foreach my $see_also (@{$new_bug->see_also}) {
+    my $see_also_url = $see_also->name;
 
     # Check if this see_also URL corresponds to a Jira ticket
-    my ($jira_id, $project_key)
-      = Bugzilla::Extension::JiraWebhookSync::JiraBugMap->extract_jira_info(
-      $see_also->name);
+    my $project_key
+      = Bugzilla::Extension::JiraWebhookSync::JiraBugMap->extract_jira_project_key(
+      $see_also_url);
 
-    next unless $jira_id && $project_key;
+    next unless $project_key;
 
-    INFO("Intercepting see_also for Jira ticket: $jira_id (project: $project_key)");
+    INFO(
+      "Intercepting see_also for Jira ticket: $see_also_url (project: $project_key)");
 
-    # Add the jira id and project key to the jira_bug_map table unless it already exists
+# Add the jira id and project key to the jira_bug_map table unless it already exists
     my $existing_map
-      = Bugzilla::Extension::JiraWebhookSync::JiraBugMap->get_by_bug_id($new_bug->id);
+      = Bugzilla::Extension::JiraWebhookSync::JiraBugMap->get_by_bug_id(
+      $new_bug->id);
     if (!$existing_map) {
       INFO('Creating new Jira mapping for bug ' . $new_bug->id);
       Bugzilla::Extension::JiraWebhookSync::JiraBugMap->create({
         bug_id           => $new_bug->id,
-        jira_id          => $jira_id,
+        jira_url         => $see_also_url,
         jira_project_key => $project_key,
       });
     }
@@ -112,25 +137,15 @@ sub webhook_before_send {
   INFO("Processing webhook for bug $bug_id to Jira host $hostname");
 
   # Check if there's a Jira mapping for this bug
-  my $jira_map
-    = Bugzilla::Extension::JiraWebhookSync::JiraBugMap->get_by_bug_id($bug_id);
+  if (my $jira_map
+    = Bugzilla::Extension::JiraWebhookSync::JiraBugMap->get_by_bug_id($bug_id))
+  {
+    INFO('Adding Jira see_also to webhook payload: ' . $jira_map->jira_url);
 
-  if ($jira_map) {
-
-    # Construct the Jira URL from the mapping
-    my $jira_url = "https://$hostname/browse/" . $jira_map->jira_id;
-
-    INFO("Adding Jira see_also to webhook payload: $jira_url");
-
-    # Add the Jira URL to the see_also array in the payload
-    if (!exists $payload->{bug}->{see_also}) {
-      $payload->{bug}->{see_also} = [];
-    }
-
-    # Only add if not already present
-    my %existing_see_also = map { $_ => 1 } @{$payload->{bug}->{see_also}};
-    if (!$existing_see_also{$jira_url}) {
-      push @{$payload->{bug}->{see_also}}, $jira_url;
+    # Add the Jira URL to the see_also array in the payload if not already present
+    $payload->{bug}->{see_also} ||= [];
+    if (none { $_ eq $jira_map->jira_url } @{$payload->{bug}->{see_also}}) {
+      push @{$payload->{bug}->{see_also}}, $jira_map->jira_url;
     }
   }
 
