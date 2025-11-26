@@ -117,7 +117,7 @@ $t->get_ok('http://externalapi.test:8001/webhooks/last_payload')
 # bug is updated and the webhook is triggered.
 # Then we look again at the last payload from the webhook, which should
 # contain the see also value that was generated from the mapping table.
-my $jira_url = 'https://externalapi.test/browse/BZFF-100';
+my $jira_url = 'https://example.com/browse/BZFF-100';
 my $update   = {see_also => {add => [$jira_url]}, 'priority' => 'P2'};
 $t->put_ok($config->{browser_url}
     . "/rest/bug/$bug_id_1"                                 =>

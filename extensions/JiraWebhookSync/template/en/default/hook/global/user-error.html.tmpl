@@ -11,8 +11,8 @@
   A [% terms.bug %] ID is required for the Jira issue.
 
 [% ELSIF error == "jira_url_required" %]
-  [% title = "Jira Url Required" %]
-  A Jira issue url is required.
+  [% title = "Jira Url Required or Invalid" %]
+  A Jira issue url was missing or is not a valid url.
 
 [% ELSIF error == "jira_project_key_required" %]
   [% title = "Jira Project Key Required" %]

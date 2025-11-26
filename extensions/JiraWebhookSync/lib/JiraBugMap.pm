@@ -15,13 +15,14 @@ use base qw(Bugzilla::Object);
 
 use Bugzilla;
 use Bugzilla::Bug;
+use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Logging;
 use Bugzilla::Util qw(detaint_natural trim);
 
 use JSON::MaybeXS qw(decode_json);
 use List::Util qw(none);
-use Mojo::URL;
+use URI;
 use Scalar::Util qw(blessed);
 
 ###############################
@@ -91,7 +92,20 @@ sub _check_jira_url {
   $jira_url = trim($jira_url);
   $jira_url || ThrowUserError('jira_url_required');
 
-  return $jira_url;
+  $jira_url = URI->new($jira_url);
+
+  if ( !$jira_url
+    || ($jira_url->scheme ne 'http' && $jira_url->scheme ne 'https')
+    || !$jira_url->authority
+    || length($jira_url->path) > MAX_BUG_URL_LENGTH)
+  {
+    ThrowUserError('jira_url_required');
+  }
+
+  # always https
+  $jira_url->scheme('https');
+
+  return $jira_url->as_string;
 }
 
 sub _check_jira_project_key {
@@ -124,7 +138,7 @@ sub extract_jira_project_key {
 
   # Match pattern
   # https://jira.example.com/browse/PROJ-123
-  my $url = Mojo::URL->new($see_also);
+  my $url = URI->new($see_also);
   my $project_key = undef;
   if ($url->path =~ m{^/browse/([[:upper:]]+)-\d+$}) {
     $project_key = $1;
