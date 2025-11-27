@@ -167,6 +167,30 @@ sub webhook_before_send {
   $payload->{bug}->{whiteboard} = _add_whiteboard_tags($whiteboard, \@new_tags);
 }
 
+sub webservice_bug_get {
+  my ($self, $args) = @_;
+  my $bug_data = $args->{bug_data};
+  my $user     = $args->{user};
+  my $params   = Bugzilla->params;
+
+  # Only add see also values for the Jira webhook sync user
+  return if $user->login ne $params->{jira_webhook_sync_user};
+
+  INFO('Jira sync user is accessing REST get bug. Looking for see also values');
+
+  foreach my $bug (@{$bug_data}) {
+    if (my $jira_map
+      = Bugzilla::Extension::JiraWebhookSync::JiraBugMap->get_by_bug_id($bug->{id}))
+    {
+      $bug->{see_also} ||= [];
+      if (none { $_ eq $jira_map->jira_url } @{$bug->{see_also}}) {
+        INFO('Adding Jira see_also to REST bug data: ' . $jira_map->jira_url);
+        push @{$bug->{see_also}}, $jira_map->jira_url;
+      }
+    }
+  }
+}
+
 # Adds a whiteboard tag to the whiteboard string if it doesn't already exist.
 # Returns the whiteboard value with the tag in [brackets] format.
 # If the tag already exists, returns the whiteboard unchanged.

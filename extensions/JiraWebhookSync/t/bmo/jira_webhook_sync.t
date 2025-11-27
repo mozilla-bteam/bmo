@@ -31,6 +31,7 @@ set_parameters(
     },
     'Jira Webhook Sync' => {
       'jira_webhook_sync_hostname' => {type => 'text', value => 'externalapi.test'},
+      'jira_webhook_sync_user'     => {type => 'text', value => $config->{editbugs_user_login}},
       'jira_webhook_sync_config'   => {
         type  => 'text',
         value => '{"BZFF": {"product": "Firefox", "component": "General"}}'
@@ -138,6 +139,16 @@ $t->get_ok('http://externalapi.test:8001/webhooks/last_payload')
   ->json_is('/bug/component',  'General')
   ->json_is('/bug/whiteboard', '[BZFF]')
   ->json_is('/bug/see_also/0', $jira_url);
+
+# When using the REST API to get bug details, and the calling user
+# is the jira sync user, then we need to make sure the hidden see
+# also values are included in the response.
+$t->get_ok($config->{browser_url}
+    . "/rest/bug/$bug_id_1" =>
+    {'X-Bugzilla-API-Key' => $config->{editbugs_user_api_key}})
+  ->status_is(200)
+  ->json_is('/bugs/0/id',         $bug_id_1)
+  ->json_is('/bugs/0/see_also/0', $jira_url);
 
 # Turn off webhooks and jira sync.
 log_in($sel, $config, 'admin');
