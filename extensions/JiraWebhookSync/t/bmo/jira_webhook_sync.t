@@ -150,6 +150,14 @@ $t->get_ok($config->{browser_url}
   ->json_is('/bugs/0/id',         $bug_id_1)
   ->json_is('/bugs/0/see_also/0', $jira_url);
 
+# And make sure the see also values are not visible to other users
+$t->get_ok($config->{browser_url}
+    . "/rest/bug/$bug_id_1" =>
+    {'X-Bugzilla-API-Key' => $config->{admin_user_api_key}})
+  ->status_is(200)
+  ->json_is('/bugs/0/id', $bug_id_1)
+  ->json_hasnt('/bugs/0/see_also');
+
 # Turn off webhooks and jira sync.
 log_in($sel, $config, 'admin');
 set_parameters(

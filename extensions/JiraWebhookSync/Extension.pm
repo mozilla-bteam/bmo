@@ -174,6 +174,7 @@ sub webservice_bug_get {
   my $params   = Bugzilla->params;
 
   # Only add see also values for the Jira webhook sync user
+  return if !$params->{jira_webhook_sync_user};
   return if $user->login ne $params->{jira_webhook_sync_user};
 
   INFO('Jira sync user is accessing REST get bug. Looking for see also values');
