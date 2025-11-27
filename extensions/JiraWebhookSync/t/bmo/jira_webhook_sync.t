@@ -156,7 +156,7 @@ $t->get_ok($config->{browser_url}
     {'X-Bugzilla-API-Key' => $config->{admin_user_api_key}})
   ->status_is(200)
   ->json_is('/bugs/0/id', $bug_id_1)
-  ->json_hasnt('/bugs/0/see_also');
+  ->json_hasnt('/bugs/0/see_also/0');
 
 # Turn off webhooks and jira sync.
 log_in($sel, $config, 'admin');
