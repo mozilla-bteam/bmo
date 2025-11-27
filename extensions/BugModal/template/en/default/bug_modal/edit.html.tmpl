@@ -1530,8 +1530,8 @@
   END;
 %]
   <div class="link">
-    <a href="[% bug.bug_file_loc FILTER html %]" target="_blank"
-      rel="noreferrer" title="[% bug.bug_file_loc FILTER truncate(256) FILTER html %]"
+    <a href="[% bug.bug_file_loc FILTER html %]" target="_blank" rel="nofollow noreferrer"
+      title="[% bug.bug_file_loc FILTER truncate(256) FILTER html %]"
       class="bug-url" data-safe="[% is_safe_url(bug.bug_file_loc) ? 1 : 0 %]">
       [%~ link_text FILTER html ~%]
     </a>

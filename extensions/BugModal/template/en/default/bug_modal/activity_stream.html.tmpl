@@ -413,7 +413,7 @@
 
       CASE 'bug_file_loc';
         %]
-        <a href="[% value FILTER html %]" target="_blank" rel="noreferrer"
+        <a href="[% value FILTER html %]" target="_blank" rel="nofollow noreferrer"
            class="bug-url" data-safe="[% is_safe_url(value) ? 1 : 0 %]"
         >[% value FILTER truncate(40) FILTER html %]</a>
         [%
@@ -424,7 +424,8 @@
             see_also.bug_id FILTER bug_link(see_also.bug_id, use_alias => 1);
           ELSE;
             %]
-            <a href="[% see_also.url FILTER html %]" target="_blank" rel="noreferrer">[% see_also.url FILTER html %]</a>
+            <a href="[% see_also.url FILTER html %]" target="_blank"
+               rel="nofollow noreferrer">[% see_also.url FILTER html %]</a>
             [%
           END;
           ", " UNLESS loop.last;

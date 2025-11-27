@@ -79,7 +79,8 @@ sub render_html {
   my $dom = Mojo::DOM->new($html);
   $dom->find(join(', ', @bad_tags))->map('remove');
 
-  $dom->find("a[href]")->grep(\&_is_external_link)->map(attr => rel => 'nofollow');
+  $dom->find("a[href]")->grep(\&_is_external_link)
+      ->map(attr => {target => '_blank', rel => 'nofollow noreferrer'});
   $dom->find(join ', ', @valid_text_parent_tags)->map(sub {
     my $node = shift;
     $node->descendant_nodes->map(sub {
