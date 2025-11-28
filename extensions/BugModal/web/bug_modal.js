@@ -63,24 +63,24 @@ function initKeywordsAutocomplete(keywords) {
             forceFixPosition: true,
             lookup: function(_query, done) {
                 const enteredKeywords = $keywords.value
-                  .split(',')
-                  .map((keyword) => keyword.trim().toLowerCase());
+                    .split(',')
+                    .map((keyword) => keyword.trim().toLowerCase());
                 const query = enteredKeywords.pop();
                 const matchStart = [];
                 const matchSub = [];
 
                 keywords.forEach((keyword) => {
-                  const lowerKeyword = keyword.toLowerCase();
+                    const lowerKeyword = keyword.toLowerCase();
 
-                  if (enteredKeywords.includes(lowerKeyword) || !lowerKeyword.includes(query)) {
-                    return;
-                  }
+                    if (enteredKeywords.includes(lowerKeyword) || !lowerKeyword.includes(query)) {
+                        return;
+                    }
 
-                  if (lowerKeyword.startsWith(query)) {
-                    matchStart.push(keyword);
-                  } else {
-                    matchSub.push(keyword);
-                  }
+                    if (lowerKeyword.startsWith(query)) {
+                        matchStart.push(keyword);
+                    } else {
+                        matchSub.push(keyword);
+                    }
                 });
 
                 done({ suggestions: [...matchStart, ...matchSub].map((value) => ({ value })) });
