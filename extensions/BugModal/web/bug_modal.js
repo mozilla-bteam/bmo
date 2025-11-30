@@ -55,31 +55,35 @@ function init_module_visibility() {
  * @param {string[]} keywords Available keyword list.
  */
 function initKeywordsAutocomplete(keywords) {
-    $('#keywords')
+    const $keywords = document.querySelector('#keywords');
+
+    $($keywords)
         .devbridgeAutocomplete({
             appendTo: $('#main-inner'),
             forceFixPosition: true,
-            lookup: function(query, done) {
-                query = query.toLowerCase();
-                let that = document.querySelector('#keywords');
-                var activeValues = that.value.split(',');
-                activeValues.forEach((o,i,a) => a[i] = a[i].trim());
-                var matchStart =
-                    $.grep(keywords, function(keyword) {
-                        if(!(activeValues.includes(keyword)))
-                            return keyword.toLowerCase().substr(0, query.length) === query;
-                    });
-                var matchSub =
-                    $.grep(keywords, function(keyword) {
-                        if(!(activeValues.includes(keyword)))
-                            return keyword.toLowerCase().indexOf(query) !== -1 &&
-                                $.inArray(keyword, matchStart) === -1;
-                    });
-                var suggestions =
-                    $.map($.merge(matchStart, matchSub), function(suggestion) {
-                        return { value: suggestion };
-                    });
-                done({ suggestions });
+            lookup: function(_query, done) {
+                const enteredKeywords = $keywords.value
+                    .split(',')
+                    .map((keyword) => keyword.trim().toLowerCase());
+                const query = enteredKeywords.pop();
+                const matchStart = [];
+                const matchSub = [];
+
+                keywords.forEach((keyword) => {
+                    const lowerKeyword = keyword.toLowerCase();
+
+                    if (enteredKeywords.includes(lowerKeyword) || !lowerKeyword.includes(query)) {
+                        return;
+                    }
+
+                    if (lowerKeyword.startsWith(query)) {
+                        matchStart.push(keyword);
+                    } else {
+                        matchSub.push(keyword);
+                    }
+                });
+
+                done({ suggestions: [...matchStart, ...matchSub].map((value) => ({ value })) });
             },
             tabDisabled: true,
             delimiter: /,\s*/,
