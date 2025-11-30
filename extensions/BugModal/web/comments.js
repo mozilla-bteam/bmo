@@ -103,8 +103,10 @@ $(function() {
         }
     }
 
-    $('.change-spinner')
-        .click(function(event) {
+    // Reference the form element’s jQuery object. We use event delegation so these still work after
+    // dynamic HTML updates.
+    const form = $('#changeform')
+        .on('click', '.change-spinner', function(event) {
             event.preventDefault();
             toggleChange($(this));
         });
@@ -267,7 +269,8 @@ $(function() {
             taggingError(commentNo, message);
         }
     }
-    $('.comment-tag a.remove').click(deleteTag);
+
+    form.on('click', '.comment-tag a.remove', deleteTag);
 
     function tagsFromDom(commentTagsDiv) {
         return commentTagsDiv
@@ -415,8 +418,8 @@ $(function() {
             hideTaggingUI();
         });
 
-    $('.tag-btn')
-        .click(function(event) {
+    form
+        .on('click', '.tag-btn', function(event) {
             event.preventDefault();
             var that = $(this);
             var commentNo = that.data('no');
@@ -444,10 +447,8 @@ $(function() {
             // move, show, and focus tagging ui
             ctag.prependTo('#ctag-' + commentNo + ' .comment-tags').show();
             $('#ctag-add').val('').focus();
-        });
-
-    $('.close-btn')
-        .click(function(event) {
+        })
+        .on('click', '.close-btn', function(event) {
             event.preventDefault();
             $('#' + $(this).data('for')).hide();
         });
@@ -868,6 +869,258 @@ Bugzilla.InlineAttachment = class InlineAttachment {
 
       observer.observe(this.$attachment);
     });
+  }
+};
+
+/**
+ * Implement the instant update functionality for the modal bug page that allows users to submit a
+ * new comment without reloading the page. This functionality uses optimistic rendering to show a
+ * placeholder comment immediately after the user submits a new comment, and then updates the
+ * comment section and other affected elements from the server response.
+ */
+Bugzilla.BugModal.InstantUpdater = class InstantUpdater {
+  /**
+   * Reference to the bug form element.
+   * @type {HTMLFormElement}
+   */
+  $form = null;
+
+  /**
+   * Reference to the comment textarea element.
+   * @type {HTMLTextAreaElement}
+   */
+  $commentTextArea = null;
+
+  /**
+   * Reference to the last change set element before the placeholder.
+   * @type {HTMLElement}
+   */
+  $lastChangeSet = null;
+
+  /**
+   * Reference to the change set placeholder template.
+   * @type {HTMLTemplateElement}
+   */
+  $placeholderTemplate = null;
+
+  /**
+   * Reference to the placeholder change set element.
+   * @type {HTMLElement}
+   */
+  $placeholder = null;
+
+  /**
+   * Initial form data captured on page load for change detection.
+   * @type {FormData}
+   */
+  initialFormData = null;
+
+  /**
+   * Fields to ignore when detecting changes.
+   */
+  IGNORED_FIELDS = ['delta_ts', 'token', 'editing', 'defined_groups'];
+
+  /**
+   * Selectors for elements whose `value` attributes need to be updated.
+   */
+  VALUE_REPLACE_SELECTORS = ['input[name="delta_ts"]', 'input[name="token"]'];
+
+  /**
+   * Selectors for elements whose `innerHTML` need to be updated.
+   */
+  CONTENT_REPLACE_SELECTORS = ['#field-status_summary'];
+
+  /**
+   * Initialize the instant update functionality. This captures the initial form data for later
+   * change detection.
+   * @param {HTMLFormElement} $form The bug form element.
+   */
+  constructor($form) {
+    this.$form = $form;
+    this.$placeholderTemplate = document.querySelector('#changeset-template');
+    this.$commentTextArea = document.querySelector('#comment');
+    this.initialFormData = new FormData($form);
+    this.commentBoxPosition = BUGZILLA.user.settings?.comment_box_position ?? 'after_comments';
+    this.commentSortOrder = BUGZILLA.user.settings?.comment_sort_order ?? 'oldest_to_newest';
+  }
+
+  /**
+   * Submit the form data via the API, show a placeholder comment, fetch the updated page, and
+   * update the comment section and other affected elements.
+   * @throws {Error} When fields other than `comment` are changed, or when the server response does
+   * not contain the expected elements.
+   */
+  async submit() {
+    const currentFormData = new FormData(this.$form);
+    /** @type {Record<string, any>} */
+    const changedFields = {};
+
+    // Detect changed fields
+    currentFormData.forEach((value, key) => {
+      if (!this.IGNORED_FIELDS.includes(key) && this.initialFormData.get(key) !== value) {
+        changedFields[key] = value;
+      }
+    });
+
+    const changedKeys = Object.keys(changedFields);
+
+    // Only the `comment` field is supported for instant update at the moment
+    if (changedKeys.length !== 1 || changedKeys[0] !== 'comment') {
+      throw new Error(`Unsupported field changes detected: ${changedKeys.join(', ')}`);
+    }
+
+    // Show a placeholder comment immediately. Don't `await` this because the HTML rendering doesn’t
+    // block the following operations.
+    this.#showPlaceholder();
+
+    // Reset the initial form data for the next submission
+    this.initialFormData = currentFormData;
+
+    const { comment } = changedFields;
+    const is_markdown = BUGZILLA.param.use_markdown;
+
+    // Submit the new comment via the API
+    await Bugzilla.API.post(`bug/${BUGZILLA.bug_id}/comment`, { comment, is_markdown });
+
+    const updatedDoc = await this.#fetchUpdatedDoc();
+
+    this.#updatePage(updatedDoc);
+  }
+
+  /**
+   * Show a placeholder comment while waiting for the server response.
+   */
+  async #showPlaceholder() {
+    // Disable the textarea
+    this.$commentTextArea.readOnly = true;
+    this.$commentTextArea.hidden = true;
+
+    const changeSets = [...document.querySelectorAll('.change-set')];
+    const lastChangeSetIndex =
+      this.commentSortOrder === 'newest_to_oldest'
+        ? 0
+        : this.commentSortOrder === 'newest_to_oldest_desc_first'
+        ? 1
+        : changeSets.length - 1;
+
+    this.$placeholder = this.$placeholderTemplate.content.firstElementChild.cloneNode(true);
+    this.$lastChangeSet = changeSets[lastChangeSetIndex];
+
+    const rawComment = this.$commentTextArea.value;
+    const commentCount = changeSets.filter(({ id }) => id.match(/^c\d+/)).length;
+    const $placeholderCommentBody = this.$placeholder.querySelector('.comment-text');
+
+    // Update the placeholder content
+    this.$placeholder.querySelector('.change-name a').textContent = `Comment ${commentCount}`;
+    this.$placeholder.querySelector('.change-time span').textContent = 'Just now';
+    this.$placeholder.querySelectorAll('button').forEach(($btn) => {
+      $btn.disabled = true;
+    });
+
+    // Insert the raw comment first; don’t use `innerHTML` here to avoid XSS
+    $placeholderCommentBody.textContent = rawComment;
+
+    // Insert the placeholder before or after the last change set
+    this.$lastChangeSet.insertAdjacentElement(
+      this.commentSortOrder === 'oldest_to_newest' ? 'afterend' : 'beforebegin',
+      this.$placeholder
+    );
+
+    // Fetch the rendered HTML from the server
+    const { html } = await Bugzilla.API.post('bug/comment/render', { text: rawComment });
+
+    // Replace the raw comment; safe to use `innerHTML` here
+    $placeholderCommentBody.innerHTML = html;
+  }
+
+  /**
+   * Fetch the updated bug page from the server. We have to fetch the whole page because the comment
+   * section may be affected by other users’ changes in the meantime, and we also need to update the
+   * CSRF token and last change time in the form.
+   * @returns {Promise<Document>} Parsed HTML document from the server response.
+   * @throws {Error} When the response does not contain the expected elements.
+   */
+  async #fetchUpdatedDoc() {
+    const response = await fetch(`${BUGZILLA.config.basepath}show_bug.cgi?id=${BUGZILLA.bug_id}`);
+    const html = await response.text();
+    const updatedDoc = new DOMParser().parseFromString(html, 'text/html');
+
+    if (!updatedDoc.querySelector('#changeform')) {
+      // Something went wrong, e.g. mid-air collision, session timeout, or CSRF failure.
+      throw new Error('Failed to submit the changes in background.');
+    }
+
+    return updatedDoc;
+  }
+
+  /**
+   * Update the page with the new comment and other updated elements from the server response.
+   * @param {Document} updatedDoc Parsed HTML document from the server response.
+   */
+  #updatePage(updatedDoc) {
+    /** @type {HTMLElement[]} */
+    const allChangeSets = [...updatedDoc.querySelectorAll('.change-set')];
+    const lastChangeSetIndex = allChangeSets.findIndex(({ id }) => id === this.$lastChangeSet.id);
+    const newChangeSetRange =
+      this.commentSortOrder === 'newest_to_oldest'
+        ? [0, lastChangeSetIndex]
+        : this.commentSortOrder === 'newest_to_oldest_desc_first'
+        ? [1, lastChangeSetIndex]
+        : [lastChangeSetIndex + 1];
+    const newChangeSets = allChangeSets.slice(...newChangeSetRange);
+
+    // Replace the placeholder with the new change sets
+    this.$placeholder.replaceWith(...newChangeSets);
+
+    newChangeSets.forEach(($changeSet) => {
+      this.#hydrateChangeSet($changeSet);
+    });
+
+    // Re-enable and clear the comment textarea
+    this.$commentTextArea.readOnly = false;
+    this.$commentTextArea.hidden = false;
+    this.$commentTextArea.value = '';
+
+    // Re-enable the save button
+    document.querySelectorAll('.save-btn').forEach(($btn) => {
+      $btn.disabled = false;
+    });
+
+    // Update the last change time and CSRF tokens in the form
+    this.VALUE_REPLACE_SELECTORS.forEach((selector) => {
+      document.querySelector(selector).value = updatedDoc.querySelector(selector).value;
+    });
+
+    // Update the status summary, including the timestamp
+    this.CONTENT_REPLACE_SELECTORS.forEach((selector) => {
+      document.querySelector(selector).innerHTML = updatedDoc.querySelector(selector).innerHTML;
+    });
+
+    Bugzilla.Toast.show('New comment added', {
+      position: this.commentBoxPosition === 'before_comments' ? 'top' : 'bottom',
+    });
+  }
+
+  /**
+   * Hydrate interactive components such as emoji reactions and inline attachments in a change set.
+   * @param {HTMLElement} $changeSet Change set element.
+   */
+  #hydrateChangeSet($changeSet) {
+    const $comment = $changeSet.querySelector('.comment-text');
+    const $reactions = $changeSet.querySelector('.comment-reactions');
+    const $attachment = $changeSet.querySelector('.attachment');
+
+    if ($comment) {
+      Bugzilla.InlineCommentEditor.activate($changeSet);
+    }
+
+    if ($reactions) {
+      new Bugzilla.BugModal.CommentReactions($reactions);
+    }
+
+    if ($attachment) {
+      new Bugzilla.InlineAttachment($attachment);
+    }
   }
 };
 

@@ -84,6 +84,33 @@
   END;
 %]
 
+[%# Embed changeset template for instant bug updates %]
+[% IF user.id %]
+  <template id="changeset-template">
+    <div class="change-set placeholder">
+    [%
+      empty_comment = {
+        id => 0,
+        count => 0,
+        tags => [],
+        author => user,
+        is_private => 0,
+        is_markdown => Param('use_markdown'),
+        body => "",
+        collapsed => 0,
+      };
+
+      PROCESS comment_header
+        comment = empty_comment
+        editors = []
+        ts = bug.creation_ts;
+      PROCESS comment_body
+        comment = empty_comment;
+    %]
+    </div>
+  </template>
+[% END %]
+
 [% IF user.can_tag_comments %]
   <div id="ctag" style="display:none">
     <input id="ctag-add" size="10" placeholder="add tag"

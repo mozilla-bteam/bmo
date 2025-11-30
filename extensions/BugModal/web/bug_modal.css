@@ -1043,6 +1043,15 @@ h3.change-name a {
   color: inherit;
 }
 
+/* Hide the comment in the textarea that overlaps with the placeholder */
+#comment[hidden] {
+  display: block;
+  color: transparent;
+  pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 .comment-private {
   display: inline-block;
   margin: 0 8px;

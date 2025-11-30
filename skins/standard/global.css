@@ -3134,7 +3134,6 @@ div.bz_comment_text pre {
 
 #toast {
   position: fixed;
-  inset: 50px auto auto 50dvw;
   z-index: 100;
   box-sizing: border-box;
   border: 1px solid var(--control-border-color);
@@ -3149,7 +3148,16 @@ div.bz_comment_text pre {
   cursor: default;
   -webkit-user-select: none;
   user-select: none;
+  pointer-events: none;
   transform: translateX(-50%);
+}
+
+#toast.top {
+  inset: 50px auto auto 50dvw;
+}
+
+#toast.bottom {
+  inset: auto auto 25px 50dvw;
 }
 
 /**

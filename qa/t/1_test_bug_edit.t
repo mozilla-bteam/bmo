@@ -491,6 +491,26 @@ $sel->click_ok('bottom-save-btn', 'Save changes');
 check_page_load($sel, qq{http://HOSTNAME/show_bug.cgi?id=$bug2_id});
 $sel->is_text_present_ok("Changes submitted for bug $bug2_id");
 
+# Test instant bug update. It works only when adding a comment in readonly mode.
+
+go_to_bug($sel, $bug2_id, 1);
+sleep(1); # FIXME: Delay for slow page performance
+$sel->type_ok('comment', 'Awesome comment that should be added instantly');
+$sel->click_ok('bottom-save-btn', 'Save changes');
+check_page_load($sel, qq{http://HOSTNAME/show_bug.cgi?id=$bug2_id});
+ok(!$sel->is_text_present('Email sent to 1 recipient'), 'Form not submitted');
+$sel->is_text_present_ok('Awesome comment that should be added instantly',
+  'Comment added instantly');
+$sel->type_ok('comment', 'Comment that should not be added instantly');
+$sel->click_ok('//button[text()="FIXED"]', 'Change status to FIXED');
+$sel->click_ok('bottom-save-btn', 'Save changes');
+check_page_load($sel, qq{http://HOSTNAME/show_bug.cgi?id=$bug2_id});
+$sel->is_text_present('Email sent to 1 recipient', 'Form submitted');
+# Comment doesn’t exist because the post-submit action in the test environment
+# is set to "Do Nothing" instead of "Show the updated bug"
+ok(!$sel->is_text_present('Comment that should not be added instantly'),
+  'Comment not added');
+
 # Test mass-change.
 
 $sel->click_ok('quicksearch_top');
