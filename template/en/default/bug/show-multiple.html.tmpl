@@ -166,8 +166,8 @@
         <th>[% field_descs.bug_file_loc FILTER html %]:</th>
         <td colspan="3">
           [% IF is_safe_url(bug.bug_file_loc) %]
-            <a href="[% bug.bug_file_loc FILTER html %]" rel="noreferrer">
-                     [% bug.bug_file_loc FILTER html %]</a>
+            <a href="[% bug.bug_file_loc FILTER html %]" target="_blank"
+               rel="nofollow noreferrer">[% bug.bug_file_loc FILTER html %]</a>
           [% ELSE %]
             [% bug.bug_file_loc FILTER html %]
           [% END %]
@@ -180,7 +180,8 @@
         <th>[% field_descs.see_also FILTER html %]:</th>
         <td colspan="3">
           [% FOREACH see_also = bug.see_also %]
-            <a href="[% see_also.name FILTER html %]">[% see_also.name FILTER html %]</a>
+            <a href="[% see_also.name FILTER html %]" target="_blank"
+               rel="nofollow noreferrer">[% see_also.name FILTER html %]</a>
             [% "<br>" IF not loop.last() %]
           [% END %]
         </td>

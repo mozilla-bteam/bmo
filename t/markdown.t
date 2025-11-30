@@ -35,7 +35,8 @@ is(
 
 is(
   $parser->render_html('https://www.mozilla.org'),
-  "<p><a href=\"https://www.mozilla.org\" rel=\"nofollow\">https://www.mozilla.org</a></p>\n",
+  "<p><a href=\"https://www.mozilla.org\" rel=\"nofollow noreferrer\" target=\"_blank\">"
+    . "https://www.mozilla.org</a></p>\n",
   'Autolink extension'
 );
 

@@ -440,7 +440,8 @@ END;
 
   [% FOREACH link IN external_links %]
     <div class="link">
-      <a href="[% link.name FILTER html %]" title="[% link.name FILTER truncate(256) FILTER html %]">
+      <a target="_blank" rel="nofollow noreferrer" href="[% link.name FILTER html %]"
+         title="[% link.name FILTER truncate(256) FILTER html %]">
         [%~ link.name FILTER pretty_url FILTER truncate(40) FILTER html ~%]
       </a>
       [% IF edit %]
