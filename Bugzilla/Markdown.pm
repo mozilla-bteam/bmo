@@ -25,19 +25,14 @@ has 'bugzilla_shorthand' => (
 );
 
 sub _build_markdown_parser {
-  if (Bugzilla->has_feature('alien_cmark')) {
-    require Bugzilla::Markdown::GFM;
-    require Bugzilla::Markdown::GFM::Parser;
-    return Bugzilla::Markdown::GFM::Parser->new({
-      hardbreaks    => 1,
-      validate_utf8 => 1,
-      safe          => 1,
-      extensions    => [qw( autolink tagfilter table strikethrough )],
-    });
-  }
-  else {
-    return undef;
-  }
+  require Bugzilla::Markdown::GFM;
+  require Bugzilla::Markdown::GFM::Parser;
+  return Bugzilla::Markdown::GFM::Parser->new({
+    hardbreaks    => 1,
+    validate_utf8 => 1,
+    safe          => 1,
+    extensions    => [qw( autolink tagfilter table strikethrough )],
+  });
 }
 
 my $MARKDOWN_OFF = quotemeta '#[markdown(off)]';
