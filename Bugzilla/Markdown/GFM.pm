@@ -4,9 +4,9 @@ use 5.10.1;
 use strict;
 use warnings;
 
-use Alien::libcmark_gfm;
-use FFI::Platypus;
+use FFI::Platypus 2.00;
 use FFI::Platypus::Buffer qw( scalar_to_buffer buffer_to_scalar );
+use FFI::CheckLib qw( find_lib );
 use Exporter qw(import);
 
 use Bugzilla::Markdown::GFM::SyntaxExtension;
@@ -33,7 +33,12 @@ my %OPTIONS = (
 );
 
 my $FFI = FFI::Platypus->new(
-  lib => [grep { not -l $_ } Alien::libcmark_gfm->dynamic_libs],);
+  api => 2,
+  lib => [
+    scalar find_lib(lib => 'cmark-gfm'),
+    scalar find_lib(lib => 'cmark-gfm-extensions')
+  ]
+);
 
 $FFI->custom_type(
   markdown_options_t => {

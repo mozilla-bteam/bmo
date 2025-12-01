@@ -17,11 +17,11 @@ use Bugzilla;
 use Test2::V0;
 
 my $have_cmark_gfm = eval {
-    require Alien::libcmark_gfm;
-    require Bugzilla::Markdown::GFM;
+    require FFI::CheckLib;
+    FFI::CheckLib::find_lib(lib => 'cmark-gfm');
 };
 
-plan skip_all => "these tests require Alien::libcmark_gfm" unless $have_cmark_gfm;
+plan skip_all => "these tests require libcmark-gfm" unless $have_cmark_gfm;
 
 my $parser = Bugzilla->markdown;
 
@@ -79,6 +79,17 @@ my $table_html = <<'HTML';
 HTML
 
 is($parser->render_html($table_markdown), $table_html, 'Table extension');
+
+# Test for bug 1802047: tables should work without blank line before them
+my $table_no_blank = <<'MARKDOWN';
+Some text before the table
+| Field | Value | Source |
+| ----- | ----- | ------ |
+| Keywords | access | bug 1801513 |
+MARKDOWN
+
+my $rendered = $parser->render_html($table_no_blank);
+like($rendered, qr{<table>}, 'Table renders without preceding blank line (bug 1802047)');
 
 my $angle_link =  $parser->render_html("<https://searchfox.org/mozilla-central/rev/76fe4bb385348d3f45bbebcf69ba8c7283dfcec7/mobile/android/base/java/org/mozilla/gecko/toolbar/SecurityModeUtil.java#101>");
 my $angle_link_dom = Mojo::DOM->new($angle_link);
