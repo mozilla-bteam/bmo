@@ -1,4 +1,4 @@
-FROM us-docker.pkg.dev/moz-fx-bugzilla-prod/bugzilla-prod/bmo-perl-slim:20250328 AS base
+FROM us-docker.pkg.dev/moz-fx-bugzilla-prod/bugzilla-prod/bmo-perl-slim:20251202 AS base
 
 ENV DEBIAN_FRONTEND=noninteractive
 
