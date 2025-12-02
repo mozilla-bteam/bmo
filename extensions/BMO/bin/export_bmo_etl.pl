@@ -34,7 +34,7 @@ use Try::Tiny;
 
 # BigQuery API cannot handle payloads larger than 10MB so
 # we will send data in blocks.
-use constant API_BLOCK_COUNT => 1000;
+use constant API_BLOCK_COUNT => 500;
 
 # Products which we should not send data to ETL such as Legal, etc.
 use constant EXCLUDE_PRODUCTS => ('Legal',);
@@ -77,7 +77,7 @@ my $ua = LWP::UserAgent::Determined->new(
   requests_redirectable => [qw(GET HEAD DELETE PUT)],
 );
 $ua->timing('1,2,4,8,16,32');
-$ua->timeout(30);
+$ua->timeout(300); # five minutes
 if (my $proxy = Bugzilla->params->{proxy_url}) {
   $ua->proxy(['https', 'http'], $proxy);
 }
