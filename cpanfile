@@ -44,7 +44,6 @@ requires 'Email::Reply';
 requires 'Email::Sender';
 requires 'Encode', '2.21';
 requires 'Encode::Detect';
-requires 'FFI::CheckLib';
 requires 'FFI::Platypus', '2.00';
 requires 'File::Copy::Recursive';
 requires 'File::MimeInfo::Magic';
