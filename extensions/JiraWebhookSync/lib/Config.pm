@@ -22,6 +22,11 @@ sub get_param_list {
   my @params = (
     {name => 'jira_webhook_sync_hostname', type => 't', default => ''},
     {
+      name    => 'jira_webhook_sync_user',
+      type    => 't',
+      default => '',
+    },
+    {
       name    => 'jira_webhook_sync_config',
       type    => 'l',
       default => '{}',

@@ -136,18 +136,8 @@ sub webhook_before_send {
 
   INFO("Processing webhook for bug $bug_id to Jira host $hostname");
 
-  # Check if there's a Jira mapping for this bug
-  if (my $jira_map
-    = Bugzilla::Extension::JiraWebhookSync::JiraBugMap->get_by_bug_id($bug_id))
-  {
-    INFO('Adding Jira see_also to webhook payload: ' . $jira_map->jira_url);
-
-    # Add the Jira URL to the see_also array in the payload if not already present
-    $payload->{bug}->{see_also} ||= [];
-    if (none { $_ eq $jira_map->jira_url } @{$payload->{bug}->{see_also}}) {
-      push @{$payload->{bug}->{see_also}}, $jira_map->jira_url;
-    }
-  }
+  # Check if there's a Jira mapping for this bug and add to see also
+  $payload->{bug}->{see_also} = _populate_jira_see_also($bug_id, $payload->{bug}->{see_also});
 
   # Make copy of the current whiteboard value
   my $whiteboard = $payload->{bug}->{whiteboard};
@@ -165,6 +155,26 @@ sub webhook_before_send {
   }
 
   $payload->{bug}->{whiteboard} = _add_whiteboard_tags($whiteboard, \@new_tags);
+}
+
+sub webservice_bug_get {
+  my ($self, $args) = @_;
+  my $bug_data = $args->{bug_data};
+  my $user     = $args->{user};
+  my $params   = Bugzilla->params;
+
+  # Only add see also values for the Jira webhook sync user
+  if (!$params->{jira_webhook_sync_user} || $user->login ne $params->{jira_webhook_sync_user}) {
+    INFO('Not the jira_webhook_sync_user so skipping see also population');
+    return;
+  }
+
+  INFO('Jira sync user is accessing REST get bug. Looking for see also values');
+
+  foreach my $bug (@{$bug_data}) {
+    INFO('Processing bug id ' . $bug->{id} . ' for Jira see also population');
+    $bug->{see_also} = _populate_jira_see_also($bug->{id}, $bug->{see_also});
+  }
 }
 
 # Adds a whiteboard tag to the whiteboard string if it doesn't already exist.
@@ -201,6 +211,24 @@ sub _bug_matches_rule {
   }
 
   return 0;
+}
+
+# Adds the Jira issue URL associated with the given Bugzilla bug ID to the see_also list,
+# ensuring no duplicates. Returns the updated list.
+sub _populate_jira_see_also {
+  my ($bug_id, $see_also_list) = @_;
+
+  $see_also_list ||= [];
+
+  if (my $jira_map
+    = Bugzilla::Extension::JiraWebhookSync::JiraBugMap->get_by_bug_id($bug_id))
+  {
+    INFO('Adding Jira see_also to webhook payload: ' . $jira_map->jira_url);
+    push @{$see_also_list}, $jira_map->jira_url
+      if none { $_ eq $jira_map->jira_url } @{$see_also_list};
+  }
+
+  return $see_also_list;
 }
 
 __PACKAGE__->NAME;
