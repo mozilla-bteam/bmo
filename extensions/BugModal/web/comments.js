@@ -960,7 +960,7 @@ Bugzilla.BugModal.InstantUpdater = class InstantUpdater {
       if (
         // New or changed field
         (!this.IGNORED_FIELDS.includes(key) && this.initialFormData.get(key) !== value) ||
-        // Clear needinfo checkbox for myself, which is ticked by default
+        // “Clear needinfo” checkbox for myself, which is ticked by default
         key.startsWith("needinfo_override_")
       ) {
         changedFields[key] = value;
