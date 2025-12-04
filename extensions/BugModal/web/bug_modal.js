@@ -813,9 +813,18 @@ $(function() {
                     event.stopPropagation();
                     await instantUpdater.submit();
                     clearSavedBugComment();
-                } catch {
-                    // Fallback to a full form submission
-                    $form.submit();
+                } catch (ex) {
+                    console.error(ex);
+
+                    if (ex.message === 'AFTER_SUBMIT_HALT') {
+                        // The comment was posted successfully, but further processing is halted.
+                        // Reload the page to show the updated bug.
+                        clearSavedBugComment();
+                        window.location.reload();
+                    } else {
+                        // Fallback to a full form submission
+                        $form.submit();
+                    }
                 }
             }
 
