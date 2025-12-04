@@ -31,6 +31,7 @@ set_parameters(
     },
     'Jira Webhook Sync' => {
       'jira_webhook_sync_hostname' => {type => 'text', value => 'externalapi.test'},
+      'jira_webhook_sync_user'     => {type => 'text', value => $config->{editbugs_user_login}},
       'jira_webhook_sync_config'   => {
         type  => 'text',
         value => '{"BZFF": {"product": "Firefox", "component": "General"}}'
@@ -117,7 +118,7 @@ $t->get_ok('http://externalapi.test:8001/webhooks/last_payload')
 # bug is updated and the webhook is triggered.
 # Then we look again at the last payload from the webhook, which should
 # contain the see also value that was generated from the mapping table.
-my $jira_url = 'https://externalapi.test/browse/BZFF-100';
+my $jira_url = 'https://example.com/browse/BZFF-100';
 my $update   = {see_also => {add => [$jira_url]}, 'priority' => 'P2'};
 $t->put_ok($config->{browser_url}
     . "/rest/bug/$bug_id_1"                                 =>
@@ -138,6 +139,24 @@ $t->get_ok('http://externalapi.test:8001/webhooks/last_payload')
   ->json_is('/bug/component',  'General')
   ->json_is('/bug/whiteboard', '[BZFF]')
   ->json_is('/bug/see_also/0', $jira_url);
+
+# When using the REST API to get bug details, and the calling user
+# is the jira sync user, then we need to make sure the hidden see
+# also values are included in the response.
+$t->get_ok($config->{browser_url}
+    . "/rest/bug/$bug_id_1" =>
+    {'X-Bugzilla-API-Key' => $config->{editbugs_user_api_key}})
+  ->status_is(200)
+  ->json_is('/bugs/0/id',         $bug_id_1)
+  ->json_is('/bugs/0/see_also/0', $jira_url);
+
+# And make sure the see also values are not visible to other users
+$t->get_ok($config->{browser_url}
+    . "/rest/bug/$bug_id_1" =>
+    {'X-Bugzilla-API-Key' => $config->{admin_user_api_key}})
+  ->status_is(200)
+  ->json_is('/bugs/0/id', $bug_id_1)
+  ->json_hasnt('/bugs/0/see_also/0');
 
 # Turn off webhooks and jira sync.
 log_in($sel, $config, 'admin');

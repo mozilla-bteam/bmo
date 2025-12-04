@@ -1,5 +1,4 @@
 requires 'Algorithm::BloomFilter', '0.02';
-requires 'Alien::libcmark_gfm', '3';
 requires 'Auth::GoogleAuth', '1.01';
 requires 'Authen::SASL';
 requires 'BSD::Resource';
@@ -45,7 +44,7 @@ requires 'Email::Reply';
 requires 'Email::Sender';
 requires 'Encode', '2.21';
 requires 'Encode::Detect';
-requires 'FFI::Platypus';
+requires 'FFI::Platypus', '2.00';
 requires 'File::Copy::Recursive';
 requires 'File::MimeInfo::Magic';
 requires 'File::Which';

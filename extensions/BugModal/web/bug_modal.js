@@ -55,31 +55,35 @@ function init_module_visibility() {
  * @param {string[]} keywords Available keyword list.
  */
 function initKeywordsAutocomplete(keywords) {
-    $('#keywords')
+    const $keywords = document.querySelector('#keywords');
+
+    $($keywords)
         .devbridgeAutocomplete({
             appendTo: $('#main-inner'),
             forceFixPosition: true,
-            lookup: function(query, done) {
-                query = query.toLowerCase();
-                let that = document.querySelector('#keywords');
-                var activeValues = that.value.split(',');
-                activeValues.forEach((o,i,a) => a[i] = a[i].trim());
-                var matchStart =
-                    $.grep(keywords, function(keyword) {
-                        if(!(activeValues.includes(keyword)))
-                            return keyword.toLowerCase().substr(0, query.length) === query;
-                    });
-                var matchSub =
-                    $.grep(keywords, function(keyword) {
-                        if(!(activeValues.includes(keyword)))
-                            return keyword.toLowerCase().indexOf(query) !== -1 &&
-                                $.inArray(keyword, matchStart) === -1;
-                    });
-                var suggestions =
-                    $.map($.merge(matchStart, matchSub), function(suggestion) {
-                        return { value: suggestion };
-                    });
-                done({ suggestions });
+            lookup: function(_query, done) {
+                const enteredKeywords = $keywords.value
+                    .split(',')
+                    .map((keyword) => keyword.trim().toLowerCase());
+                const query = enteredKeywords.pop();
+                const matchStart = [];
+                const matchSub = [];
+
+                keywords.forEach((keyword) => {
+                    const lowerKeyword = keyword.toLowerCase();
+
+                    if (enteredKeywords.includes(lowerKeyword) || !lowerKeyword.includes(query)) {
+                        return;
+                    }
+
+                    if (lowerKeyword.startsWith(query)) {
+                        matchStart.push(keyword);
+                    } else {
+                        matchSub.push(keyword);
+                    }
+                });
+
+                done({ suggestions: [...matchStart, ...matchSub].map((value) => ({ value })) });
             },
             tabDisabled: true,
             delimiter: /,\s*/,
@@ -107,6 +111,31 @@ function initKeywordsAutocomplete(keywords) {
 
 $(function() {
     'use strict';
+
+    /**
+     * Reference to the main bug change form.
+     * @type {HTMLFormElement}
+     */
+    const $form = document.querySelector('#changeform');
+
+    /**
+     * Flag indicating whether we are creating a new bug or editing an existing one.
+     */
+    const isNewBug = BUGZILLA.bug_id === undefined;
+
+    /**
+     * Instance of the instant update handler.
+     */
+    const instantUpdater =
+      $form && !isNewBug
+        ? new Bugzilla.BugModal.InstantUpdater($form)
+        : undefined;
+
+    /**
+     * Flag indicating whether the user is in Edit mode or not. This affects the behavior of the
+     * Save button.
+     */
+    let editMode = isNewBug || false;
 
     // update relative dates
     var relative_timer_duration = 60000;
@@ -285,7 +314,7 @@ $(function() {
         });
 
     // show floating message after creating/updating a bug/attachment
-    const { changeSummary } = document.querySelector('#changeform')?.dataset ?? {};
+    const { changeSummary } = $form?.dataset ?? {};
 
     if (changeSummary) {
         Bugzilla.Toast.show(changeSummary);
@@ -381,9 +410,6 @@ $(function() {
                     $('#ccr-' + $(this).data('n')).css('visibility', 'hidden');
                 }
             );
-            $('#cc-list .show_usermenu').click(function() {
-                return show_usermenu($(this)[0]);
-            });
             $('#cc-list .cc-remove')
                 .click(function(event) {
                     event.preventDefault();
@@ -621,6 +647,7 @@ $(function() {
     $('#mode-btn')
         .click(async event => {
             event.preventDefault();
+            editMode = true;
 
             // hide buttons, old error messages
             $('#mode-btn-readonly').hide();
@@ -720,12 +747,12 @@ $(function() {
 
     // disable the save buttons while posting
     $('.save-btn')
-        .click(function(event) {
+        .click(async function(event) {
             event.preventDefault();
 
             // Check if all the required fields are entered/selected.
             // This replaces the legacy `validateEnterBug()` function.
-            const hasInvalidField = [...this.form.querySelectorAll('[aria-required="true"]')]
+            const hasInvalidField = [...$form.querySelectorAll('[aria-required="true"]')]
                 .map(($input) => {
                     let invalid = false;
 
@@ -740,7 +767,7 @@ $(function() {
                     } else if ($input.type === 'select-one') {
                         invalid = $input.selectedIndex === -1;
                     } else if ($input.matches('[class="buttons toggle"]')) {
-                        invalid = !this.form[$input.id].value;
+                        invalid = !$form[$input.id].value;
                     }
 
                     $input.setAttribute('aria-invalid', invalid);
@@ -759,7 +786,7 @@ $(function() {
                     return !!$input;
                 });
 
-            if (hasInvalidField || !document.changeform.checkValidity())
+            if (hasInvalidField || !$form.checkValidity())
                 return;
 
             // unfortunately native html form validation doesn't support
@@ -776,7 +803,21 @@ $(function() {
             }
 
             $('.save-btn').attr('disabled', true);
-            this.form.submit();
+
+            if (editMode) {
+                // Submit the form normally as the user has probably changed multiple fields
+                $form.submit();
+            } else {
+                try {
+                    // Try to do an instant update via the API
+                    event.stopPropagation();
+                    await instantUpdater.submit();
+                    clearSavedBugComment();
+                } catch {
+                    // Fallback to a full form submission
+                    $form.submit();
+                }
+            }
 
             // remember expanded modules
             $('#editing').val(
@@ -1043,8 +1084,8 @@ $(function() {
         });
 
     // reply button
-    $('.reply-btn')
-        .click(function(event) {
+    $('#changeform')
+        .on('click', '.reply-btn', function(event) {
             event.preventDefault();
             var comment_id = $(event.target).data('id');
             var comment_no = $(event.target).data('no');
@@ -1516,7 +1557,10 @@ $(function() {
             saveBugComment(event.target.value);
         });
 
+    const { bug_id: bugId } = BUGZILLA;
+    const attachmentInputIds = ['att-file', 'att-data', 'att-textarea', 'att-description'];
     const comment = document.querySelector('#comment', '#add-comment');
+
     if (comment.classList.contains('attach-long-paste')) {
       // Convert long paste into an attachment
       comment.addEventListener('paste', async event => {
@@ -1525,12 +1569,28 @@ $(function() {
 
         if (lines < 50) {
           return;
-       }
+        }
 
         const extract = text.replace(/(?:\r\n|\r|\n)/, ' ').trim().substr(0, 20);
+        const message = `You’re pasting ${lines} lines of text starting with “${extract}”.`;
+
+        if (isNewBug && attachmentInputIds.some(id => !!document.getElementById(id).value)) {
+          // We can’t attach because there are already attachments being added
+          const confirmed = window.confirm(
+            `${message} However, there is already a file being attached to this bug, so the pasted text can’t be ` +
+            `uploaded as an attachment. Click OK and attach it as a file after submitting the bug, or click Cancel ` +
+            `to paste it anyway.`
+          );
+
+          if (confirmed) {
+            event.preventDefault();
+          }
+
+          return;
+        }
+
         const summary = (window.prompt(
-          `You’re pasting ${lines} lines of text starting with “${extract}”. ` +
-          'Enter the summary below and click OK to upload it as an attachment. Click Cancel to paste it normally.'
+          `${message} Enter the summary below to upload it as an attachment, or click Cancel to paste it anyway.`
         ) || '').trim();
 
         if (!summary) {
@@ -1539,8 +1599,18 @@ $(function() {
 
         event.preventDefault();
 
+        if (isNewBug) {
+          // Expand the attachment module
+          document.querySelector('#attach-new-file').click();
+          // Fill in the attachment fields in the new bug form
+          document.querySelector('#att-textarea').value = text;
+          document.querySelector('#att-description').value = summary;
+
+          return;
+        }
+
         try {
-          await Bugzilla.API.post(`bug/${BUGZILLA.bug_id}/attachment`, {
+          await Bugzilla.API.post(`bug/${bugId}/attachment`, {
             // https://developer.mozilla.org/en-US/docs/Web/API/WindowBase64/Base64_encoding_and_decoding
             data: btoa(encodeURIComponent(text).replace(/%([0-9A-F]{2})/g, (m, p1) => String.fromCharCode(`0x${p1}`))),
             file_name: 'pasted.txt',
@@ -1549,7 +1619,7 @@ $(function() {
           });
 
           // Reload the page once upload is complete
-          location.replace(`${BUGZILLA.config.basepath}show_bug.cgi?id=${BUGZILLA.bug_id}`);
+          location.replace(`${BUGZILLA.config.basepath}show_bug.cgi?id=${bugId}`);
         } catch ({ message }) {
           window.alert(`Couldn’t upload the text as an attachment. Please try again later. Error: ${message}`);
         }

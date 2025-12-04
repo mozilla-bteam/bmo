@@ -25,19 +25,14 @@ has 'bugzilla_shorthand' => (
 );
 
 sub _build_markdown_parser {
-  if (Bugzilla->has_feature('alien_cmark')) {
-    require Bugzilla::Markdown::GFM;
-    require Bugzilla::Markdown::GFM::Parser;
-    return Bugzilla::Markdown::GFM::Parser->new({
-      hardbreaks    => 1,
-      validate_utf8 => 1,
-      safe          => 1,
-      extensions    => [qw( autolink tagfilter table strikethrough )],
-    });
-  }
-  else {
-    return undef;
-  }
+  require Bugzilla::Markdown::GFM;
+  require Bugzilla::Markdown::GFM::Parser;
+  return Bugzilla::Markdown::GFM::Parser->new({
+    hardbreaks    => 1,
+    validate_utf8 => 1,
+    safe          => 1,
+    extensions    => [qw( autolink tagfilter table strikethrough )],
+  });
 }
 
 my $MARKDOWN_OFF = quotemeta '#[markdown(off)]';
@@ -79,7 +74,8 @@ sub render_html {
   my $dom = Mojo::DOM->new($html);
   $dom->find(join(', ', @bad_tags))->map('remove');
 
-  $dom->find("a[href]")->grep(\&_is_external_link)->map(attr => rel => 'nofollow');
+  $dom->find("a[href]")->grep(\&_is_external_link)
+      ->map(attr => {target => '_blank', rel => 'nofollow noreferrer'});
   $dom->find(join ', ', @valid_text_parent_tags)->map(sub {
     my $node = shift;
     $node->descendant_nodes->map(sub {

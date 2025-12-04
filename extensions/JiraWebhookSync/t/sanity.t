@@ -18,41 +18,28 @@ use Bugzilla;
 use ok 'Bugzilla::Extension::JiraWebhookSync::JiraBugMap';
 
 # Unit tests for extract_jira_info method
-
-local Bugzilla->params->{jira_webhook_sync_hostname}     = 'externalapi.test';
 local Bugzilla->params->{jira_webhook_sync_project_keys} = '["FOO","BAZ"]';
 
 # Success
-my ($jira_id, $project_key)
-  = Bugzilla::Extension::JiraWebhookSync::JiraBugMap->extract_jira_info(
+my $project_key
+  = Bugzilla::Extension::JiraWebhookSync::JiraBugMap->extract_jira_project_key(
   'https://externalapi.test/browse/FOO-100');
-ok(
-  $jira_id eq 'FOO-100' && $project_key eq 'FOO',
-  'Correct Jira ID and Project Key extracted'
-);
-($jira_id, $project_key)
-  = Bugzilla::Extension::JiraWebhookSync::JiraBugMap->extract_jira_info(
+ok($project_key eq 'FOO', 'Correct Jira ID and Project Key extracted');
+$project_key
+  = Bugzilla::Extension::JiraWebhookSync::JiraBugMap->extract_jira_project_key(
   'https://externalapi.test/browse/BAZ-300');
-ok(
-  $jira_id eq 'BAZ-300' && $project_key eq 'BAZ',
-  'Correct Jira ID and Project Key extracted'
-);
+ok($project_key eq 'BAZ', 'Correct Jira ID and Project Key extracted');
 
 # Failed
-($jira_id, $project_key)
-  = Bugzilla::Extension::JiraWebhookSync::JiraBugMap->extract_jira_info(
+$project_key
+  = Bugzilla::Extension::JiraWebhookSync::JiraBugMap->extract_jira_project_key(
   'https://externalapi.test/browse/FOO-100/some/more/path');
-ok(!defined $jira_id && !defined $project_key,
+ok(!defined $project_key,
   'No Jira ID or Project Key extracted for improperly formatted url');
-($jira_id, $project_key)
-  = Bugzilla::Extension::JiraWebhookSync::JiraBugMap->extract_jira_info(
-  'https://jira.com/browse/browse/FOO-100');
-ok(!defined $jira_id && !defined $project_key,
-  'No Jira ID or Project Key extracted for wrong hostname');
-($jira_id, $project_key)
-  = Bugzilla::Extension::JiraWebhookSync::JiraBugMap->extract_jira_info(
+$project_key
+  = Bugzilla::Extension::JiraWebhookSync::JiraBugMap->extract_jira_project_key(
   'https://externalapi.test/browse/BAR-100');
-ok(!defined $jira_id && !defined $project_key,
+ok(!defined $project_key,
   'No Jira ID or Project Key extracted for wrong project key');
 
 done_testing();

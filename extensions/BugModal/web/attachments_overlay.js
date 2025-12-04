@@ -61,7 +61,7 @@ window.addEventListener('DOMContentLoaded', () => {
   } = /** @type {any} */ (BUGZILLA);
   const tokens = $form.token
     ? Object.fromEntries(JSON.parse($form.token.dataset.tokens))
-    : undefined;
+    : {};
   const cgiPath = `${basepath}attachment.cgi`;
   const previewDisabled = $preview.matches('.disabled');
 

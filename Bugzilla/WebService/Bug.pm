@@ -509,6 +509,9 @@ sub get {
     }
   }
 
+  Bugzilla::Hook::process('webservice_bug_get',
+    {webservice => $self, user => $user, params => $params, bug_data => \@hashes,});
+
   return {bugs => \@hashes, faults => \@faults};
 }
 

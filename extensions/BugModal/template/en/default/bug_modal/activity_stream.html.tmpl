@@ -84,6 +84,33 @@
   END;
 %]
 
+[%# Embed changeset template for instant bug updates %]
+[% IF user.id %]
+  <template id="changeset-template">
+    <div class="change-set placeholder">
+    [%
+      empty_comment = {
+        id => 0,
+        count => 0,
+        tags => [],
+        author => user,
+        is_private => 0,
+        is_markdown => Param('use_markdown'),
+        body => "",
+        collapsed => 0,
+      };
+
+      PROCESS comment_header
+        comment = empty_comment
+        editors = []
+        ts = bug.creation_ts;
+      PROCESS comment_body
+        comment = empty_comment;
+    %]
+    </div>
+  </template>
+[% END %]
+
 [% IF user.can_tag_comments %]
   <div id="ctag" style="display:none">
     <input id="ctag-add" size="10" placeholder="add tag"
@@ -413,7 +440,7 @@
 
       CASE 'bug_file_loc';
         %]
-        <a href="[% value FILTER html %]" target="_blank" rel="noreferrer"
+        <a href="[% value FILTER html %]" target="_blank" rel="nofollow noreferrer"
            class="bug-url" data-safe="[% is_safe_url(value) ? 1 : 0 %]"
         >[% value FILTER truncate(40) FILTER html %]</a>
         [%
@@ -424,7 +451,8 @@
             see_also.bug_id FILTER bug_link(see_also.bug_id, use_alias => 1);
           ELSE;
             %]
-            <a href="[% see_also.url FILTER html %]" target="_blank" rel="noreferrer">[% see_also.url FILTER html %]</a>
+            <a href="[% see_also.url FILTER html %]" target="_blank"
+               rel="nofollow noreferrer">[% see_also.url FILTER html %]</a>
             [%
           END;
           ", " UNLESS loop.last;

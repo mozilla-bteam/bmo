@@ -628,7 +628,7 @@
       [% IF bug.check_can_change_field("bug_file_loc", 0, 1) %]
         <span id="bz_url_edit_container" class="bz_default_hidden">
           <a href="[% bug.bug_file_loc FILTER html %]" target="_blank"
-            rel="noreferrer" title="[% bug.bug_file_loc FILTER html %]"
+             rel="nofollow noreferrer" title="[% bug.bug_file_loc FILTER html %]"
             [% IF NOT is_safe_url(bug.bug_file_loc) %]
               onclick="
                 try {
@@ -653,8 +653,8 @@
         %]
         [% IF NOT bug.check_can_change_field("bug_file_loc", 0, 1)
               AND is_safe_url(bug.bug_file_loc) %]
-          <a href="[% bug.bug_file_loc FILTER html %]"
-             rel="noreferrer">[% url_output FILTER none %]</a>
+          <a href="[% bug.bug_file_loc FILTER html %]" target="_blank"
+             rel="nofollow noreferrer">[% url_output FILTER none %]</a>
         [% ELSE %]
           [% url_output FILTER none %]
         [% END %]

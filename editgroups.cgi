@@ -163,6 +163,7 @@ if ($action eq 'changeform') {
   get_current_and_available($group, $vars);
   $vars->{'group'} = $group;
   $vars->{'token'} = issue_session_token('edit_group');
+  $vars->{'confirm_remove_token'} = issue_session_token('confirm_remove_group_members');
 
   print $cgi->header();
   $template->process("admin/groups/edit.html.tmpl", $vars)
@@ -305,6 +306,7 @@ if ($action eq 'postchanges') {
 }
 
 if ($action eq 'confirm_remove') {
+  check_token_data($token, 'confirm_remove_group_members');
   my $group = new Bugzilla::Group(CheckGroupID($cgi->param('group_id')));
   check_for_restricted_groups([$group]);
   $vars->{'group'}  = $group;

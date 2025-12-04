@@ -22,7 +22,7 @@ jobs:
     - name: Generate timestamp
       run: echo "TIMESTAMP=$(date +%Y%m%d)" >> $GITHUB_ENV
     - name: Generate new cpanfile and cpanfile.snapshot
-      run: docker build -t bmo-cpanfile -f Dockerfile.cpanfile .
+      run: docker build -t bmo-cpanfile --no-cache -f Dockerfile.cpanfile .
     - name: Copy the new cpanfile and cpanfile.snapshot from image
       run: |
         docker run -v $(pwd):/app/result bmo-cpanfile cp cpanfile cpanfile.snapshot /app/result
@@ -53,5 +53,6 @@ jobs:
         tags: |
           ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/bmo-perl-slim:${{ env.TIMESTAMP }}
         push: true
+        no-cache: true
         cache-from: type=gha
         cache-to: type=gha,mode=max

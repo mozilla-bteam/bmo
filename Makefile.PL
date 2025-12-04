@@ -62,7 +62,7 @@ my %requires = (
   'Email::MIME'                         => '1.904',
   'Email::MIME::ContentType'            => 0,
   'Email::Sender'                       => 0,
-  'FFI::Platypus'                       => 0,
+  'FFI::Platypus'                       => '2.00',
   'Future'                              => '0.34',
   'Graph'                               => 0,
   'HTML::Escape'                        => '1.10',
@@ -132,10 +132,6 @@ my %optional_features = (
     description => 'Improved behavior of MOJO_REVERSE_PROXY',
     prereqs =>
       {runtime => {requires => {'Mojolicious::Plugin::ForwardedFor' => 0}}}
-  },
-  alien_cmark => {
-    description => 'Support GitHub-flavored markdown',
-    prereqs     => {runtime => {requires => {'Alien::libcmark_gfm' => '3'},},},
   },
   argon2 => {
     description => 'Support hashing passwords with Argon2',
