@@ -815,8 +815,16 @@ $(function() {
                     clearSavedBugComment();
                 } catch (ex) {
                     console.error(ex);
-                    // Fallback to a full form submission
-                    $form.submit();
+
+                    if (ex.message === 'AFTER_SUBMIT_HALT') {
+                        // The comment was posted successfully, but further processing is halted.
+                        // Reload the page to show the updated bug.
+                        clearSavedBugComment();
+                        window.location.reload();
+                    } else {
+                        // Fallback to a full form submission
+                        $form.submit();
+                    }
                 }
             }
 

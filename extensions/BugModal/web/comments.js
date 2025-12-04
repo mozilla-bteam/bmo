@@ -947,8 +947,7 @@ Bugzilla.BugModal.InstantUpdater = class InstantUpdater {
   /**
    * Submit the form data via the API, show a placeholder comment, fetch the updated page, and
    * update the comment section and other affected elements.
-   * @throws {Error} When fields other than `comment` are changed, or when the server response does
-   * not contain the expected elements.
+   * @throws {Error} When any step fails.
    */
   async submit() {
     const currentFormData = new FormData(this.$form);
@@ -973,12 +972,20 @@ Bugzilla.BugModal.InstantUpdater = class InstantUpdater {
 
     // Only the `comment` field is supported for instant update at the moment
     if (changedKeys.length !== 1 || changedKeys[0] !== 'comment') {
-      throw new Error(`Unsupported field changes detected: ${changedKeys.join(', ')}`);
+      throw new Error('BEFORE_SUBMIT_HALT', {
+        cause: 'Unsupported field changes detected.',
+      });
     }
 
     // Show a placeholder comment immediately. Don't `await` this because the HTML rendering doesn’t
     // block the following operations.
-    this.#showPlaceholder();
+    try {
+      this.#showPlaceholder();
+    } catch {
+      throw new Error('BEFORE_SUBMIT_HALT', {
+        cause: 'Failed to show the placeholder comment.',
+      });
+    }
 
     // Reset the initial form data for the next submission
     this.initialFormData = currentFormData;
@@ -986,12 +993,22 @@ Bugzilla.BugModal.InstantUpdater = class InstantUpdater {
     const { comment } = changedFields;
     const is_markdown = BUGZILLA.param.use_markdown;
 
-    // Submit the new comment via the API
-    await Bugzilla.API.post(`bug/${BUGZILLA.bug_id}/comment`, { comment, is_markdown });
+    try {
+      // Submit the new comment via the API
+      await Bugzilla.API.post(`bug/${BUGZILLA.bug_id}/comment`, { comment, is_markdown });
+    } catch {
+      throw new Error('DURING_SUBMIT_HALT', {
+        cause: 'Failed to submit the new comment.',
+      });
+    }
 
-    const updatedDoc = await this.#fetchUpdatedDoc();
-
-    this.#updatePage(updatedDoc);
+    try {
+      this.#updatePage(await this.#fetchUpdatedDoc());
+    } catch {
+      throw new Error('AFTER_SUBMIT_HALT', {
+        cause: 'Failed to fetch or update the page with the new comment.',
+      });
+    }
   }
 
   /**
