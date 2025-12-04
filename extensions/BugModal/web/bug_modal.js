@@ -813,7 +813,8 @@ $(function() {
                     event.stopPropagation();
                     await instantUpdater.submit();
                     clearSavedBugComment();
-                } catch {
+                } catch (ex) {
+                    console.error(ex);
                     // Fallback to a full form submission
                     $form.submit();
                 }

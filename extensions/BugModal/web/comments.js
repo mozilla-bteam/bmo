@@ -961,7 +961,9 @@ Bugzilla.BugModal.InstantUpdater = class InstantUpdater {
         // New or changed field
         (!this.IGNORED_FIELDS.includes(key) && this.initialFormData.get(key) !== value) ||
         // “Clear needinfo” checkbox for myself, which is ticked by default
-        key.startsWith('needinfo_override_')
+        key.startsWith('needinfo_override_') ||
+        // “Add me to CC” checkbox, which is also ticked by default depending on user settings
+        key === 'addselfcc'
       ) {
         changedFields[key] = value;
       }
@@ -1116,7 +1118,8 @@ Bugzilla.BugModal.InstantUpdater = class InstantUpdater {
     const $attachment = $changeSet.querySelector('.attachment');
 
     if ($comment) {
-      Bugzilla.InlineCommentEditor.activate($changeSet);
+      // `InlineCommentEditor` is undefined when the user is not allowed to edit comments
+      Bugzilla.InlineCommentEditor?.activate($changeSet);
     }
 
     if ($reactions) {
