@@ -1105,6 +1105,9 @@ Bugzilla.BugModal.InstantUpdater = class InstantUpdater {
     this.$commentTextArea.hidden = false;
     this.$commentTextArea.value = '';
 
+    // Switch to preview mode to show the comment box
+    document.querySelector('#add-comment [data-command="edit"]').click();
+
     // Re-enable the save button
     document.querySelectorAll('.save-btn').forEach(($btn) => {
       $btn.disabled = false;
