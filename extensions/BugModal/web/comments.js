@@ -107,7 +107,7 @@ $(function() {
     // dynamic HTML updates.
     const form = $('#changeform');
 
-    // individual comment toggles: logged-out users don’t have the `#form`, so bind to `#main-inner`
+    // individual comment toggles: logged-out users don’t have the form, so bind to `#main-inner`
     $('#main-inner').on('click', '.change-spinner', function(event) {
         event.preventDefault();
         toggleChange($(this));
