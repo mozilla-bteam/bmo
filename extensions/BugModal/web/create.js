@@ -257,10 +257,6 @@ window.addEventListener('DOMContentLoaded', () => {
     if ($form.component.options.length === 1) {
       $form.component.selectedIndex = 0;
     } else {
-      // Select first compponent if more than one and none are selected
-      if ($form.component.selectedIndex === -1) {
-        $form.component.selectedIndex = 0;
-      }
       $form.component.addEventListener('change', () => {
         onComponentChange();
       });
