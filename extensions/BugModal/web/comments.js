@@ -105,11 +105,13 @@ $(function() {
 
     // Reference the form element’s jQuery object. We use event delegation so these still work after
     // dynamic HTML updates.
-    const form = $('#changeform')
-        .on('click', '.change-spinner', function(event) {
-            event.preventDefault();
-            toggleChange($(this));
-        });
+    const form = $('#changeform');
+
+    // individual comment toggles: logged-out users don’t have the form, so bind to `#main-inner`
+    $('#main-inner').on('click', '.change-spinner', function(event) {
+        event.preventDefault();
+        toggleChange($(this));
+    });
 
     // view and tag menus
 
