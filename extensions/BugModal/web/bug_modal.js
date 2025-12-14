@@ -625,10 +625,11 @@ $(function() {
 
     // dirty field tracking
     $('#changeform select').each(function() {
-        var that = $(this);
-        var dirty = $('#' + that.attr('id') + '-dirty');
+        const that = $(this);
+        const id = that.attr('id');
+        const dirty = $(`#${id}-dirty`);
+
         if (!dirty) return;
-        var isMultiple = that.attr('multiple');
 
         // store the option that had the selected attribute when we
         // initially loaded
@@ -638,8 +639,8 @@ $(function() {
         that.data('preselected', value);
 
         // if the user hasn't touched a field, override the browser's choice
-        // with Bugzilla's
-        if (!dirty.val())
+        // with Bugzilla's, unless it's the component field
+        if (id !== 'component' && !dirty.val())
             that.val(value);
     });
 
@@ -813,9 +814,18 @@ $(function() {
                     event.stopPropagation();
                     await instantUpdater.submit();
                     clearSavedBugComment();
-                } catch {
-                    // Fallback to a full form submission
-                    $form.submit();
+                } catch (ex) {
+                    console.error(ex);
+
+                    if (ex.message === 'AFTER_SUBMIT_HALT') {
+                        // The comment was posted successfully, but further processing is halted.
+                        // Reload the page to show the updated bug.
+                        clearSavedBugComment();
+                        window.location.reload();
+                    } else {
+                        // Fallback to a full form submission
+                        $form.submit();
+                    }
                 }
             }
 
