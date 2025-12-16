@@ -195,6 +195,140 @@ sub startup {
       $c->render(json => {id_token => $id_token}, status => 200);
     }
   );
+
+  # Recorded Future Identity API Mocked endpoints
+  # This simulates the Recorded Future API for testing the recorded_future.pl script
+  $r->get(
+    '/recordedfuture/identity/search' => sub {
+      my $c = shift;
+
+      # Check for Bearer token auth
+      my $auth = $c->req->headers->authorization;
+      unless ($auth && $auth eq 'Bearer test_api_key') {
+        return $c->render(
+          json   => {error => "Unauthorized"},
+          status => 401
+        );
+      }
+
+      # Get query parameters
+      my $domain                = $c->param('domain');
+      my $latest_downloaded_gte = $c->param('latest_downloaded_gte');
+      my $offset                = $c->param('offset');
+
+      # Mock data - 3 identities with compromised credentials
+      # test1@example.com - password: "password123" (should match)
+      # test2@example.com - password: "different456" (won't match)
+      # test3@example.com - no cleartext password available
+      my @all_mock_identities = (
+        {
+          identity => {
+            subjects => ['test1@example.com']
+          },
+          credentials => [
+            {
+              subject         => 'test1@example.com',
+              exposed_secret  => {
+                clear_text_value => 'correctpassword123!',
+                clear_text_hint  => 'co',
+              },
+              latest_downloaded => '2025-12-08',
+              first_downloaded  => '2025-12-01',
+              dumps             => [
+                {name => 'TestBreach2025', type => 'dump'}
+              ],
+            }
+          ],
+          count => 1
+        },
+        {
+          identity => {
+            subjects => ['test2@example.com']
+          },
+          credentials => [
+            {
+              subject         => 'test2@example.com',
+              exposed_secret  => {
+                clear_text_value => 'different456!',
+                clear_text_hint  => 'di',
+              },
+              latest_downloaded => '2025-12-08',
+              first_downloaded  => '2025-12-01',
+              dumps             => [
+                {name => 'AnotherBreach2025', type => 'dump'}
+              ],
+            }
+          ],
+          count => 1
+        },
+        {
+          identity => {
+            subjects => ['test3@example.com']
+          },
+          credentials => [
+            {
+              subject         => 'test3@example.com',
+              exposed_secret  => {
+                # No clear_text_value - only hashed
+                clear_text_hint => 'xx',
+              },
+              latest_downloaded => '2025-12-08',
+              first_downloaded  => '2025-12-01',
+              dumps             => [
+                {name => 'HashedBreach2025', type => 'dump'}
+              ],
+            }
+          ],
+          count => 1
+        },
+      );
+
+      # Filter by domain if provided
+      if ($domain && $domain ne 'bugzilla.mozilla.org') {
+        return $c->render(
+          json => {
+            count      => 0,
+            identities => [],
+          },
+          status => 200
+        );
+      }
+
+      # Simple pagination: split into pages of 2 items each for testing
+      my $page_size = 2;
+      my $start_idx = 0;
+
+      if ($offset) {
+        if ($offset eq 'page2') {
+          $start_idx = 2;
+        }
+        elsif ($offset eq 'page3') {
+          $start_idx = 4;
+        }
+      }
+
+      my $end_idx = $start_idx + $page_size - 1;
+      $end_idx = $#all_mock_identities if $end_idx > $#all_mock_identities;
+
+      my @page_identities
+        = $start_idx <= $#all_mock_identities
+        ? @all_mock_identities[$start_idx .. $end_idx]
+        : ();
+
+      my $next_offset = undef;
+      if ($end_idx < $#all_mock_identities) {
+        $next_offset = 'page' . ($start_idx / $page_size + 2);
+      }
+
+      my $response = {
+        count      => scalar(@all_mock_identities),
+        identities => \@page_identities,
+      };
+      $response->{next_offset} = $next_offset if $next_offset;
+
+      return $c->render(json => $response, status => 200);
+    }
+  );
 }
 
 1;
