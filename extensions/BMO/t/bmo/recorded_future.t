@@ -38,8 +38,8 @@ set_parameters(
 );
 
 # Create test users with known passwords
-# test1@example.com with password "password123" (will match breach)
-# test2@example.com with password "wrongpassword" (won't match)
+# test1@example.com with password "correctpassword123!" (will match breach)
+# test2@example.com with password "wrongpassword123!" (won't match)
 create_user('test1@example.com', 'correctpassword123!',
   realname => 'Test User 1');
 create_user('test2@example.com', 'wrongpassword123!',

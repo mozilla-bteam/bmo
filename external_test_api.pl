@@ -205,20 +205,18 @@ sub startup {
       # Check for Bearer token auth
       my $auth = $c->req->headers->authorization;
       unless ($auth && $auth eq 'Bearer test_api_key') {
-        return $c->render(
-          json   => {error => "Unauthorized"},
-          status => 401
-        );
+        my $error = 'Unauthorized: Missing or invalid API key';
+        return $c->render(json => {error => $error}, status => 401);
       }
 
       # Get query parameters
       my $domain                = $c->param('domain');
-      my $latest_downloaded_gte = $c->param('latest_downloaded_gte');
+      my $latest_downloaded_gte = $c->param('latest_downloaded_gte'); # Not used
       my $offset                = $c->param('offset');
 
       # Mock data - 3 identities with compromised credentials
       # test1@example.com - password: "password123" (should match)
-      # test2@example.com - password: "different456" (won't match)
+      # test2@example.com - password: "different456!" (won't match)
       # test3@example.com - no cleartext password available
       my @all_mock_identities = (
         {
