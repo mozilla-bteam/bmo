@@ -220,7 +220,7 @@ sub startup {
       my @all_mock_identities = (
         {login => 'test1@example.com', domain => 'example.com',},
         {login => 'test2@example.com', domain => 'example.com',},
-        {login => 'test2@example.com', domain => 'example.com',},
+        {login => 'test3@example.com', domain => 'example.com',},
       );
 
       # Filter by domain if provided
