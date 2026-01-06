@@ -34,21 +34,24 @@ EOF
 
 Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
 
-my ($dry_run, $help);
-GetOptions('dry-run' => \$dry_run, 'help|h' => \$help,) or die <<'EOF';
-usage: recorded_future.pl [--dry-run] [--token=<api_key>] [--url=<api_url>]
+my ($dry_run, $help, $domain);
+GetOptions('dry-run' => \$dry_run, 'help|h' => \$help, 'domain=s' => \$domain)
+  or die <<'EOF';
+usage: recorded_future.pl [--dry-run] [--domain=<domain>]
+  --domain  : domain to check (default: bugzilla.mozilla.org)
   --dry-run : show what would be done without actually disabling accounts
   --help|-h : show this help message
 EOF
 
 if ($help) {
   print <<'EOF';
-usage: recorded_future.pl [--dry-run]
+usage: recorded_future.pl [--dry-run] [--domain=<domain>]
 
 This script queries the Recorded Future API for compromised accounts related to
 bugzilla.mozilla.org and disables any accounts where the email and password match.
 
 Options:
+  --domain  : domain to check (default: bugzilla.mozilla.org)
   --dry-run : show what would be done without actually disabling accounts
   --help|-h : show this help message
 
@@ -79,49 +82,51 @@ my $dbh = Bugzilla->dbh;
 say 'Checking for compromised accounts via Recorded Future API...';
 
 # Get the last run timestamp from the database
-my $last_run_ts = $dbh->selectrow_array(
-  'SELECT value FROM recorded_future WHERE name = \'last_run_ts\'');
+# The timestamp needs to be in the format of "YYYY-MM-DDTHH:MI:SSZ"
+my $last_run_ts
+  = $dbh->selectrow_array(
+  'SELECT DATE_FORMAT(value, \'%Y-%m-%dT%H:%i:%sZ\') FROM recorded_future WHERE name = \'last_run_ts\''
+  );
+
+# Default to bugzilla.mozilla.org if no domain provided
+$domain = $domain || 'bugzilla.mozilla.org';
 
 # Build query parameters for the API
-# API expects YYYY-MM-DD format and uses latest_downloaded_gte parameter
-my @query_params;
-push @query_params, 'domain=bugzilla.mozilla.org';
+my %query_params
+  = (domains => [$domain], filter => {username_properties => ['Email']});
 
 if ($last_run_ts) {
   say "Last check was at: $last_run_ts";
-
-  # Convert timestamp to YYYY-MM-DD format for API
-  my $date_only = substr $last_run_ts, 0, 10;
-  push @query_params, "latest_downloaded_gte=$date_only";
+  $query_params{filter}->{latest_downloaded_gte} = $last_run_ts;
 }
 else {
   say 'No previous run found. Fetching all available data.';
 }
 
 # Query the Recorded Future API with pagination support
-say 'Querying Recorded Future API...';
-my $ua = mojo_user_agent();
+say 'Querying Recorded Future API for compromised accounts...';
 
-my @all_identities;
-my $offset          = undef;
-my $page_num        = 1;
-my $total_available = 0;
+my $ua             = mojo_user_agent();
+my @all_identities = ();
+my $offset         = undef;
+my $page_num       = 1;
+
+# First we need to search for a list of compomised identities (email addresses) for our domain
 
 # Fetch all pages of results
 while (1) {
 
-  # Build query string with pagination
-  my @page_params = @query_params;
-  push @page_params, "offset=$offset" if $offset;
-  my $query_string = @page_params ? '?' . join('&', @page_params) : '';
+  # Build query with pagination
+  my %page_params = %query_params;
+  $page_params{offset} = $offset if $offset;
 
-  my $full_url = $api_url . $query_string;
+  my $full_url = $api_url . '/identity/credentials/search';
   say "Fetching page $page_num: $full_url";
 
-  my $result
-    = $ua->get($full_url =>
-      {'Accept' => 'application/json', 'Authorization' => "Bearer $api_key"})
-    ->result;
+  my $result = $ua->post(
+    $full_url => {'Accept' => 'application/json', 'X-RFToken' => $api_key},
+    json      => \%page_params
+  )->result;
 
   if (!$result->is_success) {
     die "ERROR: Recorded Future API returned error:\n"
@@ -146,7 +151,6 @@ while (1) {
       . ref $data;
   }
 
-  $total_available = $data->{count} // 0;
   my $page_count = scalar @{$identities};
 
   say "Page $page_num: Fetched $page_count identities";
@@ -172,8 +176,7 @@ while (1) {
 
 my $total_fetched = scalar @all_identities;
 
-say
-  "Fetched $total_fetched identities across $page_num page(s) (total available: $total_available)";
+say "Fetched $total_fetched identities across $page_num page(s)";
 
 if ($total_fetched == 0) {
   say 'No new compromised accounts found.';
@@ -183,22 +186,97 @@ if ($total_fetched == 0) {
   exit 0;
 }
 
+# Now that we have a list of compromised accounts, we need to do another
+# lookup to get the cleartext passwords for each identity.
+my @all_credentials = ();
+$page_num = 1;
+
+# We need to brake up the list of identities into chunks to avoid exceeding API limits
+my @identity_chunks;
+while (@all_identities) {
+  push @identity_chunks, [splice @all_identities, 0, 50];
+}
+
+foreach my $chunk (@identity_chunks) {
+  %query_params
+    = (subjects_login => $chunk, filter => {username_properties => ['Email']},);
+
+  my $full_url = $api_url . '/identity/credentials/lookup';
+  say "Fetching page $page_num: $full_url";
+
+  my $result = $ua->post(
+    $full_url => {'Accept' => 'application/json', 'X-RFToken' => $api_key},
+    json      => \%query_params
+  )->result;
+
+  if (!$result->is_success) {
+    die "ERROR: Recorded Future API returned error:\n"
+      . ($result->code ? $result->code . ' - ' : '')
+      . ($result->message // 'Unknown error');
+  }
+
+  # Parse the JSON response
+  my $data = $result->json;
+
+  unless ($data) {
+    die 'ERROR: Failed to parse API response as JSON';
+  }
+
+  # Extract identities from response
+  my $identities = $data->{identities} // [];
+
+  unless (ref $identities eq 'ARRAY') {
+    die
+      'ERROR: Unexpected API response format. Expected "identities" array but got: '
+      . ref $data;
+  }
+
+  my $page_count = scalar @{$identities};
+
+  say 'Processing ' . scalar @{$identities} . ' identities';
+
+  # Extract credentials from response
+  foreach my $identity (@{$identities}) {
+    foreach my $credential (@{$identity->{credentials}}) {
+      next
+        if !$credential->{exposed_secret}
+        || !$credential->{exposed_secret}{clear_text_value};
+      push @all_credentials,
+        {
+        identity => $credential->{subject},
+        password => $credential->{exposed_secret}{clear_text_value},
+        };
+    }
+  }
+
+  # Small delay to avoid rate limiting (100 calls per 60 seconds = ~0.6s per call)
+  # Being conservative with 1 second delay
+  sleep 1;
+  $page_num++;
+}
+
+my $total_credentials = scalar @all_credentials;
+
+if ($total_credentials == 0) {
+  say 'No new compromised credentials found.';
+
+  # Update the last run timestamp even if no accounts found
+  update_last_run() unless $dry_run;
+  exit 0;
+}
+else {
+  say
+    "Fetched $total_credentials compromised credentials across $page_num page(s)";
+}
+
 # Process each identity and their credentials
-# Each identity contains: { identity: { subjects: [...] }, credentials: [...], count: N }
-my $total_credentials = 0;
-my $matched_count     = 0;
-my $disabled_count    = 0;
+my $matched_count  = 0;
+my $disabled_count = 0;
 my @disabled_users;
 
-foreach my $identity_data (@all_identities) {
-  my $subjects    = $identity_data->{identity}{subjects} // [];
-  my $credentials = $identity_data->{credentials}        // [];
-
-  # Skip if no subjects (email addresses)
-  next unless @{$subjects};
-
-  # Get the primary email (first subject)
-  my $email = $subjects->[0];
+foreach my $identity (@all_credentials) {
+  my $email    = $identity->{identity};
+  my $password = $identity->{password};
 
   # Check if the user exists in Bugzilla
   my $user = Bugzilla::User->new({name => $email});
@@ -207,71 +285,45 @@ foreach my $identity_data (@all_identities) {
     next;
   }
 
-  # Check each credential for this identity
-  foreach my $credential (@{$credentials}) {
-    $total_credentials++;
+  say "User $email password found";
 
-    # Extract password from exposed_secret
-    # Structure: { exposed_secret: { clear_text_value: "password", ... } }
-    my $exposed_secret = $credential->{exposed_secret} // {};
-    my $password       = $exposed_secret->{clear_text_value};
+  # Check if the password matches
+  my $real_password_crypted    = $user->cryptpassword;
+  my $entered_password_crypted = bz_crypt($password, $real_password_crypted);
 
-    # Skip if no cleartext password
-    unless ($password) {
-      say "User $email password not found";
-      next;
+  if ($entered_password_crypted eq $real_password_crypted) {
+    $matched_count++;
+    say "MATCH FOUND: User $email has compromised credentials!";
+
+    if ($dry_run) {
+      say "[DRY RUN] Would disable user: $email";
+      push @disabled_users, $email unless any { $_ eq $email } @disabled_users;
     }
+    else {
+      # Check if already disabled
+      if ($user->disabledtext) {
+        say "User $email is already disabled. Skipping.";
+        next;
+      }
 
-    say "User $email password found";
-
-    # Check if the password matches
-    my $real_password_crypted    = $user->cryptpassword;
-    my $entered_password_crypted = bz_crypt($password, $real_password_crypted);
-
-    if ($entered_password_crypted eq $real_password_crypted) {
-      $matched_count++;
-      say "MATCH FOUND: User $email has compromised credentials!";
-
-      # Get breach details for logging
-      my $latest_downloaded = $credential->{latest_downloaded} // 'unknown';
-      my $dumps             = $credential->{dumps}             // [];
-      my $dump_names        = join ', ', map { $_->{name} // 'unknown' } @{$dumps};
-      say "Downloaded: $latest_downloaded";
-      say "Dumps: $dump_names" if $dump_names;
-
-      if ($dry_run) {
-        say "[DRY RUN] Would disable user: $email";
+      # Disable the account
+      try {
+        $user->set_disabledtext(DISABLE_MESSAGE);
+        $user->update();
+        $disabled_count++;
         push @disabled_users, $email unless any { $_ eq $email } @disabled_users;
+        say "User $email successfully disabled.";
+
+        # Audit log the action
+        Bugzilla->audit(
+          sprintf
+            'Disabled account %s due to compromised credentials found in data breach',
+          $user->login
+        );
       }
-      else {
-        # Check if already disabled
-        if ($user->disabledtext) {
-          say "User $email is already disabled. Skipping.";
-          next;
-        }
-
-        # Disable the account
-        try {
-          $user->set_disabledtext(DISABLE_MESSAGE);
-          $user->update();
-          $disabled_count++;
-          push @disabled_users, $email unless any { $_ eq $email } @disabled_users;
-          say "User $email successfully disabled.";
-
-          # Audit log the action
-          Bugzilla->audit(
-            sprintf
-              'Disabled account %s due to compromised credentials found in data breach',
-            $user->login
-          );
-        }
-        catch {
-          warn "ERROR: Failed to disable user $email: $_";
-        };
-      }
-
-      # Once we find a matching password, no need to check other credentials for this user
-      last;
+      catch {
+        warn "ERROR: Failed to disable user $email: $_";
+      };
     }
   }
 }

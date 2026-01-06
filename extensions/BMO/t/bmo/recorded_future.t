@@ -30,7 +30,7 @@ set_parameters(
     'Reports' => {
       'recorded_future_api_uri' => {
         type  => 'text',
-        value => 'http://externalapi.test:8001/recordedfuture/identity/search'
+        value => 'http://externalapi.test:8001'
       },
       'recorded_future_api_key' => {type => 'text', value => 'test_api_key'},
     }
@@ -49,7 +49,7 @@ create_user('test3@example.com', 'wrongpassword123!',
 
 # Run the recorded_future.pl script in dry-run mode
 my @cmd
-  = ('perl', 'extensions/BMO/bin/recorded_future.pl', '--dry-run', '2>&1');
+  = ('perl', 'extensions/BMO/bin/recorded_future.pl', '--dry-run', '--domain', 'example.com', '2>&1');
 my ($output, $error, $exit_code) = capture { system @cmd; };
 
 # Check that the script ran successfully
@@ -102,7 +102,7 @@ like(
 );
 
 # Now run without dry-run to test actual disabling
-@cmd = ('perl', 'extensions/BMO/bin/recorded_future.pl', '2>&1');
+@cmd = ('perl', 'extensions/BMO/bin/recorded_future.pl', '--domain', 'example.com', '2>&1');
 ($output, $error, $exit_code) = capture { system @cmd; };
 
 is($exit_code, 0, 'Script executed without errors (non-dry-run)');
@@ -121,7 +121,7 @@ my $test2_user = Bugzilla::User->new({name => 'test2@example.com'});
 ok(!$test2_user->disabledtext, 'test2@example.com was not disabled');
 
 # Test incremental updates: run again and verify no new matches
-@cmd = ('perl', 'extensions/BMO/bin/recorded_future.pl', '2>&1');
+@cmd = ('perl', 'extensions/BMO/bin/recorded_future.pl', '--domain', 'example.com', '2>&1');
 ($output, $error, $exit_code) = capture { system @cmd; };
 
 is($exit_code, 0, 'Script ran successfully on second run');
