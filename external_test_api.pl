@@ -195,6 +195,140 @@ sub startup {
       $c->render(json => {id_token => $id_token}, status => 200);
     }
   );
+
+  # Recorded Future Identity API Mocked endpoints
+  # This simulates the Recorded Future API for testing the recorded_future.pl script
+  $r->post(
+    '/identity/credentials/search' => sub {
+      my $c = shift;
+
+      # Check for proper token auth
+      my $headers = $c->req->headers;
+      unless ($headers->header('X-RFToken')
+        && $headers->header('X-RFToken') eq 'test_api_key')
+      {
+        my $error = 'Unauthorized: Missing or invalid API key';
+        return $c->render(json => {error => $error}, status => 401);
+      }
+
+      # Get query parameters
+      my $params = $c->req->json;
+      my $domain = $params->{domains}->[0];
+      my $offset = $params->{offset};
+
+      # Mock data - 3 possible identities
+      my @all_mock_identities = (
+        {login => 'test1@example.com', domain => 'example.com',},
+        {login => 'test2@example.com', domain => 'example.com',},
+        {login => 'test3@example.com', domain => 'example.com',},
+      );
+
+      # Filter by domain if provided
+      if ($domain && $domain ne 'example.com') {
+        return $c->render(json => {count => 0, identities => [],}, status => 200);
+      }
+
+      # Simple pagination: split into pages of 2 items each for testing
+      my $page_size = 2;
+      my $start_idx = 0;
+
+      if ($offset) {
+        if ($offset eq 'page2') {
+          $start_idx = 2;
+        }
+        elsif ($offset eq 'page3') {
+          $start_idx = 4;
+        }
+      }
+
+      my $end_idx = $start_idx + $page_size - 1;
+      $end_idx = $#all_mock_identities if $end_idx > $#all_mock_identities;
+
+      my @page_identities
+        = $start_idx <= $#all_mock_identities
+        ? @all_mock_identities[$start_idx .. $end_idx]
+        : ();
+
+      my $next_offset = undef;
+      if ($end_idx < $#all_mock_identities) {
+        $next_offset = 'page' . ($start_idx / $page_size + 2);
+      }
+
+      my $response
+        = {count => scalar(@all_mock_identities), identities => \@page_identities,};
+      $response->{next_offset} = $next_offset if $next_offset;
+
+      return $c->render(json => $response, status => 200);
+    }
+  );
+
+  $r->post(
+    '/identity/credentials/lookup' => sub {
+      my $c = shift;
+
+      # Check for proper token auth
+      my $headers = $c->req->headers;
+      unless ($headers->header('X-RFToken')
+        && $headers->header('X-RFToken') eq 'test_api_key')
+      {
+        my $error = 'Unauthorized: Missing or invalid API key';
+        return $c->render(json => {error => $error}, status => 401);
+      }
+
+      # Mock data - 3 identities with compromised credentials
+      # test1@example.com - password: "password123" (should match)
+      # test2@example.com - password: "different456!" (won't match)
+      # test3@example.com - no cleartext password available
+      my @all_mock_identities = (
+        {
+          identity    => {subjects => ['test1@example.com']},
+          credentials => [{
+            subject        => 'test1@example.com',
+            exposed_secret =>
+              {clear_text_value => 'correctpassword123!', clear_text_hint => 'co',},
+            latest_downloaded => '2025-12-08T00:00:00Z',
+            first_downloaded  => '2025-12-01T00:00:00Z',
+            dumps             => [{name => 'TestBreach2025', type => 'dump'}],
+          }],
+          count => 1
+        },
+        {
+          identity    => {subjects => ['test2@example.com']},
+          credentials => [{
+            subject        => 'test2@example.com',
+            exposed_secret =>
+              {clear_text_value => 'different456!', clear_text_hint => 'di',},
+            latest_downloaded => '2025-12-08T00:00:00Z',
+            first_downloaded  => '2025-12-01T00:00:00Z',
+            dumps             => [{name => 'AnotherBreach2025', type => 'dump'}],
+          }],
+          count => 1
+        },
+        {
+          identity    => {subjects => ['test3@example.com']},
+          credentials => [{
+            subject        => 'test3@example.com',
+            exposed_secret => {
+
+              # No clear_text_value - only hashed
+              clear_text_hint => 'xx',
+            },
+            latest_downloaded => '2025-12-08T00:00:00Z',
+            first_downloaded  => '2025-12-01T00:00:00Z',
+            dumps             => [{name => 'HashedBreach2025', type => 'dump'}],
+          }],
+          count => 1
+        },
+      );
+
+      my $response = {
+        count      => scalar(@all_mock_identities),
+        identities => \@all_mock_identities,
+      };
+
+      return $c->render(json => $response, status => 200);
+    }
+  );
 }
 
 1;

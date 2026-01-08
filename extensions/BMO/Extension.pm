@@ -1402,6 +1402,16 @@ sub db_schema_abstract_schema {
       creation_ts => {TYPE => 'DATETIME',},
     ],
   };
+
+  # Recorded Future
+  $args->{'schema'}->{'recorded_future'} = {
+    FIELDS => [
+      id    => {TYPE => 'INTSERIAL',    NOTNULL => 1, PRIMARYKEY => 1,},
+      name  => {TYPE => 'VARCHAR(255)', NOTNULL => 1,},
+      value => {TYPE => 'MEDIUMTEXT',   NOTNULL => 1}
+    ],
+    INDEXES => [recorded_future_idx => {FIELDS => ['name'], TYPE => 'UNIQUE',},],
+  };
 }
 
 sub install_update_db {
@@ -2643,6 +2653,18 @@ sub config_modify_panels {
     type => 't',
     };
 
+  # Recorded Future
+  push @{$args->{panels}->{reports}->{params}},
+    {
+    name    => 'recorded_future_api_uri',
+    type    => 't',
+    default => '',
+    },
+    {
+    name    => 'recorded_future_api_key',
+    type    => 't',
+    default => '',
+    };
 }
 
 sub comment_after_add_tag {
