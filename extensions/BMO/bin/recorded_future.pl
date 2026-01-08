@@ -55,7 +55,7 @@ Options:
   --dry-run : show what would be done without actually disabling accounts
   --help|-h : show this help message
 
-The server admin will need to set the values for recorded_future_api_url and
+The server admin will need to set the values for recorded_future_api_uri and
 recorded_future_api_key in the Bugzilla parameters for this script to work.
 
 The script stores the last run timestamp in the database and uses it to fetch
@@ -191,7 +191,7 @@ if ($total_fetched == 0) {
 my @all_credentials = ();
 $page_num = 1;
 
-# We need to brake up the list of identities into chunks to avoid exceeding API limits
+# We need to break up the list of identities into chunks to avoid exceeding API limits
 my @identity_chunks;
 while (@all_identities) {
   push @identity_chunks, [splice @all_identities, 0, 50];

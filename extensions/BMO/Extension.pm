@@ -1406,6 +1406,16 @@ sub db_schema_abstract_schema {
     ],
     INDEXES => [recorded_future_idx => {FIELDS => ['name'], TYPE => 'UNIQUE',},],
   };
+
+  # Recorded Future
+  $args->{'schema'}->{'recorded_future'} = {
+    FIELDS => [
+      id    => {TYPE => 'INTSERIAL',    NOTNULL => 1, PRIMARYKEY => 1,},
+      name  => {TYPE => 'VARCHAR(255)', NOTNULL => 1,},
+      value => {TYPE => 'MEDIUMTEXT',   NOTNULL => 1}
+    ],
+    INDEXES => [recorded_future_idx => {FIELDS => ['name'], TYPE => 'UNIQUE',},],
+  };
 }
 
 sub install_update_db {
