@@ -132,7 +132,7 @@ END
   # Also if the GCP bucket name ever changes, we need to update the nginx config at
   # https://github.com/mozilla/webservices-infra/blob/main/bugzilla/k8s/bugzilla/templates/nginx-configmap.yaml
   # in addition to Bugzilla params.
-  my $sitemap_url = Bugzilla->localconfig->urlbase . 'sitemap/';
+  my $sitemap_url = Bugzilla->localconfig->urlbase . 'sitemap';
   foreach my $filename (@$filelist) {
     $index_xml .= "
   <sitemap>
