@@ -123,19 +123,20 @@ sub _generate_sitemap_index {
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 END
 
-  # We use urlbase instead of storage.googleapis.com since we have
+  # We use urlbase instead of <bucket>.storage.googleapis.com since we have
   # a rewrite rule in the nginx config to redirect for us. This is
   # because the sitemap specification requires the sitemap hosts to
   # be ones we own locally and not external sites.
-  my $sitemap_url
-    = Bugzilla->localconfig->urlbase
-    . 'sitemap/storage/v1/b/'
-    . Bugzilla->params->{sitemapindex_google_bucket} . '/o';
-
+  # For example: https://bugzilla.mozilla.org/sitemap/sitemap_index.xml will be rewritten to
+  # https://<bucket>.storage.googleapis.com/sitemap_index.xml
+  # Also if the GCP bucket name ever changes, we need to update the nginx config at
+  # https://github.com/mozilla/webservices-infra/blob/main/bugzilla/k8s/bugzilla/templates/nginx-configmap.yaml
+  # in addition to Bugzilla params.
+  my $sitemap_url = Bugzilla->localconfig->urlbase . 'sitemap/';
   foreach my $filename (@$filelist) {
     $index_xml .= "
   <sitemap>
-    <loc>$sitemap_url/$filename?alt=media</loc>
+    <loc>$sitemap_url/$filename</loc>
     <lastmod>$timestamp</lastmod>
   </sitemap>
 ";
