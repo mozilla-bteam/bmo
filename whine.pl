@@ -376,33 +376,40 @@ sub mail {
   return if $addressee->email_disabled;
 
   my $template = Bugzilla->template_inner($addressee->setting('lang'));
-  my $msg = '';    # it's a temporary variable to hold the template output
-  $args->{'alternatives'} ||= [];
+  my ($msg_text, $msg_html, $msg_header);
 
-  # put together the different multipart mime segments
+  $template->process('whine/multipart-mime.txt.tmpl', $args, \$msg_header)
+    || ThrowTemplateError($template->error());
 
-  $template->process("whine/mail.txt.tmpl", $args, \$msg)
-    or die($template->error());
-  push @{$args->{'alternatives'}}, {'content' => $msg, 'type' => 'text/plain',};
-  $msg = '';
+  $template->process('whine/mail.txt.tmpl', $args, \$msg_text)
+    || ThrowTemplateError($template->error());
 
-  $template->process("whine/mail.html.tmpl", $args, \$msg)
-    or die($template->error());
-  push @{$args->{'alternatives'}}, {'content' => $msg, 'type' => 'text/html',};
-  $msg = '';
+  my @parts = (Email::MIME->create(
+    attributes => {content_type => 'text/plain',},
+    body       => $msg_text,
+  ));
+  if ($addressee->setting('email_format') eq 'html') {
+    $template->process('whine/mail.html.tmpl', $args, \$msg_html)
+      || ThrowTemplateError($template->error());
+    push @parts,
+      Email::MIME->create(
+      attributes => {content_type => 'text/html',},
+      body       => $msg_html,
+      );
+  }
 
-  # now produce a ready-to-mail mime-encoded message
+  # TT trims the trailing newline, and threadingmarker may be ignored.
+  my $email = Email::MIME->new("$msg_header\n");
 
-  $args->{'boundary'} = "----------" . $$ . "--" . time() . "-----";
+  if (scalar(@parts) == 1) {
+    $email->content_type_set($parts[0]->content_type);
+  }
+  else {
+    $email->content_type_set('multipart/alternative');
+  }
+  $email->parts_set(\@parts);
 
-  $template->process("whine/multipart-mime.txt.tmpl", $args, \$msg)
-    or die($template->error());
-
-  MessageToMTA($msg);
-
-  delete $args->{'boundary'};
-  delete $args->{'alternatives'};
-
+  MessageToMTA($email);
 }
 
 # run_queries runs all of the queries associated with a schedule ID, adding
