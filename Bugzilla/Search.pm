@@ -976,7 +976,17 @@ sub _sql {
   my $remote_ip    = remote_ip();
   my $user_agent   = $cgi->user_agent || $cgi->script_name;
   my $query_string = $cgi->canonicalize_query();
-  my $query        = <<END;
+
+  # Sanitize user-controlled fields to prevent SQL injection in user agent
+  # and query parameters
+  for ($user_agent, $query_string) {
+      # Remove SQL comment terminators and newlines
+      s/[*]//g;
+      s/[\r\n]+/ /g;
+      s/[^\x20-\x7E]/ /g; # Replace non-printable characters with space
+  }
+
+  my $query = <<"END";
 /*
 user-id: $user_id
 remote-ip: $remote_ip
