@@ -181,6 +181,12 @@ sub startup {
       $res->headers->header('Referrer-policy' => 'same-origin');
     }
 
+    # Add Cross-Origin-Opener-Policy header if not already set
+    # This header controls the relationship between browsing contexts
+    # to prevent cross-origin attacks like Spectre.
+    $res->headers->header(
+      'Cross-Origin-Opener-Policy' => 'same-origin-allow-popups');
+
     unless ($res->headers->content_security_policy) {
       if (my $csp = $c->content_security_policy) {
         $res->headers->header($csp->header_name, $csp->value);
