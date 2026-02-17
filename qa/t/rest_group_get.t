@@ -77,9 +77,9 @@ ok($user_found, "User was included in membership list of new group");
 $t->get_ok($url . "rest/group/$group_id" => {'X-Bugzilla-API-Key' => $unprivileged_api_key})
   ->status_is(400);
 
-# Adding the unprivileged user to the mozilla-employee-confidential
+# Adding the unprivileged user to the can_see_groups
 # group should allow seeing the group
-$user_update = {groups => {add => ['mozilla-employee-confidential']}};
+$user_update = {groups => {add => ['can_see_groups']}};
 $t->put_ok(
   $url . "rest/user/$unprivileged_login" => {'X-Bugzilla-API-Key' => $admin_api_key} => json => $user_update)
   ->status_is(200)->json_has('/users');
