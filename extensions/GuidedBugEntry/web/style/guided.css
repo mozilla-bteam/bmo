@@ -72,6 +72,10 @@
   background-color: var(--control-background-color);
 }
 
+#guided .messages:has(#product-support[hidden]):has(#l10n-message[hidden]) {
+  display: none;
+}
+
 #page-header {
   flex: none;
   display: flex;
