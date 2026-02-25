@@ -47,11 +47,11 @@ log_in($sel, $config, 'QA_Selenium_TEST');
 $sel->click_ok("//a[./span[contains(text(), 'New Bug')]]");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->title_is("Enter Bug");
-$sel->click_ok('//li[@data-product="Other Products"]]',
-  undef, "Choose full product list");
-sleep(1);
+# `$sel->click_ok()` doesn’t work because the target is not an anchor element
+$sel->driver->execute_script('
+  document.querySelector("li[data-product=\"Other Products\"]").click();
+');
 $sel->click_ok('//a[@data-product="QA-Selenium-TEST"]',
   undef, "Choose QA-Selenium-TEST product");
-sleep(1);
 $sel->is_text_present_ok("Product: QA-Selenium-TEST");
 logout($sel);
