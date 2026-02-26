@@ -8,12 +8,12 @@
 use strict;
 use warnings;
 use 5.10.1;
-use lib qw(lib ../../lib ../../local/lib/perl5);
+use lib qw(. lib);
 
 use Bugzilla;
 
 use Mojo::JSON qw(encode_json false);
-use QA::Util qw(get_config generate_payload_signature);
+use Bugzilla::QA::Util qw(get_config generate_payload_signature);
 use Test::Mojo;
 use Test::More;
 
