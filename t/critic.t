@@ -8,14 +8,14 @@
 use 5.10.1;
 use strict;
 use warnings;
-use lib qw(. lib local/lib/perl5 t);
+use lib qw(. lib local/lib/perl5);
 
-use Support::Files;
+use Bugzilla::Test::Files;
 use Test::More;
 
 my @testitems = (
-  @Support::Files::testitems, @Support::Files::test_files,
-  @Support::Files::scripts
+  @Bugzilla::Test::Files::testitems, @Bugzilla::Test::Files::test_files,
+  @Bugzilla::Test::Files::scripts
 );
 
 my $ok = eval { require Test::Perl::Critic::Progressive };

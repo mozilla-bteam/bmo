@@ -11,11 +11,11 @@
 
 use strict;
 use warnings;
-use lib qw(lib ../../lib ../../local/lib/perl5);
+use lib qw(. lib);
 use Storable qw(dclone);
 use Test::More tests => 305;
-use QA::Util;
-use QA::Tests qw(create_bug_fields PRIVATE_BUG_USER);
+use Bugzilla::QA::Util;
+use Bugzilla::QA::Tests qw(create_bug_fields PRIVATE_BUG_USER);
 
 my ($config, $xmlrpc, $jsonrpc, $jsonrpc_get) = get_rpc_clients();
 

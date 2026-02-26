@@ -7,11 +7,11 @@
 
 use strict;
 use warnings;
-use lib qw(lib ../../lib ../../local/lib/perl5);
+use lib qw(. lib);
 use Data::Dumper;
 use Test::More;
 use List::Util qw(first);
-use QA::Util;
+use Bugzilla::QA::Util;
 
 my ($config, @clients) = get_rpc_clients();
 plan tests => ($config->{test_extensions} ? 1416 : 1398);

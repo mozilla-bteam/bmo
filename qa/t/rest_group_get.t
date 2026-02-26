@@ -8,10 +8,10 @@
 use strict;
 use warnings;
 use 5.10.1;
-use lib qw(lib ../../lib ../../local/lib/perl5);
+use lib qw(. lib);
 
 use Bugzilla;
-use QA::Util qw(get_config);
+use Bugzilla::QA::Util qw(get_config);
 
 use Mojo::JSON qw(true);
 use Mojo::Util qw(dumper);

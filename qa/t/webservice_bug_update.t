@@ -7,10 +7,10 @@
 
 use strict;
 use warnings;
-use lib qw(lib ../../lib ../../local/lib/perl5);
+use lib qw(. lib);
 use Data::Dumper;
-use QA::Util;
-use QA::Tests qw(PRIVATE_BUG_USER STANDARD_BUG_TESTS);
+use Bugzilla::QA::Util;
+use Bugzilla::QA::Tests qw(PRIVATE_BUG_USER STANDARD_BUG_TESTS);
 use Storable qw(dclone);
 use Test::More tests => 923;
 

@@ -157,7 +157,7 @@ sub startup {
       my $request   = $c->param('request');
 
       # Load selenium config file to get the client secret, etc.
-      my $conf_file = '/app/qa/config/selenium_test.conf';
+      my $conf_file = '/app/conf/selenium_test.conf';
       my $config = do($conf_file) or die "can't read configuration '$conf_file': $!";
       my $client_secret = $config->{duo_client_secret};
 
@@ -182,7 +182,7 @@ sub startup {
       my $duo_uname = $cache->{$c->param('code')};
 
       # Load selenium config file to get the client secret, etc.
-      my $conf_file = '/app/qa/config/selenium_test.conf';
+      my $conf_file = '/app/conf/selenium_test.conf';
       my $config = do($conf_file) or die "can't read configuration '$conf_file': $!";
       my $client_secret = $config->{duo_client_secret};
 

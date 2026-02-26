@@ -1,7 +1,6 @@
 name: BMO Test Suite
 
-on:
-  pull_request
+on: pull_request
 
 jobs:
   test_sanity:
@@ -13,7 +12,7 @@ jobs:
       - name: Build Docker test images
         run: docker-compose -f docker-compose.test.yml build bmo.test
       - name: Run sanity tests
-        run: docker-compose -f docker-compose.test.yml run --no-deps bmo.test test_sanity t/*.t extensions/*/t/*.t
+        run: docker-compose -f docker-compose.test.yml run --no-deps bmo.test test_sanity -qf t/*.t extensions/*/t/*.t
 
   test_webservices:
     runs-on: ubuntu-latest
@@ -24,7 +23,7 @@ jobs:
       - name: Build Docker test images
         run: docker-compose -f docker-compose.test.yml build
       - name: Run webservice tests
-        run: docker-compose -f docker-compose.test.yml run bmo.test test_webservices
+        run: docker-compose -f docker-compose.test.yml run bmo.test test_webservices -qf qa/t/{webservice,rest}_*.t extensions/*/qa/t/{webservice,rest}_*.t
 
   test_bmo:
     runs-on: ubuntu-latest
@@ -35,7 +34,7 @@ jobs:
       - name: Build Docker test images
         run: docker-compose -f docker-compose.test.yml build
       - name: Run bmo specific tests
-        run: docker-compose -f docker-compose.test.yml run -e CI=1 bmo.test test_bmo -q -f t/bmo/*.t extensions/*/t/bmo/*.t
+        run: docker-compose -f docker-compose.test.yml run -e CI=1 bmo.test test_bmo -qf t/bmo/*.t extensions/*/t/bmo/*.t
 
   test_selenium_1:
     runs-on: ubuntu-latest
@@ -46,7 +45,7 @@ jobs:
       - name: Build Docker test images
         run: docker-compose -f docker-compose.test.yml build
       - name: Run Selenium tests (1)
-        run: docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=1 bmo.test test_selenium
+        run: docker-compose -f docker-compose.test.yml run bmo.test test_selenium -qf qa/t/1_test_*.t extensions/*/qa/t/1_test_*.t
 
   test_selenium_2:
     runs-on: ubuntu-latest
@@ -57,7 +56,7 @@ jobs:
       - name: Build Docker test images
         run: docker-compose -f docker-compose.test.yml build
       - name: Run Selenium tests (2)
-        run: docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=2 bmo.test test_selenium
+        run: docker-compose -f docker-compose.test.yml run bmo.test test_selenium -qf qa/t/2_test_*.t extensions/*/qa/t/2_test_*.t
 
   test_selenium_3:
     runs-on: ubuntu-latest
@@ -68,7 +67,7 @@ jobs:
       - name: Build Docker test images
         run: docker-compose -f docker-compose.test.yml build
       - name: Run Selenium tests (3)
-        run: docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=3 bmo.test test_selenium
+        run: docker-compose -f docker-compose.test.yml run bmo.test test_selenium -qf qa/t/3_test_*.t extensions/*/qa/t/3_test_*.t
 
   test_selenium_4:
     runs-on: ubuntu-latest
@@ -79,4 +78,4 @@ jobs:
       - name: Build Docker test images
         run: docker-compose -f docker-compose.test.yml build
       - name: Run Selenium tests (4)
-        run: docker-compose -f docker-compose.test.yml run -e SELENIUM_GROUP=4 bmo.test test_selenium
+        run: docker-compose -f docker-compose.test.yml run bmo.test test_selenium -qf qa/t/4_test_*.t extensions/*/qa/t/4_test_*.t
