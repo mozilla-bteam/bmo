@@ -7,13 +7,16 @@
 
 # -*- Mode: perl; indent-tabs-mode: nil -*-
 
-package QA::RPC::JSONRPC;
-use strict;
+package Bugzilla::QA::RPC::JSONRPC;
 
-use QA::RPC;
+use 5.10.1;
+use strict;
+use warnings;
+
+use Bugzilla::QA::RPC;
 
 BEGIN {
-  our @ISA = qw(QA::RPC);
+  our @ISA = qw(Bugzilla::QA::RPC);
 
   if (eval { require JSON::RPC::Client }) {
     push(@ISA, 'JSON::RPC::Client');
@@ -39,8 +42,8 @@ sub TYPE {
 
 sub ua {
   my $self = shift;
-  if ($self->{ua} and not $self->{ua}->isa('QA::RPC::UserAgent')) {
-    bless $self->{ua}, 'QA::RPC::UserAgent';
+  if ($self->{ua} and not $self->{ua}->isa('Bugzilla::QA::RPC::UserAgent')) {
+    bless $self->{ua}, 'Bugzilla::QA::RPC::UserAgent';
   }
   return $self->SUPER::ua(@_);
 }
@@ -97,7 +100,7 @@ sub call {
   }
 
   if ($result) {
-    bless $result, 'QA::RPC::JSONRPC::ReturnObject';
+    bless $result, 'Bugzilla::QA::RPC::JSONRPC::ReturnObject';
   }
   return $result;
 }
@@ -123,7 +126,7 @@ sub _get {
 
 1;
 
-package QA::RPC::JSONRPC::ReturnObject;
+package Bugzilla::QA::RPC::JSONRPC::ReturnObject;
 use strict;
 
 BEGIN {
@@ -146,7 +149,7 @@ sub fault       { $_[0]->is_error }
 
 1;
 
-package QA::RPC::UserAgent;
+package Bugzilla::QA::RPC::UserAgent;
 use strict;
 use base qw(LWP::UserAgent);
 

@@ -4,10 +4,10 @@ use strict;
 use warnings;
 use autodie;
 
-use lib qw( . qa/t/lib local/lib/perl5 );
+use lib qw( . lib local/lib/perl5 );
 
 use Mojo::Base -strict;
-use QA::Util;
+use Bugzilla::QA::Util;
 use Test::More;
 
 # Bad passwords

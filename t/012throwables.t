@@ -20,8 +20,8 @@ use Bugzilla::Constants;
 use Bugzilla::WebService::Constants;
 
 use File::Spec;
-use Support::Files;
-use Support::Templates;
+use Bugzilla::Test::Files;
+use Bugzilla::Test::Templates;
 use Test::More;
 
 my %Errors = ();
@@ -34,7 +34,7 @@ my %test_templates = ();
 my %test_modules   = ();
 
 # Find all modules
-foreach my $module (@Support::Files::testitems) {
+foreach my $module (@Bugzilla::Test::Files::testitems) {
   $test_modules{$module} = ();
 }
 
@@ -99,33 +99,52 @@ foreach my $file (keys %test_templates) {
 foreach my $file (keys %test_modules) {
   $file =~ s/\s.*$//;    # nuke everything after the first space (#comment)
   next if (!$file);      # skip null entries
+  next if ($file eq 'Bugzilla/QA/Tests.pm');    # skip this file since it contains test data
   if (!open(TMPL, $file)) {
     Register(\%test_modules, $file, "could not open file --WARNING");
     next;
   }
 
-  my $lineno = 0;
-  while (my $line = <TMPL>) {
-    last if $line =~ /^__END__/;    # skip the POD (at least in
-                                    # Bugzilla/Error.pm)
-    $lineno++;
-    if ($line
-      =~ /^[^#]*\b(Throw(Code|User)Error|(user_)?error\s+=>)\s*\(?\s*["'](.*?)['"]/)
-    {
-      my $errtype;
+  my $content = do { local $/; <TMPL> };
 
-      # If it's a normal ThrowCode/UserError
-      if ($2) {
-        $errtype = lc($2);
-      }
+  # Skip the POD (at least in Bugzilla/Error.pm)
+  $content =~ s/^__END__\b.*\z//ms;
 
-      # If it's an AUTH_ERROR tag
-      else {
-        $errtype = $3 ? 'user' : 'code';
-      }
-      my $errtag = $4;
-      push @{$Errors{$errtype}{$errtag}{used_in}{$file}}, $lineno;
+  while ($content
+    =~ /^[^#\n]*\b(Throw(Code|User)Error|(user_)?error\s+=>)\s*\(?\s*["'](.*?)['"]/mg
+    )
+  {
+    my $errtype;
+
+    # If it's a normal ThrowCode/UserError
+    if ($2) {
+      $errtype = lc($2);
     }
+
+    # If it's an AUTH_ERROR tag
+    else {
+      $errtype = $3 ? 'user' : 'code';
+    }
+    my $errtag = $4;
+
+    # Compute line number from match position in the slurped content
+    my $lineno = () = substr($content, 0, $-[0]) =~ /\n/g;
+    $lineno++;
+    push @{$Errors{$errtype}{$errtag}{used_in}{$file}}, $lineno;
+  }
+
+  # Find any occurrences of ->code_error() or ->user_error()
+  while ($content
+    =~ /->(code|user)_error\(\s*["'](.*?)['"]\s*\)/mg
+    )
+  {
+    my $errtype = $1;
+    my $errtag  = $2;
+
+    # Compute line number from match position in the slurped content
+    my $lineno = () = substr($content, 0, $-[0]) =~ /\n/g;
+    $lineno++;
+    push @{$Errors{$errtype}{$errtag}{used_in}{$file}}, $lineno;
   }
 
   close(TMPL);

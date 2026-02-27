@@ -7,8 +7,12 @@
 
 # -*- Mode: perl; indent-tabs-mode: nil -*-
 
-package QA::Tests;
+package Bugzilla::QA::Tests;
+
+use 5.10.1;
 use strict;
+use warnings;
+
 use base qw(Exporter);
 our @EXPORT_OK = qw(
   PRIVATE_BUG_USER

@@ -13,12 +13,12 @@ use 5.10.1;
 use strict;
 use warnings;
 
-use lib qw(. lib local/lib/perl5 t);
+use lib qw(. lib local/lib/perl5);
 
-use Support::Files;
+use Bugzilla::Test::Files;
 use Pod::Checker;
 
-use Test::More tests => scalar(@Support::Files::testitems);
+use Test::More tests => scalar(@Bugzilla::Test::Files::testitems);
 
 # Capture the TESTOUT from Test::More or Test::Builder for printing errors.
 # This will handle verbosity for us automatically.
@@ -36,7 +36,7 @@ my $fh;
   }
 }
 
-my @testitems = @Support::Files::testitems;
+my @testitems = @Bugzilla::Test::Files::testitems;
 
 foreach my $file (@testitems) {
   $file =~ s/\s.*$//;    # nuke everything after the first space (#comment)

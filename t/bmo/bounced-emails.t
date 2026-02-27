@@ -8,7 +8,7 @@
 use strict;
 use warnings;
 use 5.10.1;
-use lib qw( . lib qa/t/lib local/lib/perl5 );
+use lib qw( . lib local/lib/perl5 );
 
 BEGIN {
   $ENV{LOG4PERL_CONFIG_FILE}     = 'log4perl-t.conf';
@@ -18,7 +18,7 @@ BEGIN {
 use Bugzilla;
 use Bugzilla::Util qw(mojo_user_agent);
 use Mojo::URL;
-use QA::Util;
+use Bugzilla::QA::Util;
 use Test2::V0;
 use Test::Selenium::Remote::Driver;
 

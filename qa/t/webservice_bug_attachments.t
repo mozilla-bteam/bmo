@@ -7,9 +7,9 @@
 
 use strict;
 use warnings;
-use lib qw(lib ../../lib ../../local/lib/perl5);
-use QA::Util;
-use QA::Tests qw(STANDARD_BUG_TESTS PRIVATE_BUG_USER);
+use lib qw(. lib);
+use Bugzilla::QA::Util;
+use Bugzilla::QA::Tests qw(STANDARD_BUG_TESTS PRIVATE_BUG_USER);
 use Data::Dumper;
 use List::Util qw(first);
 use MIME::Base64;
@@ -64,7 +64,7 @@ foreach my $alias (qw(public_bug private_bug)) {
 # Attachment Tests #
 ####################
 
-my $content_file = '../config/generate_test_data.pl';
+my $content_file = 'scripts/generate_test_data.pl';
 open(my $fh, '<', $content_file) or die "$content_file: $!";
 my $content;
 { local $/; $content = <$fh>; }
@@ -158,7 +158,7 @@ sub post_success {
     "creator is the correct user"
   );
   my $data = $attachment->{data};
-  $data = decode_base64($data) if $rpc->isa('QA::RPC::JSONRPC');
+  $data = decode_base64($data) if $rpc->isa('Bugzilla::QA::RPC::JSONRPC');
   is($data,               $content,      'data is correct');
   is($attachment->{size}, length($data), "size matches data's size");
 }

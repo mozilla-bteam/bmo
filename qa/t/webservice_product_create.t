@@ -11,9 +11,9 @@
 
 use strict;
 use warnings;
-use lib qw(lib ../../lib ../../local/lib/perl5);
+use lib qw(. lib);
 use Test::More tests => 109;
-use QA::Util;
+use Bugzilla::QA::Util;
 
 use constant DESCRIPTION  => 'Product created by Product.create';
 use constant PROD_VERSION => 'unspecified';
