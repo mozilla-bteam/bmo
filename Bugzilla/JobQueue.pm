@@ -111,11 +111,13 @@ sub insert {
     try {
       $retval = $self->SUPER::insert(@insert_args);
 
-    } catch {
+    }
+    catch {
       my $errmsg = $_;
       chomp $errmsg;
-      WARN("Attempt $attempt/$max_attempts failed to insert job '$job' into the queue: "
-        . longmess($errmsg));
+      WARN(
+        "Attempt $attempt/$max_attempts failed to insert job '$job' into the queue: "
+          . longmess($errmsg));
       sleep 1;
     };
     last if $retval;
