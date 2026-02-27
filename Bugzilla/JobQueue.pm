@@ -106,16 +106,17 @@ sub insert {
   # This can fail due to transient database errors, so we retry a few times before giving up.
   # If it fails after max_attempts, we log a detailed error rather than pass it through to the user.
   my $max_attempts = 4;
-  my ($retval, $errmsg);
+  my $retval;
   for my $attempt (1 .. $max_attempts) {
     try {
       $retval = $self->SUPER::insert(@insert_args);
 
     } catch {
-      $errmsg = $_;
+      my $errmsg = $_;
       chomp $errmsg;
       WARN("Attempt $attempt/$max_attempts failed to insert job '$job' into the queue: "
         . longmess($errmsg));
+      sleep 1;
     };
     last if $retval;
   }
