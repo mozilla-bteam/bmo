@@ -304,7 +304,8 @@
   [% ELSIF error == "jobqueue_insert_failed" %]
    [% title = "Job Queue Failure" %]
     Inserting a <code>[% job FILTER html %]</code> job into the Job
-    Queue failed with the following error: [% errmsg FILTER html %]
+    Queue failed. Please contact an administrator and describing what
+    you were doing when you got this error.
 
   [% ELSIF error == "jobqueue_no_job_mapping" %]
     <code>Bugzilla::JobQueue</code> has not been configured to handle

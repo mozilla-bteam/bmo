@@ -21,7 +21,10 @@ use IO::Async::Loop;
 use Future;
 use base qw(TheSchwartz);
 use Bugzilla::Types qw(Task);
+use Try::Tiny;
 use Type::Params qw( compile Invocant );
+use Carp qw(longmess);
+use Mojo::Util qw(dumper);
 
 # This maps job names for Bugzilla::JobQueue to the appropriate modules.
 # If you add new types of jobs, you should add a mapping here.
@@ -97,14 +100,28 @@ sub insert {
 
   my $mapped_job = Bugzilla::JobQueue->job_map()->{$job};
   ThrowCodeError('jobqueue_no_job_mapping', {job => $job}) if !$mapped_job;
-  unshift(@_, $mapped_job);
 
-  my $retval = $self->SUPER::insert(@_);
+  # Create new args list to work properly with insert()
+  my @insert_args = ($mapped_job, @_);
 
-  # XXX Need to get an error message here if insert fails, but
-  # I don't see any way to do that in TheSchwartz.
-  ThrowCodeError('jobqueue_insert_failed', {job => $job, errmsg => $@})
-    if !$retval;
+  # This can fail due to transient database errors, so we retry a few times before giving up.
+  # If it fails after max_attempts, we log a detailed error rather than pass it through to the user.
+  my $max_attempts = 4;
+  my ($retval, $errmsg);
+  for my $attempt (1 .. $max_attempts) {
+    try {
+      $retval = $self->SUPER::insert(@insert_args);
+
+    } catch {
+      $errmsg = $_;
+      chomp $errmsg;
+      WARN("Attempt $attempt/$max_attempts failed to insert job '$job' into the queue: "
+        . longmess($errmsg));
+    };
+    last if $retval;
+  }
+
+  ThrowCodeError('jobqueue_insert_failed', {job => $job}) if !$retval;
 
   return $retval;
 }
