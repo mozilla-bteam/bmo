@@ -24,7 +24,6 @@ use Bugzilla::Types qw(Task);
 use Try::Tiny;
 use Type::Params qw( compile Invocant );
 use Carp qw(longmess);
-use Mojo::Util qw(dumper);
 
 # This maps job names for Bugzilla::JobQueue to the appropriate modules.
 # If you add new types of jobs, you should add a mapping here.
