@@ -68,7 +68,35 @@ $t->get_ok($url . "rest/reminder/$id" => {'X-Bugzilla-API-Key' => $api_key})
 
 ### Section 3: Remove the reminder
 
+# Passing an invalid value for id should fail
+$t->delete_ok($url . "rest/reminder/invalid" => {'X-Bugzilla-API-Key' => $api_key})
+  ->status_is(400)->json_like('/message' => qr/id must be an integer/);
+
 $t->delete_ok($url . "rest/reminder/$id" => {'X-Bugzilla-API-Key' => $api_key})
+  ->status_is(200)->json_is('/success' => 1);
+
+### Section 4: Another user cannot delete someone else's reminder
+
+# Create a new reminder as userA (editbugs_user)
+$new_reminder
+  = {bug_id => $bug_id, note => 'Test Reminder for Editbugs User', reminder_ts => '2024-06-08',};
+
+$t->post_ok($url
+    . 'rest/reminder' => {'X-Bugzilla-API-Key' => $api_key} => json =>
+    $new_reminder)->status_is(200)->json_is('/note' => 'Test Reminder for Editbugs User');
+
+$id = $t->tx->res->json->{id};
+
+# Try to delete userA's reminder as userB. Should fail with success => 0.
+my $other_api_key = $config->{QA_Selenium_TEST_user_api_key};
+
+$t->delete_ok(
+  $url . "rest/reminder/$id" => {'X-Bugzilla-API-Key' => $other_api_key})
+  ->status_is(200)->json_is('/success' => 0);
+
+# Clean up: verify reminder still exists and delete it as userA
+$t->delete_ok(
+  $url . "rest/reminder/$id" => {'X-Bugzilla-API-Key' => $api_key})
   ->status_is(200)->json_is('/success' => 1);
 
 done_testing();

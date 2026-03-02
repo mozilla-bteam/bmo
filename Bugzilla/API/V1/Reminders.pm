@@ -91,14 +91,20 @@ sub remove {
   my $user = $self->bugzilla->login;
   $user->id || return $self->user_error('login_required');
 
+  # Validate that id is an integer
+  if ($self->param('id') !~ /^\d+$/) {
+    return $self->user_error('invalid_params',
+      {type_error => 'id must be an integer'});
+  }
+
   # You can only delete your own so pass in user_id as well
-  my $reminder
-    = Bugzilla::Reminder->new({user_id => $user->id, id => $self->param('id')});
+  my $reminders
+    = Bugzilla::Reminder->match({user_id => $user->id, id => $self->param('id')});
 
   my $success = 0;
-  if ($reminder) {
+  if (@{$reminders}) {
     try {
-      $reminder->remove_from_db();
+      $reminders->[0]->remove_from_db();
       $success = 1;
     }
     catch {
