@@ -24,7 +24,7 @@ my $phab_content_type = 'text/x-phabricator-request';
 
 log_in($sel, $config, 'admin');
 file_bug_in_product($sel, 'Firefox');
-$sel->select_ok('component', 'General');
+$sel->select_ok('component', 'label=General');
 $sel->type_ok('short_desc',
   'Test bug for Phabricator attachment content-type restriction');
 $sel->type_ok('comment',
