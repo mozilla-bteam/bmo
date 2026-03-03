@@ -4,6 +4,7 @@
 
 services:
   bmo.test:
+    platform: linux/x86_64
     build: &build_bmo
       context: .
       dockerfile: Dockerfile
@@ -43,6 +44,7 @@ services:
       - bq
 
   externalapi.test:
+    platform: linux/x86_64
     build: *build_bmo
     entrypoint: perl /app/external_test_api.pl daemon -l http://*:8001
     ports:
@@ -53,6 +55,7 @@ services:
   # https://github.com/mozilla-it/webservices-infra/blob/main/bugzilla/tf/prod/locals.tf
   # https://github.com/mozilla-it/webservices-infra/blob/main/bugzilla/tf/stage/mysql.tf
   bmo.db:
+    platform: linux/x86_64
     image: mysql:8.0.42
     tmpfs:
       - /tmp
@@ -65,12 +68,15 @@ services:
       - MYSQL_ALLOW_EMPTY_PASSWORD=1
 
   memcached:
+    platform: linux/x86_64
     image: ghcr.io/ghcr-library/memcached:latest
 
   s3:
+    platform: linux/x86_64
     image: scireum/s3-ninja
 
   gcs:
+    platform: linux/x86_64
     image: fsouza/fake-gcs-server
     command: "-scheme http"
     volumes:
@@ -79,6 +85,7 @@ services:
       - ./docker/gcs/mining:/data/mining
 
   bq:
+    platform: linux/x86_64
     build:
       context: ./docker/bigquery
       dockerfile: Dockerfile

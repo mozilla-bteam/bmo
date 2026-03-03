@@ -266,6 +266,10 @@ use constant SYSTEM_GROUPS => (
   {
     name        => 'can_delete_attachments',
     description => 'Can delete attachments'
+  },
+  {
+    name        => 'can_see_groups',
+    description => 'Can see all groups'
   }
 );
 

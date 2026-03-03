@@ -372,4 +372,4 @@ pdf_fit_background_mode = 'scale'
 # Temporary highlighting of TODO items
 todo_include_todos = False
 
-extlinks = {'bug': ('https://bugzilla.mozilla.org/show_bug.cgi?id=%s', 'bug  ')}
+extlinks = {'bug': ('https://bugzilla.mozilla.org/show_bug.cgi?id=%s', 'bug %s')}
