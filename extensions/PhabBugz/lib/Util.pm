@@ -202,6 +202,11 @@ sub create_revision_attachment {
     local $submitter->{groups} = [Bugzilla::Group->get_all]; # We need to always be able to add attachment
     my $restore_prev_user = Bugzilla->set_user($submitter, scope_guard => 1);
 
+    # Users cannot normally create attachments with text/x-phabricator-request content type.
+    # So we need to set an override to allow it for this attachment.
+    my $request_cache = Bugzilla->request_cache;
+    local $request_cache->{allow_phab_revision_attachment} = 1;
+
     my $new_attach_description = $revision->secured_title;
 
     $attachment = Bugzilla::Attachment->create({
