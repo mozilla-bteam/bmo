@@ -13,6 +13,7 @@ use warnings;
 
 use parent qw(Bugzilla::Extension);
 
+use Bugzilla;
 use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Logging;
@@ -102,6 +103,50 @@ sub object_end_of_update {
   };
 
   Bugzilla->error_mode($orig_error_mode);
+}
+
+sub object_start_of_update {
+  my ($self,       $args)       = @_;
+  my ($new_object, $old_object) = @$args{qw( object old_object )};
+
+  return unless $new_object->isa('Bugzilla::Attachment');
+
+  # Only allow phab-bot to set content type to text/x-phabricator-request
+  my $old_content_type = $old_object->contenttype;
+  my $new_content_type = $new_object->contenttype;
+
+  if ($old_content_type ne $new_content_type
+    && $new_content_type eq PHAB_CONTENT_TYPE
+    && !Bugzilla->request_cache->{allow_phab_revision_attachment})
+  {
+    Bugzilla->audit(
+      sprintf
+        'WARN: User %s attempted to update an attachment to phabricator content type %s',
+      Bugzilla->user->login, $new_content_type
+    );
+    $new_object->set_content_type($old_content_type);
+    $new_object->set_is_patch($old_object->ispatch);
+  }
+}
+
+sub object_before_create {
+  my ($self,  $args)   = @_;
+  my ($class, $params) = @$args{qw(class params)};
+
+  return if $class ne 'Bugzilla::Attachment';
+
+  # Only allow phab-bot to set content type to text/x-phabricator-request
+  my $content_type = $params->{mimetype};
+  if ($content_type eq PHAB_CONTENT_TYPE
+    && !Bugzilla->request_cache->{allow_phab_revision_attachment})
+  {
+    Bugzilla->audit(
+      sprintf
+        'WARN: User %s attempted to create an attachment with phabricator content type %s',
+      Bugzilla->user->login, $content_type
+    );
+    $params->{mimetype} = undef;
+  }
 }
 
 #
