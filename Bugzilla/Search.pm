@@ -970,30 +970,8 @@ sub _sql {
     $timeout_comment = "/*+ MAX_EXECUTION_TIME($ms) */";
   }
 
-  # Add some user information to the SQL so we can pinpoint where some
-  # slow running queries originate and help to refine the searches.
-  my $cgi          = Bugzilla->cgi;
-  my $remote_ip    = remote_ip();
-  my $user_agent   = $cgi->user_agent || $cgi->script_name;
-  my $query_string = $cgi->canonicalize_query();
-
-  # Sanitize user-controlled fields to prevent SQL injection in user agent
-  # and query parameters
-  for ($user_agent, $query_string) {
-      # Remove SQL comment terminators and newlines
-      s/[*]//g;
-      s/[\r\n]+/ /g;
-      s/[^\x20-\x7E]/ /g; # Replace non-printable characters with space
-  }
-
   my $query = <<"END";
-/*
-user-id: $user_id
-remote-ip: $remote_ip
-user-agent: $user_agent
-query-string: $query_string
-*/
-  SELECT $timeout_comment $select
+SELECT $timeout_comment $select
   FROM $from
  WHERE $where
 $group_by$order_by$limit
