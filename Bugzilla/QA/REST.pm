@@ -5,7 +5,7 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-package QA::REST;
+package Bugzillas::QA::REST;
 
 use 5.10.1;
 use strict;
@@ -14,11 +14,11 @@ use autodie;
 
 use LWP::UserAgent;
 use JSON;
-use QA::Util;
+use Bugzilla::QA::Util;
 
 use parent qw(LWP::UserAgent Exporter);
 
-@QA::REST::EXPORT = qw(
+@Bugzilla::QA::REST::EXPORT = qw(
   MUST_FAIL
   get_rest_client
 );
@@ -27,7 +27,7 @@ use constant MUST_FAIL => 1;
 
 sub get_rest_client {
   my $rest_client = LWP::UserAgent->new(ssl_opts => {verify_hostname => 0});
-  bless($rest_client, 'QA::REST');
+  bless($rest_client, 'Bugzilla::QA::REST');
   my $config = $rest_client->{bz_config} = get_config();
   $rest_client->{bz_url}
     = $config->{browser_url} . '/rest/';

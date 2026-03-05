@@ -8,11 +8,11 @@
 use 5.10.1;
 use strict;
 use warnings;
-use lib qw(lib ../../lib ../../local/lib/perl5);
+use lib qw(. lib);
 
 use Bugzilla;
 use Bugzilla::Constants;
-use QA::Util qw(get_config);
+use Bugzilla::QA::Util qw(get_config);
 
 use Test::Mojo;
 use Test::More;
