@@ -970,6 +970,45 @@ sub _sql {
     $timeout_comment = "/*+ MAX_EXECUTION_TIME($ms) */";
   }
 
+<<<<<<< Updated upstream
+||||||| Stash base
+  # Add some user information to the SQL so we can pinpoint where some
+  # slow running queries originate and help to refine the searches.
+  my $cgi          = Bugzilla->cgi;
+  my $remote_ip    = remote_ip();
+  my $user_agent   = $cgi->user_agent || $cgi->script_name;
+  my $query_string = $cgi->canonicalize_query();
+
+  # Sanitize user-controlled fields to prevent SQL injection in user agent
+  # and query parameters
+  for ($user_agent, $query_string) {
+      # Remove SQL comment terminators and newlines
+      s/[*]//g;
+      s/[\r\n]+/ /g;
+      s/[^\x20-\x7E]/ /g; # Replace non-printable characters with space
+  }
+
+=======
+  # Add some user information to the SQL so we can pinpoint where some
+  # slow running queries originate and help to refine the searches.
+  my $cgi          = Bugzilla->cgi;
+  my $remote_ip    = remote_ip();
+  my $user_agent   = $cgi->user_agent || $cgi->script_name;
+  my $query_string = $cgi->canonicalize_query();
+
+  # Sanitize all values embedded in the SQL block comment. The only way to
+  # break out of a /* */ block comment in MySQL is the sequence */. We also
+  # strip non-printable characters and newlines (which would silently move
+  # text outside the comment). All fields are treated as untrusted: user_id
+  # is forced to an integer, and remote_ip may derive from X-Forwarded-For
+  # when the better_xff feature is enabled, making it user-controllable.
+  $user_id = int($user_id || 0);
+  for ($remote_ip, $user_agent, $query_string) {
+      s/[^\x20-\x7E]/ /g;  # ASCII printable only
+      s/\*\//\* \//g;       # Break */ comment terminators (insert space)
+  }
+
+>>>>>>> Stashed changes
   my $query = <<"END";
 SELECT $timeout_comment $select
   FROM $from
