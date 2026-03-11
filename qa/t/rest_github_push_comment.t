@@ -361,4 +361,42 @@ foreach my $change_group (@{$history}) {
 
 ok($found_status_flag_change, 'Flag change found');
 
+# Test Git trailer format (Bug: 1234567)
+$new_bug = {
+  product     => 'Firefox',
+  component   => 'General',
+  summary     => 'Test Git trailer format',
+  type        => 'defect',
+  version     => 'unspecified',
+  severity    => 'blocker',
+  description => 'Test bug for Git trailer format',
+};
+
+$t->post_ok(
+  $url . 'rest/bug' => {'X-Bugzilla-API-Key' => $api_key} => json => $new_bug)
+  ->status_is(200)->json_has('/id');
+
+my $bug_id_3 = $t->tx->res->json->{id};
+
+$payload = {
+  ref => 'refs/heads/master',
+  repository => {
+    full_name      => 'mozilla-mobile/firefox-android',
+    default_branch => 'master',
+  },
+  commits    => [{
+    author => {username => 'testuser', name => 'Test User'},
+    url => 'https://github.com/mozilla-bteam/bmo/commit/abc123',
+    message => "Fix authentication issue\n\nBug: $bug_id_3",
+  }]
+};
+
+$t->post_ok(
+  $url
+    . 'rest/github/push_comment' => {
+    'X-Hub-Signature-256' => generate_payload_signature($secret, $payload),
+    'X-GitHub-Event'      => 'push'
+    } => json => $payload
+)->status_is(200)->json_has("/bugs/$bug_id_3/id");
+
 done_testing();
