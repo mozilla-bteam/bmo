@@ -20,10 +20,13 @@ our @EXPORT = qw(
   PHAB_USER_POLL_SECONDS
   PHAB_GROUP_POLL_SECONDS
   PHAB_TIMEOUT
- 
+
+  UPLIFT_QUESTIONS
+  UPLIFT_QE_TEST_LABEL
+
   LANDO_AUTOMATION_USER
   LANDO_BUG_UPDATE_FIELDS
- 
+
   PULSEBOT_AUTOMATION_USER
   PULSEBOT_UPLIFT_REPOS
   PULSEBOT_BUG_UPDATE_FIELDS
@@ -36,6 +39,52 @@ use constant PHAB_FEED_POLL_SECONDS  => $ENV{PHAB_FEED_POLL} // 5;
 use constant PHAB_USER_POLL_SECONDS  => $ENV{PHAB_USER_POLL} // 60;
 use constant PHAB_GROUP_POLL_SECONDS => $ENV{PHAB_GROUP_POLL} // 300;
 use constant PHAB_TIMEOUT            => $ENV{PHAB_TIMEOUT} // 60;
+
+# Uplift request form questions in the order they should appear in markdown
+# comments. Each entry's `keys` list contains all known Phabricator form
+# strings (past and present) that map to that question. When the form schema
+# changes, add the new string to `keys` and optionally update `label`.
+use constant UPLIFT_QUESTIONS => [
+  {
+    keys  => ["User impact if declined/Reason for urgency", "User impact if declined"],
+    label => "User impact if declined/Reason for urgency",
+  },
+  {
+    keys  => ["Code covered by automated testing?", "Code covered by automated testing"],
+    label => "Code covered by automated testing?",
+  },
+  {
+    keys  => ["Fix verified in Nightly?", "Fix verified in Nightly"],
+    label => "Fix verified in Nightly?",
+  },
+  {
+    keys  => ["Needs manual QE testing?", "Needs manual QE test"],
+    label => "Needs manual QE testing?",
+  },
+  {
+    keys  => ["Steps to reproduce for manual QE testing"],
+    label => "Steps to reproduce for manual QE testing",
+  },
+  {
+    keys  => ["Risk associated with taking this patch"],
+    label => "Risk associated with taking this patch",
+  },
+  {
+    keys  => ["Explanation of risk level"],
+    label => "Explanation of risk level",
+  },
+  {
+    keys  => ["String changes made/needed?", "String changes made/needed"],
+    label => "String changes made/needed?",
+  },
+  {
+    keys  => ["Is Android affected?"],
+    label => "Is Android affected?",
+  },
+];
+
+# Label of the `UPLIFT_QUESTIONS` entry used to determine if manual QE testing is needed.
+use constant UPLIFT_QE_TEST_LABEL => "Needs manual QE testing?";
 
 use constant LANDO_AUTOMATION_USER   => 'lobot@bmo.tld';
 use constant LANDO_BUG_UPDATE_FIELDS => qw(

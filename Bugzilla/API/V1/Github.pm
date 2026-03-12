@@ -25,6 +25,8 @@ use Digest::SHA qw(hmac_sha256_hex);
 use JSON::Validator::Joi qw(joi);
 use Mojo::Util  qw(secure_compare);
 
+use constant BUG_RE => qr/\b[Bb]ug(?:[ -]|: )(\d+)\b/;
+
 sub setup_routes {
   my ($class, $r) = @_;
   $r->post('/github/pull_request')->to('V1::Github#pull_request');
@@ -89,7 +91,7 @@ sub pull_request {
 
   # Find bug ID in the title and see if bug exists and client
   # can see it (non-fatal).
-  my ($bug_id) = $title =~ /\b[Bb]ug[ -](\d+)\b/;
+  my ($bug_id) = $title =~ BUG_RE;
   my $bug = Bugzilla::Bug->new($bug_id);
   if ($bug->{error}) {
     $template->process('global/code-error.html.tmpl',
@@ -263,7 +265,7 @@ sub push_comment {
     }
 
     # Find bug ID in the title and see if bug exists
-    my ($bug_id) = $message =~ /\b[Bb]ug[ -](\d+)\b/;
+    my ($bug_id) = $message =~ BUG_RE;
     next if !$bug_id;
 
     # Only include the first line of the commit message

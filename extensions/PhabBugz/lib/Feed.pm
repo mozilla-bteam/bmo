@@ -433,30 +433,32 @@ sub readable_answer {
   return 'no';
 }
 
+sub find_uplift_key {
+  my ($question_answers_mapping, $keys) = @_;
+  foreach my $key (@$keys) {
+    return $key if exists $question_answers_mapping->{$key};
+  }
+  return undef;
+}
+
+sub get_uplift_keys_by_label {
+  my ($label) = @_;
+  foreach my $question_def (@{UPLIFT_QUESTIONS()}) {
+    return $question_def->{keys} if $question_def->{label} eq $label;
+  }
+  return [];
+}
+
 sub format_uplift_request_as_markdown {
   my ($repo_short_name, $question_answers_mapping) = @_;
 
-  # Form content will come across a JSON object. Ensure the question/response pairs
-  # are added to the markdown output in the correct order.
-  my @uplift_questions_order = (
-    "User impact if declined",
-    "Code covered by automated testing",
-    "Fix verified in Nightly",
-    "Needs manual QE test",
-    "Steps to reproduce for manual QE testing",
-    "Risk associated with taking this patch",
-    "Explanation of risk level",
-    "String changes made/needed",
-    "Is Android affected?",
-  );
-
   my $comment = "### $repo_short_name Uplift Approval Request\n";
 
-  foreach my $question (@uplift_questions_order) {
-    my $answer = $question_answers_mapping->{$question};
-    my $answer_string = readable_answer($answer);
-
-    $comment .= "- **$question**: $answer_string\n";
+  foreach my $question_def (@{UPLIFT_QUESTIONS()}) {
+    my $key = find_uplift_key($question_answers_mapping, $question_def->{keys});
+    next unless defined $key;
+    my $answer_string = readable_answer($question_answers_mapping->{$key});
+    $comment .= "- **$question_def->{label}**: $answer_string\n";
   }
 
   return $comment;
@@ -522,7 +524,11 @@ sub process_uplift_request_form_change {
   }
 
   # If manual QE is required, set the Bugzilla flag.
-  if ($revision->uplift_request->{'Needs manual QE test'}) {
+  # The value may be a boolean (old format) or a string like "yes"/"no" (new format).
+  my $qe_key = find_uplift_key($revision->uplift_request, get_uplift_keys_by_label(UPLIFT_QE_TEST_LABEL));
+  my $qe_value = $qe_key ? $revision->uplift_request->{$qe_key} : undef;
+  my $needs_qe = $qe_value && ($qe_value eq '1' || lc($qe_value) eq 'yes');
+  if ($needs_qe) {
     INFO('Needs manual QE test is set.');
 
     my @old_flags;
