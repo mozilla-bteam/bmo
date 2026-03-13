@@ -195,6 +195,12 @@ sub install_update_db {
     $dbh->bz_add_column('phab_reviewer_rotation', 'author_phid',
       {TYPE => 'VARCHAR(255)', NOTNULL => 1, DEFAULT => "''"});
     $dbh->do('DELETE FROM phab_reviewer_rotation');
+  }
+
+  # Add unique index separately so it is also created if a previous run
+  # added the column but crashed before reaching the bz_add_index call.
+  if (!$dbh->bz_index_info('phab_reviewer_rotation', 'phab_reviewer_rotation_idx')) {
+    $dbh->do('DELETE FROM phab_reviewer_rotation');
     $dbh->bz_add_index('phab_reviewer_rotation', 'phab_reviewer_rotation_idx',
       {FIELDS => ['project_phid', 'author_phid'], TYPE => 'UNIQUE'});
   }

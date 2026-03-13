@@ -539,6 +539,11 @@ sub rotate_reviewer_list {
     = grep { $project_members[$_]->phid eq $last_reviewer_phid }
     0..$#project_members;
 
+  # If the last reviewer is no longer a member of the group (e.g. left the
+  # project), treat it as if there is no previous reviewer and return the
+  # list unrotated.
+  return @project_members if !defined $index;
+
   # Rotate list
   my @rotated_members = (
     @project_members[$index..$#project_members],
@@ -570,8 +575,8 @@ sub update_last_reviewer_phid {
 
   $dbh->do(
     'INSERT INTO phab_reviewer_rotation (project_phid, author_phid, user_phid) VALUES (?, ?, ?) '
-      . 'ON DUPLICATE KEY UPDATE user_phid = VALUES(user_phid)',
-    undef, $project->phid, $author_phid, $reviewer->phid);
+      . 'ON DUPLICATE KEY UPDATE user_phid = ?',
+    undef, $project->phid, $author_phid, $reviewer->phid, $reviewer->phid);
 }
 
 sub get_stack_reviewers {
