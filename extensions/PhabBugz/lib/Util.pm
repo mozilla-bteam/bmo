@@ -435,15 +435,11 @@ PROJECT: foreach my $project (@review_projects) {
       }
     }
 
-    # Loop through all members and pick the next one in line after last selected
+    # Loop through all members and pick the next eligible reviewer.
+    # The list has been rotated so the last reviewer is at the end,
+    # meaning they are only selected if no other eligible reviewer is available.
     foreach my $member (@project_members) {
       INFO('Considering candidate reviewer: ' . $member->name);
-
-      # Skip this member if they were the last one picked
-      if ($last_reviewer_phid && $member->phid eq $last_reviewer_phid) {
-        INFO('Already the last reviewer picked, skipping: ' . $member->name);
-        next;
-      }
 
       # Here we look to see if they can see the bug, and they are not set to away
       # (not accepting reviews). If both are positive, we have found our reviewer
@@ -455,24 +451,6 @@ PROJECT: foreach my $project (@review_projects) {
         INFO('Promoting member to reviewer: ' . $member->name);
         set_new_reviewer($revision, $project, $member, $is_blocking, \@review_users);
         next PROJECT;
-      }
-    }
-
-    # Fallback: retry without skipping the last reviewer. Being the last
-    # reviewer is a preference for rotation, not a hard exclusion. This
-    # prevents the "not found" error when the group is small and other
-    # members are unavailable (Bug 2003867).
-    if ($last_reviewer_phid) {
-      INFO('No reviewer found, retrying without skipping last reviewer');
-      foreach my $member (@project_members) {
-        if ($member->phid ne $revision->author->phid
-          && $member->bugzilla_user->can_see_bug($revision->bug->id)
-          && $member->bugzilla_user->settings->{block_reviews}->{value} ne 'on')
-        {
-          INFO('Fallback: promoting member to reviewer: ' . $member->name);
-          set_new_reviewer($revision, $project, $member, $is_blocking, \@review_users);
-          next PROJECT;
-        }
       }
     }
 
@@ -544,10 +522,11 @@ sub rotate_reviewer_list {
   # list unrotated.
   return @project_members if !defined $index;
 
-  # Rotate list
+  # Rotate the list so the last reviewer is at the end, meaning they will
+  # only be selected if no other eligible reviewer is available.
   my @rotated_members = (
-    @project_members[$index..$#project_members],
-    @project_members[0..$index - 1]
+    @project_members[$index + 1..$#project_members],
+    @project_members[0..$index]
   );
 
   INFO(
