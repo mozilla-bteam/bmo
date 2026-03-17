@@ -167,15 +167,8 @@ sub db_schema_abstract_schema {
     FIELDS => [
       id            => {TYPE => 'INTSERIAL',    NOTNULL => 1, PRIMARYKEY => 1,},
       project_phid  => {TYPE => 'VARCHAR(255)', NOTNULL => 1,},
-      author_phid   => {TYPE => 'VARCHAR(255)', NOTNULL => 1,},
       user_phid     => {TYPE => 'VARCHAR(255)', NOTNULL => 1,},
-    ],
-    INDEXES => [
-      phab_reviewer_rotation_idx => {
-        FIELDS => ['project_phid', 'author_phid'],
-        TYPE   => 'UNIQUE',
-      },
-    ],
+    ]
   };
   $args->{'schema'}->{'phab_uplift_form_state'} = {
     FIELDS => [
@@ -184,26 +177,6 @@ sub db_schema_abstract_schema {
       uplift_form_hash => {TYPE => 'VARCHAR(255)', NOTNULL => 1,},
     ]
   };
-}
-
-sub install_update_db {
-  my $dbh = Bugzilla->dbh;
-
-  # Bug 2003867 - Make reviewer rotation per-author instead of global.
-  # Clear existing rows since they lack author context.
-  if (!$dbh->bz_column_info('phab_reviewer_rotation', 'author_phid')) {
-    $dbh->bz_add_column('phab_reviewer_rotation', 'author_phid',
-      {TYPE => 'VARCHAR(255)', NOTNULL => 1, DEFAULT => "''"});
-    $dbh->do('DELETE FROM phab_reviewer_rotation');
-  }
-
-  # Add unique index separately so it is also created if a previous run
-  # added the column but crashed before reaching the bz_add_index call.
-  if (!$dbh->bz_index_info('phab_reviewer_rotation', 'phab_reviewer_rotation_idx')) {
-    $dbh->do('DELETE FROM phab_reviewer_rotation');
-    $dbh->bz_add_index('phab_reviewer_rotation', 'phab_reviewer_rotation_idx',
-      {FIELDS => ['project_phid', 'author_phid'], TYPE => 'UNIQUE'});
-  }
 }
 
 sub install_filesystem {

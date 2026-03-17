@@ -384,9 +384,8 @@ PROJECT: foreach my $project (@review_projects) {
     INFO('Sorted project members found: '
         . (join ', ', map { $_->name } @project_members));
 
-    # Find the last selected reviewer for the rotation group and author, if one exists.
-    my $author_phid = $revision->author->phid;
-    my $last_reviewer_phid = find_last_reviewer_phid($project, $author_phid);
+    # Find the last selected reviewer for the rotation group, if one exists.
+    my $last_reviewer_phid = find_last_reviewer_phid($project);
     INFO('Last reviewer phid found: '
         . ($last_reviewer_phid ? $last_reviewer_phid : 'None'));
 
@@ -435,9 +434,7 @@ PROJECT: foreach my $project (@review_projects) {
       }
     }
 
-    # Loop through all members and pick the next eligible reviewer.
-    # The list has been rotated so the last reviewer is at the end,
-    # meaning they are only selected if no other eligible reviewer is available.
+    # Loop through all members and pick the next one in line after last selected
     foreach my $member (@project_members) {
       INFO('Considering candidate reviewer: ' . $member->name);
 
@@ -498,8 +495,8 @@ sub set_new_reviewer {
   $revision->add_subscriber($project->phid);
 
   # Store the data in the phab_reviewer_rotation table so they will be
-  # next time. Track per author so each author gets independent rotation.
-  update_last_reviewer_phid($project, $revision->author->phid, $member);
+  # next time.
+  update_last_reviewer_phid($project, $member);
 
   # Add new reviewer to review users list in case they are also
   # a member of the next review rotation group.
@@ -517,11 +514,6 @@ sub rotate_reviewer_list {
     = grep { $project_members[$_]->phid eq $last_reviewer_phid }
     0..$#project_members;
 
-  # If the last reviewer is no longer a member of the group (e.g. left the
-  # project), treat it as if there is no previous reviewer and return the
-  # list unrotated.
-  return @project_members if !defined $index;
-
   # Rotate the list so the last reviewer is at the end, meaning they will
   # only be selected if no other eligible reviewer is available.
   my @rotated_members = (
@@ -536,26 +528,25 @@ sub rotate_reviewer_list {
 }
 
 sub find_last_reviewer_phid {
-  my ($project, $author_phid) = @_;
-  INFO('Retrieving last reviewer for project ' . $project->phid
-    . ' and author ' . $author_phid);
+  my ($project) = @_;
+  INFO('Retrieving last reviewer for project ' . $project->phid);
   return Bugzilla->dbh->selectrow_array(
-    'SELECT user_phid FROM phab_reviewer_rotation WHERE project_phid = ? AND author_phid = ?',
-    undef, $project->phid, $author_phid);
+    'SELECT user_phid FROM phab_reviewer_rotation WHERE project_phid = ?',
+    undef, $project->phid);
 }
 
 sub update_last_reviewer_phid {
-  my ($project, $author_phid, $reviewer) = @_;
+  my ($project, $reviewer) = @_;
   my $dbh = Bugzilla->dbh;
 
-  INFO('Updating last reviewer ' . $reviewer->name
-    . ' for project ' . $project->name
-    . ' and author ' . $author_phid);
+  INFO(
+    'Updating last reviewer ' . $reviewer->name . ' for project ' . $project->name);
 
+  $dbh->do('DELETE FROM phab_reviewer_rotation WHERE project_phid = ?',
+    undef, $project->phid);
   $dbh->do(
-    'INSERT INTO phab_reviewer_rotation (project_phid, author_phid, user_phid) VALUES (?, ?, ?) '
-      . 'ON DUPLICATE KEY UPDATE user_phid = ?',
-    undef, $project->phid, $author_phid, $reviewer->phid, $reviewer->phid);
+    'INSERT INTO phab_reviewer_rotation (project_phid, user_phid) VALUES (?, ?)',
+    undef, $project->phid, $reviewer->phid);
 }
 
 sub get_stack_reviewers {
