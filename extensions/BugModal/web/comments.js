@@ -547,7 +547,10 @@ Bugzilla.BugModal.CommentReactions = class CommentReactions {
     /** @type {string} */
     this.anchorName = `--comment-${this.commentId}-reactions`;
 
-    // Users cannot react on old bugs
+    this.attachTooltipListeners();
+
+    // When reactions are disabled (no anchor button), tooltips are still
+    // available above but adding new reactions is not.
     if (!this.$anchor) {
       return;
     }
@@ -609,17 +612,23 @@ Bugzilla.BugModal.CommentReactions = class CommentReactions {
       $button.addEventListener('click', async () => {
         this.toggleReaction($button);
       });
-
-      if ($button.matches('.sum')) {
-        $button.addEventListener('mouseenter', () => {
-          this.updateButtons();
-        });
-
-        $button.addEventListener('focus', () => {
-          this.updateButtons();
-        });
-      }
     });
+  }
+
+  /**
+   * Attach `mouseenter` and `focus` listeners on `.sum` buttons to fetch and display reaction
+   * tooltips. This is called for both active and disabled reaction states so that users can
+   * always see who reacted.
+   */
+  attachTooltipListeners() {
+    const updateButtons = () => this.updateButtons();
+
+    this.buttons
+      .filter(($button) => $button.matches('.sum'))
+      .forEach(($button) => {
+        $button.addEventListener('mouseenter', updateButtons);
+        $button.addEventListener('focus', updateButtons);
+      });
   }
 
   /**
