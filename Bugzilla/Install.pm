@@ -270,7 +270,11 @@ use constant SYSTEM_GROUPS => (
   {
     name        => 'can_see_groups',
     description => 'Can see all groups'
-  }
+  },
+  {
+    name        => 'github-webhook-bot',
+    description => 'Bot accounts whose API keys are valid GitHub webhook secrets',
+  },
 );
 
 use constant DEFAULT_CLASSIFICATION =>
