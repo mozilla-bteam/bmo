@@ -396,7 +396,8 @@ sub _verify_signature {
        INNER JOIN " . $dbh->quote_identifier('groups') . " g ON g.id = ugm.group_id
       WHERE g.name = 'github-webhook-bot'
         AND uak.revoked = 0
-        AND ugm.isbless = 0",
+        AND ugm.isbless = 0
+        AND ugm.grant_type = " . GRANT_DIRECT,
     {Slice => {}}
   );
 
@@ -405,7 +406,7 @@ sub _verify_signature {
     if (secure_compare($expected, $received_signature)) {
       # Update audit trail so admins can see which key authenticated the request
       $dbh->do(
-        "UPDATE user_api_keys SET last_used = NOW(), last_used_ip = ? WHERE id = ?",
+        "UPDATE user_api_keys SET last_used = LOCALTIMESTAMP(0), last_used_ip = ? WHERE id = ?",
         undef, ($self->tx->remote_address // ''), $key_row->{id}
       );
       return 1;

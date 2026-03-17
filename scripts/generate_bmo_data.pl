@@ -586,13 +586,11 @@ print "adding github-automation to github-webhook-bot group...\n";
 my $github_bot_group = Bugzilla::Group->new({name => 'github-webhook-bot'});
 my $github_auto_user = Bugzilla::User->new({name => 'github-automation@bmo.tld'});
 if ($github_bot_group && $github_auto_user) {
-  eval {
-    $dbh->do(
-      'INSERT INTO user_group_map (user_id, group_id, isbless, grant_type)
-            VALUES (?, ?, 0, ?)',
-      undef, $github_auto_user->id, $github_bot_group->id, GRANT_DIRECT
-    );
-  };
+  $dbh->do(
+    'INSERT IGNORE INTO user_group_map (user_id, group_id, isbless, grant_type)
+          VALUES (?, ?, 0, ?)',
+    undef, $github_auto_user->id, $github_bot_group->id, GRANT_DIRECT
+  );
 }
 
 # Update default security group settings for new products

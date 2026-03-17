@@ -12,7 +12,7 @@ and be automatically redirected to the pull request.
 
 * Create or identify a Bugzilla bot account to own this webhook.
 * A BMO admin must add that bot account to the ``github-webhook-bot`` group
-  via the Groups admin UI (``/editusers.cgi``).
+  via the Users admin UI (``/editusers.cgi``).
 * Log in as the bot account and go to Preferences > API Keys.
 * Create a new API key with a descriptive label (e.g.
   ``github-webhook-mozilla-bteam-bmo``). Copy the key value — it will only
@@ -126,7 +126,7 @@ repositories, a Firefox status flag may be set to FIXED.
 
 * Create or identify a Bugzilla bot account to own this webhook.
 * A BMO admin must add that bot account to the ``github-webhook-bot`` group
-  via the Groups admin UI (``/editusers.cgi``).
+  via the Users admin UI (``/editusers.cgi``).
 * Log in as the bot account and go to Preferences > API Keys.
 * Create a new API key with a descriptive label (e.g.
   ``github-webhook-mozilla-bteam-bmo-push``). Copy the key value — it will only
