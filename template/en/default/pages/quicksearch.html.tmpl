@@ -158,45 +158,33 @@
     standard field names always take precedence.</p>
 [% END %]
 
-[% SET regular_field_table = {} %]
-[% SET tracking_flag_table = {} %]
+[% SET field_table = {} %]
 [% FOREACH field = quicksearch_field_names.keys %]
   [% description = field_descs.$field %]
-  [% name = quicksearch_field_names.$field %]
-  [% IF description.match('^(status|tracking)-') %]
-    [% tracking_flag_table.$description = name %]
-  [% ELSE %]
-    [% regular_field_table.$description = name %]
-  [% END %]
+  [% field_table.$description = quicksearch_field_names.${field} %]
 [% END %]
 
-[% BLOCK field_table %]
-  <table cellspacing="0" cellpadding="0" border="0" class="qs_fields">
-    <thead>
+
+<table cellspacing="0" cellpadding="0" border="0" class="qs_fields">
+  <thead>
+    <tr>
+      <th class="field_name">Field</th>
+      <th class="field_nickname">Field Name(s) For Search</th>
+    </tr>
+  </thead>
+  <tbody>
+    [% FOREACH desc = field_table.keys.sort %]
       <tr>
-        <th class="field_name">Field</th>
-        <th class="field_nickname">Field Name(s) For Search</th>
+        <td class="field_name">[% desc FILTER html %]</td>
+        <td class="field_nickname">
+          [% FOREACH nickname = field_table.$desc %]
+            <kbd>[% nickname FILTER html %]</kbd>
+            [% ",&nbsp; " UNLESS loop.last %]
+          [% END %]
       </tr>
-    </thead>
-    <tbody>
-      [% FOREACH desc = table.keys.sort %]
-        <tr>
-          <td class="field_name">[% desc FILTER html %]</td>
-          <td class="field_nickname">
-            [% FOREACH nickname = table.$desc %]
-              <kbd>[% nickname FILTER html %]</kbd>
-              [% ",&nbsp; " UNLESS loop.last %]
-            [% END %]
-        </tr>
-      [% END %]
-    </tbody>
-  </table>
-[% END %]
-
-<div class="qs_field_table_wrapper">
-  [% INCLUDE field_table table = regular_field_table %]
-  [% INCLUDE field_table table = tracking_flag_table %]
-</div>
+    [% END %]
+  </tbody>
+</table>
 
 <h2 id="advanced_features">Advanced Features</h2>
 

@@ -700,18 +700,8 @@ sub quicksearch_map {
   my ($self, $args) = @_;
   my $map = $args->{'map'};
 
-  # Get a list of active flags to determine which ones to include in the quicksearch map
-  my $active_flags = Bugzilla::Extension::TrackingFlags::Flag->match({ is_active => 1 });
-  my %active_flag_names = map { $_->{name} => 1 } @$active_flags;
-
   foreach my $name (keys %$map) {
     if ($name =~ /^cf_(blocking|tracking|status)_([a-z]+)?(\d+)?$/) {
-      # Delete inactive flags from the map so they don’t show up in the available field list
-      if (!exists $active_flag_names{$name}) {
-        delete $map->{$name};
-        next;
-      }
-
       my $type    = $1;
       my $product = $2;
       my $version = $3;
