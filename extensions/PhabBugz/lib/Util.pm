@@ -438,12 +438,6 @@ PROJECT: foreach my $project (@review_projects) {
     foreach my $member (@project_members) {
       INFO('Considering candidate reviewer: ' . $member->name);
 
-      # Skip this member if they were the last one picked
-      if ($member->phid eq $last_reviewer_phid) {
-        INFO('Already the last reviewer picked, skipping: ' . $member->name);
-        next;
-      }
-
       # Here we look to see if they can see the bug, and they are not set to away
       # (not accepting reviews). If both are positive, we have found our reviewer
       # and exit the loop.
@@ -520,10 +514,16 @@ sub rotate_reviewer_list {
     = grep { $project_members[$_]->phid eq $last_reviewer_phid }
     0..$#project_members;
 
-  # Rotate list
+  # If the last reviewer is no longer a member of the group (e.g. they left
+  # the project), treat it as if there is no previous reviewer and return the
+  # list unrotated.
+  return @project_members if !defined $index;
+
+  # Rotate the list so the last reviewer is at the end, meaning they will
+  # only be selected if no other eligible reviewer is available.
   my @rotated_members = (
-    @project_members[$index..$#project_members],
-    @project_members[0..$index - 1]
+    @project_members[$index + 1..$#project_members],
+    @project_members[0..$index]
   );
 
   INFO(
