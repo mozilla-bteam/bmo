@@ -514,6 +514,11 @@ sub rotate_reviewer_list {
     = grep { $project_members[$_]->phid eq $last_reviewer_phid }
     0..$#project_members;
 
+  # If the last reviewer is no longer a member of the group (e.g. they left
+  # the project), treat it as if there is no previous reviewer and return the
+  # list unrotated.
+  return @project_members if !defined $index;
+
   # Rotate the list so the last reviewer is at the end, meaning they will
   # only be selected if no other eligible reviewer is available.
   my @rotated_members = (
