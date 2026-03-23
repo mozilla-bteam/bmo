@@ -217,12 +217,19 @@ sub _handle_error {
   $_[0] = substr($_[0], 0, 2000) . ' ... ' . substr($_[0], -2000)
     if length($_[0]) > 4000;
 
-  # Throw the stack trace into the web server's error log
-  warn Carp::longmess($_[0]);
+  # BMO: stracktrace disabled:
+  # $_[0] = Carp::longmess($_[0]);
 
-  # set the error message to something generic so we don't expose internal data to the users
-  # see https://bugzilla.mozilla.org/show_bug.cgi?id=1973151
-  $_[0] = 'A database error occurred. The site administrator can check the error log for details.';
+# BMO: catch long running query timeouts and translate into a sane message
+#if ($_[0] =~ /Lost connection to MySQL server during query/) {
+#    warn(Carp::longmess($_[0]));
+#    $_[0] = "The database query took too long to complete and has been canceled.\n"
+#            . "(Lost connection to MySQL server during query)";
+#}
+
+  #if (Bugzilla->usage_mode == USAGE_MODE_BROWSER) {
+  #    ThrowCodeError("db_error", { err_message => $_[0] });
+  #}
 
   # keep tests happy
   if (0) {
