@@ -1298,6 +1298,11 @@ a.comment-tag-url {
   color: var(--secondary-button-foreground-color) !important;
 }
 
+.comment-reactions .sums button:disabled {
+  pointer-events: auto;
+  cursor: default;
+}
+
 .comment-reactions button[aria-pressed="true"] {
   background-color: var(--selected-text-background-color) !important;
 }
