@@ -958,7 +958,7 @@ sub new_stories {
   my $data = {view => 'text'};
   $data->{after} = ($after ? $after : 1);
 
-  # For a specific type of error, we will retry up to 5 times
+  # For a specific type of error, we will retry up to MAX_FEED_RETRIES times
   # before failing.
   my $result;
   foreach my $try (1 .. MAX_FEED_RETRIES) {
