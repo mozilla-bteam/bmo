@@ -30,6 +30,8 @@ our @EXPORT = qw(
   PULSEBOT_AUTOMATION_USER
   PULSEBOT_UPLIFT_REPOS
   PULSEBOT_BUG_UPDATE_FIELDS
+
+  MAX_FEED_RETRIES
 );
 
 use constant PHAB_ATTACHMENT_PATTERN => qr/^phabricator-D(\d+)/;
@@ -100,5 +102,7 @@ use constant PULSEBOT_BUG_UPDATE_FIELDS => qw(
   keywords
   resolution
 );
+
+use constant MAX_FEED_RETRIES => 10;
 
 1;

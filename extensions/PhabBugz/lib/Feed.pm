@@ -961,7 +961,7 @@ sub new_stories {
   # For a specific type of error, we will retry up to 5 times
   # before failing.
   my $result;
-  foreach my $try (1 .. 5) {
+  foreach my $try (1 .. MAX_FEED_RETRIES) {
     $result = request('feed.query_id', $data, 1);    # Do not throw exception yet
 
     # Skip if an error was not returned or the error is not an invalid object error
