@@ -10,16 +10,28 @@ and be automatically redirected to the pull request.
 
 **Github Setup Instructions**
 
+* Create or identify a Bugzilla bot account to own this webhook.
+* A BMO admin must add that bot account to the ``github-webhook-bot`` group
+  via the Users admin UI (``/editusers.cgi``).
+* Log in as the bot account and go to Preferences > API Keys.
+* Create a new API key with a descriptive label (e.g.
+  ``github-webhook-mozilla-bteam-bmo``). Copy the key value — it will only
+  be shown once.
 * From the repository main page, click on the Settings tab.
 * Click on Webhooks from the left side menu.
 * Click on the Add Webhook button near the top right.
 * For the payload url, enter ``https://bugzilla.mozilla.org/rest/github/pull_request``.
 * Choose ``application/json`` for the content type.
-* You will need to enter the signature secret obtained from a BMO admin (DO NOT SHARE).
+* Enter the Bugzilla API key you created above as the webhook secret.
 * Make sure Enable SSL is turned on.
 * Select "Let me select individual events" and only enable changes for "Pull Requests".
 * Make sure at the bottom that "Active" is checked on.
 * Save the webhook.
+
+.. note::
+  If a webhook secret is ever compromised, revoke the affected API key from the
+  bot account's Preferences > API Keys page. Only that single webhook is affected —
+  all other bot accounts' webhooks continue to work without any changes.
 
 .. note::
   Past pull requests will not automatically get a link created in the bug. New pull
@@ -112,17 +124,29 @@ repositories, a Firefox status flag may be set to FIXED.
 
 **Github Setup Instructions**
 
+* Create or identify a Bugzilla bot account to own this webhook.
+* A BMO admin must add that bot account to the ``github-webhook-bot`` group
+  via the Users admin UI (``/editusers.cgi``).
+* Log in as the bot account and go to Preferences > API Keys.
+* Create a new API key with a descriptive label (e.g.
+  ``github-webhook-mozilla-bteam-bmo-push``). Copy the key value — it will only
+  be shown once.
 * From the repository main page, click on the Settings tab.
 * Click on Webhooks from the left side menu.
 * Click on the Add Webhook button near the top right.
 * For the payload url, enter ``https://bugzilla.mozilla.org/rest/github/push_comment``.
 * Add ``?no-qe-verify=1`` to the URL if you do not want the ``qe-verify`` flag set.
 * Choose ``application/json`` for the content type.
-* You will need to enter the signature secret obtained from a BMO admin (DO NOT SHARE).
+* Enter the Bugzilla API key you created above as the webhook secret.
 * Make sure Enable SSL is turned on.
 * Select "Let me select individual events" and only enable changes for "Pushes".
 * Make sure at the bottom that "Active" is checked on.
 * Save the webhook.
+
+.. note::
+  If a webhook secret is ever compromised, revoke the affected API key from the
+  bot account's Preferences > API Keys page. Only that single webhook is affected —
+  all other bot accounts' webhooks continue to work without any changes.
 
 .. note::
   The API endpoint looks at the commit messages for the bug ID so

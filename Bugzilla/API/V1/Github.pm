@@ -381,10 +381,47 @@ sub push_comment {
 sub _verify_signature {
   my ($self)             = @_;
   my $payload            = $self->req->body;
-  my $secret             = Bugzilla->params->{github_pr_signature_secret};
   my $received_signature = $self->req->headers->header('X-Hub-Signature-256');
-  my $expected_signature = 'sha256=' . hmac_sha256_hex($payload, $secret);
-  return secure_compare($expected_signature, $received_signature) ? 1 : 0;
+
+  return 0 if !$received_signature;
+
+  # Fetch all non-revoked API keys for users in the github-webhook-bot group.
+  # Each bot account uses its own Bugzilla API key as the GitHub webhook secret,
+  # so individual keys can be revoked without affecting other integrations.
+  my $dbh  = Bugzilla->dbh;
+  my $keys = $dbh->selectall_arrayref(
+    "SELECT uak.id, uak.api_key
+       FROM user_api_keys uak
+       INNER JOIN user_group_map ugm ON ugm.user_id = uak.user_id
+       INNER JOIN " . $dbh->quote_identifier('groups') . " g ON g.id = ugm.group_id
+      WHERE g.name = 'github-webhook-bot'
+        AND uak.revoked = 0
+        AND ugm.isbless = 0
+        AND ugm.grant_type = " . GRANT_DIRECT,
+    {Slice => {}}
+  );
+
+  foreach my $key_row (@{$keys}) {
+    my $expected = 'sha256=' . hmac_sha256_hex($payload, $key_row->{api_key});
+    if (secure_compare($expected, $received_signature)) {
+      # Update audit trail so admins can see which key authenticated the request
+      $dbh->do(
+        "UPDATE user_api_keys SET last_used = LOCALTIMESTAMP(0), last_used_ip = ? WHERE id = ?",
+        undef, ($self->tx->remote_address // ''), $key_row->{id}
+      );
+      return 1;
+    }
+  }
+
+  # Fall back to the legacy shared secret for backward compatibility during migration.
+  # Operators should migrate to per-bot API keys and clear this parameter.
+  my $legacy_secret = Bugzilla->params->{github_pr_signature_secret};
+  if ($legacy_secret) {
+    my $expected = 'sha256=' . hmac_sha256_hex($payload, $legacy_secret);
+    return secure_compare($expected, $received_signature) ? 1 : 0;
+  }
+
+  return 0;
 }
 
 # If the ref matches a certain branch pattern for the repo we are interested
