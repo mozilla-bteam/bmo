@@ -9,7 +9,7 @@
 use 5.10.1;
 use strict;
 use warnings;
-use lib qw(. lib local/lib/perl5 qa/t/lib);
+use lib qw(. lib local/lib/perl5);
 
 use Bugzilla;
 use Bugzilla::Constants;
@@ -20,9 +20,9 @@ BEGIN {
 
 use Capture::Tiny qw(capture);
 use DateTime;
-use QA::Util     qw(get_config);
-use MIME::Base64 qw(encode_base64 decode_base64);
-use Mojo::JSON   qw(false);
+use Bugzilla::QA::Util qw(get_config);
+use MIME::Base64       qw(encode_base64 decode_base64);
+use Mojo::JSON         qw(false);
 use Test::Mojo;
 use Test::More;
 

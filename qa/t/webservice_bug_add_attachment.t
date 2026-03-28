@@ -7,8 +7,8 @@
 
 use strict;
 use warnings;
-use lib qw(lib ../../lib ../../local/lib/perl5);
-use QA::Util;
+use lib qw(. lib);
+use Bugzilla::QA::Util;
 use MIME::Base64 qw(encode_base64 decode_base64);
 use Test::More tests => 187;
 my ($config, $xmlrpc, $jsonrpc, $jsonrpc_get) = get_rpc_clients();
@@ -213,7 +213,7 @@ foreach my $rpc ($jsonrpc, $xmlrpc) {
 # We have to encode data manually when using JSON-RPC, else it fails.
 sub pre_call {
   my ($t, $rpc) = @_;
-  return if !$rpc->isa('QA::RPC::JSONRPC');
+  return if !$rpc->isa('Bugzilla::QA::RPC::JSONRPC');
   return if !defined $t->{args}->{data};
 
   $t->{args}->{data} = encode_base64($t->{args}->{data}, '');
@@ -247,7 +247,7 @@ sub post_success {
       );
     }
 
-    if ($rpc->isa('QA::RPC::JSONRPC')) {
+    if ($rpc->isa('Bugzilla::QA::RPC::JSONRPC')) {
 
     # We encoded data in pre_call(), so we have to restore it to its original content.
       $t->{args}->{data} = decode_base64($t->{args}->{data});

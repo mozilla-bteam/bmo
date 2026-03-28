@@ -13,8 +13,8 @@ use 5.10.1;
 use strict;
 use warnings;
 
-use lib qw(. lib local/lib/perl5 t);
-use Support::Files;
+use lib qw(. lib local/lib/perl5);
+use Bugzilla::Test::Files;
 use Test::More tests => 52;
 use DateTime;
 

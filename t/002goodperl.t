@@ -14,15 +14,15 @@ use 5.10.1;
 use strict;
 use warnings;
 
-use lib qw(. lib local/lib/perl5 t);
+use lib qw(. lib local/lib/perl5);
 
-use Support::Files;
+use Bugzilla::Test::Files;
 
 use Test::More tests =>
-  (scalar(@Support::Files::testitems) + scalar(@Support::Files::test_files))
+  (scalar(@Bugzilla::Test::Files::testitems) + scalar(@Bugzilla::Test::Files::test_files))
   * 6;
 
-my @testitems = (@Support::Files::test_files, @Support::Files::testitems);
+my @testitems = (@Bugzilla::Test::Files::test_files, @Bugzilla::Test::Files::testitems);
 my @require_taint = qw(email_in.pl importxml.pl mod_perl.pl whine.pl);
 
 foreach my $file (@testitems) {

@@ -7,9 +7,9 @@
 
 use strict;
 use warnings;
-use lib qw(lib ../../lib ../../local/lib/perl5);
+use lib qw(. lib);
 
-use QA::Util;
+use Bugzilla::QA::Util;
 use Test::More;
 
 my ($sel, $config) = get_selenium();
