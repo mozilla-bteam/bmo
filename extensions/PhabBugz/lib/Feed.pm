@@ -165,38 +165,8 @@ sub feed_query {
     INFO("STORY: ($story_id) $story_text");
 
     with_writable_database {
-
-      # Only interested in changes to revisions for now.
-      if ($object_phid !~ /^PHID-DREV/) {
-        INFO("SKIPPING: Not a revision change");
-        $self->save_last_id($story_id, 'feed');
-        return;
-      }
-
-      # Skip changes done by phab-bot user
-      # If changer does not exist in Bugzilla database
-      # we use the phab-bot account as the changer
-      my $author = Bugzilla::Extension::PhabBugz::User->new_from_query(
-        {phids => [$author_phid]});
-
-      if ($author && $author->bugzilla_id) {
-        if ($author->bugzilla_user->login eq PHAB_AUTOMATION_USER) {
-          INFO("SKIPPING: Change made by Phabricator user");
-          $self->save_last_id($story_id, 'feed');
-          return;
-        }
-      }
-      else {
-        my $phab_user = Bugzilla::User->new({name => PHAB_AUTOMATION_USER});
-        $author = Bugzilla::Extension::PhabBugz::User->new_from_query(
-          {ids => [$phab_user->id]});
-      }
-
-      # Load the revision from Phabricator
-      my $revision = Bugzilla::Extension::PhabBugz::Revision->new_from_query(
-        {phids => [$object_phid]});
-      $self->process_revision_change($revision, $author, $story_text);
-      $self->save_last_id($story_id, 'feed');
+      $self->_process_feed_story($story_id, $author_phid, $object_phid,
+        $story_text);
     };
   }
 
@@ -279,87 +249,129 @@ sub group_query {
   # are unaffected — they communicate directly with Phabricator and do not go
   # through Bugzilla->dbh.
   with_readonly_database {
-    my $sync_groups = Bugzilla::Group->match({isactive => 1, isbuggroup => 1});
-
-    # Load phab-bot Phabricator user to add as a member of each project group later
-    my $phab_bmo_user
-      = Bugzilla::User->new({name => PHAB_AUTOMATION_USER, cache => 1});
-    my $phab_user
-      = Bugzilla::Extension::PhabBugz::User->new_from_query({
-      ids => [$phab_bmo_user->id]
-      });
-
-    # Also load lando bot user to add as a member of each project
-    my $lando_bmo_user
-      = Bugzilla::User->new({name => LANDO_AUTOMATION_USER, cache => 1});
-    my $lando_user
-      = Bugzilla::Extension::PhabBugz::User->new_from_query({
-      ids => [$lando_bmo_user->id]
-      });
-
-    # secure-revision project that will be used for BMO group projects
-    my $secure_revision
-      = Bugzilla::Extension::PhabBugz::Project->new_from_query({
-      name => 'secure-revision'
-      });
-
-    foreach my $group (@$sync_groups) {
-
-      # Create group project if one does not yet exist
-      my $phab_project_name = 'bmo-' . $group->name;
-      my $project
-        = Bugzilla::Extension::PhabBugz::Project->new_from_query({
-        name => $phab_project_name
-        });
-
-      if (!$project) {
-        INFO("Project $phab_project_name not found. Creating.");
-        $project = Bugzilla::Extension::PhabBugz::Project->create({
-          name        => $phab_project_name,
-          description => 'BMO Security Group for ' . $group->name,
-          view_policy => $secure_revision->phid,
-          edit_policy => $secure_revision->phid,
-          join_policy => $secure_revision->phid
-        });
-      }
-      else {
-        # Make sure that the group project permissions are set properly
-        INFO("Updating permissions on $phab_project_name");
-        $project->set_policy('view', $secure_revision->phid);
-        $project->set_policy('edit', $secure_revision->phid);
-        $project->set_policy('join', $secure_revision->phid);
-      }
-
-      # Make sure phab-bot also a member of the new project group so that it can
-      # make policy changes to the private revisions
-      INFO("Checking project members for " . $project->name);
-      my $set_members = $self->get_group_members($group);
-      my @set_member_phids
-        = uniq map { $_->phid } (@$set_members, $phab_user, $lando_user);
-      my @current_member_phids = uniq map { $_->phid } @{$project->members};
-      my ($removed, $added) = diff_arrays(\@current_member_phids, \@set_member_phids);
-
-      if (@$added) {
-        INFO('Adding project members: ' . join(',', @$added));
-        $project->add_member($_) foreach @$added;
-      }
-
-      if (@$removed) {
-        INFO('Removing project members: ' . join(',', @$removed));
-        $project->remove_member($_) foreach @$removed;
-      }
-
-      if (@$added || @$removed) {
-        my $result = $project->update();
-        local Bugzilla::Logging->fields->{api_result} = $result;
-        INFO("Project " . $project->name . " updated");
-      }
-    }
+    $self->_sync_phabricator_group_projects();
   };
 
   if (Bugzilla->datadog) {
     my $dd = Bugzilla->datadog();
     $dd->increment('bugzilla.phabbugz.group_query_count');
+  }
+}
+
+sub _process_feed_story {
+  my ($self, $story_id, $author_phid, $object_phid, $story_text) = @_;
+
+  # Only interested in changes to revisions for now.
+  if ($object_phid !~ /^PHID-DREV/) {
+    INFO("SKIPPING: Not a revision change");
+    $self->save_last_id($story_id, 'feed');
+    return;
+  }
+
+  # Skip changes done by phab-bot user
+  # If changer does not exist in Bugzilla database
+  # we use the phab-bot account as the changer
+  my $author = Bugzilla::Extension::PhabBugz::User->new_from_query(
+    {phids => [$author_phid]});
+
+  if ($author && $author->bugzilla_id) {
+    if ($author->bugzilla_user->login eq PHAB_AUTOMATION_USER) {
+      INFO("SKIPPING: Change made by Phabricator user");
+      $self->save_last_id($story_id, 'feed');
+      return;
+    }
+  }
+  else {
+    my $phab_user = Bugzilla::User->new({name => PHAB_AUTOMATION_USER});
+    $author = Bugzilla::Extension::PhabBugz::User->new_from_query(
+      {ids => [$phab_user->id]});
+  }
+
+  # Load the revision from Phabricator
+  my $revision = Bugzilla::Extension::PhabBugz::Revision->new_from_query(
+    {phids => [$object_phid]});
+  $self->process_revision_change($revision, $author, $story_text);
+  $self->save_last_id($story_id, 'feed');
+}
+
+sub _sync_phabricator_group_projects {
+  my ($self) = @_;
+
+  my $sync_groups = Bugzilla::Group->match({isactive => 1, isbuggroup => 1});
+
+  # Load phab-bot Phabricator user to add as a member of each project group later
+  my $phab_bmo_user
+    = Bugzilla::User->new({name => PHAB_AUTOMATION_USER, cache => 1});
+  my $phab_user
+    = Bugzilla::Extension::PhabBugz::User->new_from_query({
+    ids => [$phab_bmo_user->id]
+    });
+
+  # Also load lando bot user to add as a member of each project
+  my $lando_bmo_user
+    = Bugzilla::User->new({name => LANDO_AUTOMATION_USER, cache => 1});
+  my $lando_user
+    = Bugzilla::Extension::PhabBugz::User->new_from_query({
+    ids => [$lando_bmo_user->id]
+    });
+
+  # secure-revision project that will be used for BMO group projects
+  my $secure_revision
+    = Bugzilla::Extension::PhabBugz::Project->new_from_query({
+    name => 'secure-revision'
+    });
+
+  foreach my $group (@$sync_groups) {
+
+    # Create group project if one does not yet exist
+    my $phab_project_name = 'bmo-' . $group->name;
+    my $project
+      = Bugzilla::Extension::PhabBugz::Project->new_from_query({
+      name => $phab_project_name
+      });
+
+    if (!$project) {
+      INFO("Project $phab_project_name not found. Creating.");
+      $project = Bugzilla::Extension::PhabBugz::Project->create({
+        name        => $phab_project_name,
+        description => 'BMO Security Group for ' . $group->name,
+        view_policy => $secure_revision->phid,
+        edit_policy => $secure_revision->phid,
+        join_policy => $secure_revision->phid
+      });
+    }
+    else {
+      # Make sure that the group project permissions are set properly
+      INFO("Updating permissions on $phab_project_name");
+      $project->set_policy('view', $secure_revision->phid);
+      $project->set_policy('edit', $secure_revision->phid);
+      $project->set_policy('join', $secure_revision->phid);
+    }
+
+    # Make sure phab-bot also a member of the new project group so that it can
+    # make policy changes to the private revisions
+    INFO("Checking project members for " . $project->name);
+    my $set_members = $self->get_group_members($group);
+    my @set_member_phids
+      = uniq map { $_->phid } (@$set_members, $phab_user, $lando_user);
+    my @current_member_phids = uniq map { $_->phid } @{$project->members};
+    my ($removed, $added) = diff_arrays(\@current_member_phids, \@set_member_phids);
+
+    if (@$added) {
+      INFO('Adding project members: ' . join(',', @$added));
+      $project->add_member($_) foreach @$added;
+    }
+
+    if (@$removed) {
+      INFO('Removing project members: ' . join(',', @$removed));
+      $project->remove_member($_) foreach @$removed;
+    }
+
+    if (@$added || @$removed) {
+      my $result = $project->update();
+      local Bugzilla::Logging->fields->{api_result} = $result;
+      INFO("Project " . $project->name . " updated");
+    }
   }
 }
 
