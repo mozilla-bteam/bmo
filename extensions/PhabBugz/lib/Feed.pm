@@ -198,11 +198,11 @@ sub feed_query {
       $self->process_revision_change($revision, $author, $story_text);
       $self->save_last_id($story_id, 'feed');
     };
+  }
 
-    if (Bugzilla->datadog) {
-      my $dd = Bugzilla->datadog();
-      $dd->increment('bugzilla.phabbugz.feed_query_count');
-    }
+  if (Bugzilla->datadog) {
+    my $dd = Bugzilla->datadog();
+    $dd->increment('bugzilla.phabbugz.feed_query_count');
   }
 }
 
@@ -274,6 +274,10 @@ sub group_query {
   # 4. Set project members to exact list including phab-bot and lando bot user
   # 5. Profit
 
+  # Use the read replica for all BMO database lookups (groups, users, members).
+  # Phabricator API calls inside this block (project create/update/add_member)
+  # are unaffected — they communicate directly with Phabricator and do not go
+  # through Bugzilla->dbh.
   with_readonly_database {
     my $sync_groups = Bugzilla::Group->match({isactive => 1, isbuggroup => 1});
 
