@@ -55,11 +55,9 @@ sub run_query {
   my ($self, $name) = @_;
   my $method = $name . '_query';
   try {
-    with_writable_database {
-      alarm(PHAB_TIMEOUT);
-      $CURRENT_QUERY = $name;
-      $self->$method;
-    };
+    alarm(PHAB_TIMEOUT);
+    $CURRENT_QUERY = $name;
+    $self->$method;
   }
   catch {
     FATAL($_);
@@ -166,42 +164,45 @@ sub feed_query {
     TRACE("OBJECT PHID: $object_phid");
     INFO("STORY: ($story_id) $story_text");
 
-    # Only interested in changes to revisions for now.
-    if ($object_phid !~ /^PHID-DREV/) {
-      INFO("SKIPPING: Not a revision change");
-      $self->save_last_id($story_id, 'feed');
-      next;
-    }
+    with_writable_database {
 
-    # Skip changes done by phab-bot user
-    # If changer does not exist in Bugzilla database
-    # we use the phab-bot account as the changer
-    my $author = Bugzilla::Extension::PhabBugz::User->new_from_query(
-      {phids => [$author_phid]});
-
-    if ($author && $author->bugzilla_id) {
-      if ($author->bugzilla_user->login eq PHAB_AUTOMATION_USER) {
-        INFO("SKIPPING: Change made by Phabricator user");
+      # Only interested in changes to revisions for now.
+      if ($object_phid !~ /^PHID-DREV/) {
+        INFO("SKIPPING: Not a revision change");
         $self->save_last_id($story_id, 'feed');
-        next;
+        return;
       }
-    }
-    else {
-      my $phab_user = Bugzilla::User->new({name => PHAB_AUTOMATION_USER});
-      $author = Bugzilla::Extension::PhabBugz::User->new_from_query(
-        {ids => [$phab_user->id]});
-    }
 
-    # Load the revision from Phabricator
-    my $revision = Bugzilla::Extension::PhabBugz::Revision->new_from_query(
-      {phids => [$object_phid]});
-    $self->process_revision_change($revision, $author, $story_text);
-    $self->save_last_id($story_id, 'feed');
-  }
+      # Skip changes done by phab-bot user
+      # If changer does not exist in Bugzilla database
+      # we use the phab-bot account as the changer
+      my $author = Bugzilla::Extension::PhabBugz::User->new_from_query(
+        {phids => [$author_phid]});
 
-  if (Bugzilla->datadog) {
-    my $dd = Bugzilla->datadog();
-    $dd->increment('bugzilla.phabbugz.feed_query_count');
+      if ($author && $author->bugzilla_id) {
+        if ($author->bugzilla_user->login eq PHAB_AUTOMATION_USER) {
+          INFO("SKIPPING: Change made by Phabricator user");
+          $self->save_last_id($story_id, 'feed');
+          return;
+        }
+      }
+      else {
+        my $phab_user = Bugzilla::User->new({name => PHAB_AUTOMATION_USER});
+        $author = Bugzilla::Extension::PhabBugz::User->new_from_query(
+          {ids => [$phab_user->id]});
+      }
+
+      # Load the revision from Phabricator
+      my $revision = Bugzilla::Extension::PhabBugz::Revision->new_from_query(
+        {phids => [$object_phid]});
+      $self->process_revision_change($revision, $author, $story_text);
+      $self->save_last_id($story_id, 'feed');
+    };
+
+    if (Bugzilla->datadog) {
+      my $dd = Bugzilla->datadog();
+      $dd->increment('bugzilla.phabbugz.feed_query_count');
+    }
   }
 }
 
@@ -273,81 +274,84 @@ sub group_query {
   # 4. Set project members to exact list including phab-bot and lando bot user
   # 5. Profit
 
-  my $sync_groups = Bugzilla::Group->match({isactive => 1, isbuggroup => 1});
+  with_readonly_database {
+    my $sync_groups = Bugzilla::Group->match({isactive => 1, isbuggroup => 1});
 
-  # Load phab-bot Phabricator user to add as a member of each project group later
-  my $phab_bmo_user
-    = Bugzilla::User->new({name => PHAB_AUTOMATION_USER, cache => 1});
-  my $phab_user
-    = Bugzilla::Extension::PhabBugz::User->new_from_query({
-    ids => [$phab_bmo_user->id]
-    });
+    # Load phab-bot Phabricator user to add as a member of each project group later
+    my $phab_bmo_user
+      = Bugzilla::User->new({name => PHAB_AUTOMATION_USER, cache => 1});
+    my $phab_user
+      = Bugzilla::Extension::PhabBugz::User->new_from_query({
+      ids => [$phab_bmo_user->id]
+      });
 
-  # Also load lando bot user to add as a member of each project
-  my $lando_bmo_user
-    = Bugzilla::User->new({name => LANDO_AUTOMATION_USER, cache => 1});
-  my $lando_user
-    = Bugzilla::Extension::PhabBugz::User->new_from_query({
-    ids => [$lando_bmo_user->id]
-    });
+    # Also load lando bot user to add as a member of each project
+    my $lando_bmo_user
+      = Bugzilla::User->new({name => LANDO_AUTOMATION_USER, cache => 1});
+    my $lando_user
+      = Bugzilla::Extension::PhabBugz::User->new_from_query({
+      ids => [$lando_bmo_user->id]
+      });
 
-  # secure-revision project that will be used for BMO group projects
-  my $secure_revision
-    = Bugzilla::Extension::PhabBugz::Project->new_from_query({
-    name => 'secure-revision'
-    });
-
-  foreach my $group (@$sync_groups) {
-
-    # Create group project if one does not yet exist
-    my $phab_project_name = 'bmo-' . $group->name;
-    my $project
+    # secure-revision project that will be used for BMO group projects
+    my $secure_revision
       = Bugzilla::Extension::PhabBugz::Project->new_from_query({
-      name => $phab_project_name
+      name => 'secure-revision'
       });
 
-    if (!$project) {
-      INFO("Project $phab_project_name not found. Creating.");
-      $project = Bugzilla::Extension::PhabBugz::Project->create({
-        name        => $phab_project_name,
-        description => 'BMO Security Group for ' . $group->name,
-        view_policy => $secure_revision->phid,
-        edit_policy => $secure_revision->phid,
-        join_policy => $secure_revision->phid
-      });
-    }
-    else {
-      # Make sure that the group project permissions are set properly
-      INFO("Updating permissions on $phab_project_name");
-      $project->set_policy('view', $secure_revision->phid);
-      $project->set_policy('edit', $secure_revision->phid);
-      $project->set_policy('join', $secure_revision->phid);
-    }
+    foreach my $group (@$sync_groups) {
 
-    # Make sure phab-bot also a member of the new project group so that it can
-    # make policy changes to the private revisions
-    INFO("Checking project members for " . $project->name);
-    my $set_members          = $self->get_group_members($group);
-    my @set_member_phids     = uniq map { $_->phid } (@$set_members, $phab_user, $lando_user);
-    my @current_member_phids = uniq map { $_->phid } @{$project->members};
-    my ($removed, $added) = diff_arrays(\@current_member_phids, \@set_member_phids);
+      # Create group project if one does not yet exist
+      my $phab_project_name = 'bmo-' . $group->name;
+      my $project
+        = Bugzilla::Extension::PhabBugz::Project->new_from_query({
+        name => $phab_project_name
+        });
 
-    if (@$added) {
-      INFO('Adding project members: ' . join(',', @$added));
-      $project->add_member($_) foreach @$added;
-    }
+      if (!$project) {
+        INFO("Project $phab_project_name not found. Creating.");
+        $project = Bugzilla::Extension::PhabBugz::Project->create({
+          name        => $phab_project_name,
+          description => 'BMO Security Group for ' . $group->name,
+          view_policy => $secure_revision->phid,
+          edit_policy => $secure_revision->phid,
+          join_policy => $secure_revision->phid
+        });
+      }
+      else {
+        # Make sure that the group project permissions are set properly
+        INFO("Updating permissions on $phab_project_name");
+        $project->set_policy('view', $secure_revision->phid);
+        $project->set_policy('edit', $secure_revision->phid);
+        $project->set_policy('join', $secure_revision->phid);
+      }
 
-    if (@$removed) {
-      INFO('Removing project members: ' . join(',', @$removed));
-      $project->remove_member($_) foreach @$removed;
-    }
+      # Make sure phab-bot also a member of the new project group so that it can
+      # make policy changes to the private revisions
+      INFO("Checking project members for " . $project->name);
+      my $set_members = $self->get_group_members($group);
+      my @set_member_phids
+        = uniq map { $_->phid } (@$set_members, $phab_user, $lando_user);
+      my @current_member_phids = uniq map { $_->phid } @{$project->members};
+      my ($removed, $added) = diff_arrays(\@current_member_phids, \@set_member_phids);
 
-    if (@$added || @$removed) {
-      my $result = $project->update();
-      local Bugzilla::Logging->fields->{api_result} = $result;
-      INFO("Project " . $project->name . " updated");
+      if (@$added) {
+        INFO('Adding project members: ' . join(',', @$added));
+        $project->add_member($_) foreach @$added;
+      }
+
+      if (@$removed) {
+        INFO('Removing project members: ' . join(',', @$removed));
+        $project->remove_member($_) foreach @$removed;
+      }
+
+      if (@$added || @$removed) {
+        my $result = $project->update();
+        local Bugzilla::Logging->fields->{api_result} = $result;
+        INFO("Project " . $project->name . " updated");
+      }
     }
-  }
+  };
 
   if (Bugzilla->datadog) {
     my $dd = Bugzilla->datadog();
@@ -1017,7 +1021,7 @@ sub get_last_id {
   my $last_id   = Bugzilla->dbh->selectrow_array("
         SELECT value FROM phabbugz WHERE name = ?", undef, $type_full);
   $last_id ||= 0;
-  TRACE(uc($type_full) . ": $last_id");
+  INFO(uc($type_full) . ": $last_id");
   return $last_id;
 }
 
@@ -1026,7 +1030,7 @@ sub save_last_id {
 
   # Store the largest last key so we can start from there in the next session
   my $type_full = $type . "_last_id";
-  TRACE("UPDATING " . uc($type_full) . ": $last_id");
+  INFO("UPDATING " . uc($type_full) . ": $last_id");
   Bugzilla->dbh->do("REPLACE INTO phabbugz (name, value) VALUES (?, ?)",
     undef, $type_full, $last_id);
 }
