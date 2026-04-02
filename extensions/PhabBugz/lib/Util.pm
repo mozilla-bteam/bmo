@@ -384,9 +384,8 @@ PROJECT: foreach my $project (@review_projects) {
     INFO('Sorted project members found: '
         . (join ', ', map { $_->name } @project_members));
 
-    # Find the last selected reviewer for the rotation group and author, if one exists.
-    my $author_phid = $revision->author->phid;
-    my $last_reviewer_phid = find_last_reviewer_phid($project, $author_phid);
+    # Find the last selected reviewer for the rotation group, if one exists.
+    my $last_reviewer_phid = find_last_reviewer_phid($project);
     INFO('Last reviewer phid found: '
         . ($last_reviewer_phid ? $last_reviewer_phid : 'None'));
 
@@ -452,24 +451,6 @@ PROJECT: foreach my $project (@review_projects) {
       }
     }
 
-    # Fallback: retry without skipping the last reviewer. Being the last
-    # reviewer is a preference for rotation, not a hard exclusion. This
-    # prevents the "not found" error when the group is small and other
-    # members are unavailable (Bug 2003867).
-    if ($last_reviewer_phid) {
-      INFO('No reviewer found, retrying without skipping last reviewer');
-      foreach my $member (@project_members) {
-        if ($member->phid ne $revision->author->phid
-          && $member->bugzilla_user->can_see_bug($revision->bug->id)
-          && $member->bugzilla_user->settings->{block_reviews}->{value} ne 'on')
-        {
-          INFO('Fallback: promoting member to reviewer: ' . $member->name);
-          set_new_reviewer($revision, $project, $member, $is_blocking, \@review_users);
-          next PROJECT;
-        }
-      }
-    }
-
     # If we got to this point, we did not find a suitable reviewer so
     # we will leave a comment in the revision with explanation. First
     # we need to check to make sure we have not already added this comment.
@@ -514,8 +495,8 @@ sub set_new_reviewer {
   $revision->add_subscriber($project->phid);
 
   # Store the data in the phab_reviewer_rotation table so they will be
-  # next time. Track per author so each author gets independent rotation.
-  update_last_reviewer_phid($project, $revision->author->phid, $member);
+  # next time.
+  update_last_reviewer_phid($project, $member);
 
   # Add new reviewer to review users list in case they are also
   # a member of the next review rotation group.
@@ -552,26 +533,25 @@ sub rotate_reviewer_list {
 }
 
 sub find_last_reviewer_phid {
-  my ($project, $author_phid) = @_;
-  INFO('Retrieving last reviewer for project ' . $project->phid
-    . ' and author ' . $author_phid);
+  my ($project) = @_;
+  INFO('Retrieving last reviewer for project ' . $project->phid);
   return Bugzilla->dbh->selectrow_array(
-    'SELECT user_phid FROM phab_reviewer_rotation WHERE project_phid = ? AND author_phid = ?',
-    undef, $project->phid, $author_phid);
+    'SELECT user_phid FROM phab_reviewer_rotation WHERE project_phid = ?',
+    undef, $project->phid);
 }
 
 sub update_last_reviewer_phid {
-  my ($project, $author_phid, $reviewer) = @_;
+  my ($project, $reviewer) = @_;
   my $dbh = Bugzilla->dbh;
 
-  INFO('Updating last reviewer ' . $reviewer->name
-    . ' for project ' . $project->name
-    . ' and author ' . $author_phid);
+  INFO(
+    'Updating last reviewer ' . $reviewer->name . ' for project ' . $project->name);
 
+  $dbh->do('DELETE FROM phab_reviewer_rotation WHERE project_phid = ?',
+    undef, $project->phid);
   $dbh->do(
-    'INSERT INTO phab_reviewer_rotation (project_phid, author_phid, user_phid) VALUES (?, ?, ?) '
-      . 'ON DUPLICATE KEY UPDATE user_phid = VALUES(user_phid)',
-    undef, $project->phid, $author_phid, $reviewer->phid);
+    'INSERT INTO phab_reviewer_rotation (project_phid, user_phid) VALUES (?, ?)',
+    undef, $project->phid, $reviewer->phid);
 }
 
 sub get_stack_reviewers {
