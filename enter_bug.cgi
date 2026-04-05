@@ -456,6 +456,22 @@ my @groups = $cgi->param('groups');
 if ($cloned_bug) {
   my @clone_groups = map { $_->name } @{$cloned_bug->groups_in};
 
+  # If the cloned bug was in its product's default security group and we're
+  # cloning into a different product, also add the target product's default
+  # security group. This ensures security bugs stay secure when cloned
+  # across products (Bug 2028240).
+  if ($cloned_bug->product_id != $product->id
+    && $product->can('default_security_group'))
+  {
+    my $source_sec_group = eval { $cloned_bug->product_obj->default_security_group };
+    if ($source_sec_group && grep { $_ eq $source_sec_group } @clone_groups) {
+      my $target_sec_group = eval { $product->default_security_group };
+      if ($target_sec_group && !grep { $_ eq $target_sec_group } @clone_groups) {
+        push(@clone_groups, $target_sec_group);
+      }
+    }
+  }
+
   # It doesn't matter if there are duplicate names, since all we check
   # for in the template is whether or not the group is set.
   push(@groups, @clone_groups);
