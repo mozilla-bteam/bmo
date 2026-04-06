@@ -4,6 +4,9 @@ build:
   os: "ubuntu-22.04"
   tools:
     python: "3.11"
+  jobs:
+    pre_install:
+      - pip install "setuptools>=65.0.0"
 
 sphinx:
   configuration: docs/en/rst/conf.py
