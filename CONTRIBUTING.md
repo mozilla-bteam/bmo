@@ -15,11 +15,8 @@ Should you wish to work on an issue, please claim it first by commenting on
 the bug that you want to work on it. This is to prevent duplicated
 efforts from contributors on the same issue.
 
-Head over to [BugsAhoy!](https://www.joshmatthews.net/bugsahoy/?bugzilla=1)
-to find good tasks to start with. If you come across words or jargon that do
-not make sense, please check [FIXME](FIXME) first. If
-there's no matching entry, please make a pull request to add one with the
-content `TODO` so we can correct that!
+Head over to [Codetribute](https://codetribute.mozilla.org/projects/bugzilla)
+to find good tasks to start with.
 
 See [`README.rst`](README.rst) for more information
 on how to start working on Bugzilla.
@@ -33,24 +30,28 @@ on how to start working on Bugzilla.
 - Commits should be as small as possible, while ensuring that each commit is
   correct independently (i.e., each commit should compile and pass tests).
 
+- **Start your PR title and commit message with `Bug XXXXXXX`** (e.g.
+  `Bug 1234567 - Fix the thing`). This triggers a webhook that automatically
+  links your PR to the corresponding Bugzilla bug.
+
 - If your patch is not getting reviewed or you need a specific person to review
   it, you can @-reply a reviewer asking for a review in the pull request or a
-  comment, or you can ask for a review in `#bugzilla` on `irc.mozilla.org`.
+  comment, or you can ask for a review in the
+  [bugzilla.mozilla.org](https://chat.mozilla.org/#/room/#bmo:mozilla.org)
+  channel on Matrix.
 
 - Add tests relevant to the fixed bug or new feature.
 
-For specific git instructions, see [GitHub workflow 101](https://github.com/servo/servo/wiki/Github-workflow).
+For specific git instructions, see [GitHub's guide to pull requests](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests).
 
 ## Conduct
 
 In all Bugzilla-related forums, we follow the
-[Mozilla Community Participation Guidelines](https://www.mozilla.org/en-US/about/governance/policies/participation/).
+[Mozilla Community Participation Guidelines](https://www.mozilla.org/about/governance/policies/participation/).
  For escalation or moderation issues, please contact us on Matrix or email bmo-mods@mozilla.com.
- To report incidents use [our online reporting tool](https://app.convercent.com/en-us/Anonymous/IssueIntake/Survey?organizationId=11885ec6-e5a6-e811-80e6-000d3ab6ebad&intakeChannelId=2d885ec6-e5a6-e811-80e6-000d3ab6ebad).
+ To report incidents, see [How to Report](https://www.mozilla.org/about/governance/policies/participation/reporting/).
  We will respond within 24 hours.
 
 ## Communication
 
-Bugzilla contributors frequent the `#bugzilla.mozilla.org` channel on [`chat.mozilla.org`](https://chat.mozilla.org/#/room/#bmo:mozilla.org).
-
-You can also join the [`bugzilla-dev` mailing list](developers@bugzilla.org).
+Bugzilla contributors frequent the [bugzilla.mozilla.org](https://chat.mozilla.org/#/room/#bmo:mozilla.org) channel on Matrix.
