@@ -285,7 +285,8 @@
     background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="rgb(160, 161, 162)" viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/><path fill="none" d="M0 0h24v24H0V0z"/></svg>');
   }
 
-  #private-bug-banner {
+  #private-bug-banner,
+  #confidential-bug-banner {
     --confidential-bug-background-color: #b595f5;
     --security-bug-background-color: #ffaf1a;
   }
@@ -1595,30 +1596,34 @@ input[type="radio"]:checked {
  * Private group banner for confidential and security bugs
  */
 
-:root:has(#private-bug-banner) {
+:root:has(#private-bug-banner),
+:root:has(#confidential-bug-banner) {
   --private-bug-banner-height: 24px;
 }
 
-#private-bug-banner {
+#private-bug-banner,
+#confidential-bug-banner {
   position: fixed;
   inset: var(--global-header-height) 0 auto;
   z-index: calc(var(--global-header-z-index) - 1);
   background-color: var(--confidential-bug-background-color);
   color: #111;
   box-sizing: border-box;
-  height: var(--private-bug-banner-height);
+  height: 24px;
   padding: 4px;
   text-align: center;
   -webkit-user-select: none;
   user-select: none;
 }
 
-#private-bug-banner .icon {
+#private-bug-banner .icon,
+#confidential-bug-banner .icon {
   font-family: var(--icon-font-family);
   vertical-align: text-bottom;
 }
 
-#private-bug-banner .icon::before {
+#private-bug-banner .icon::before,
+#confidential-bug-banner .icon::before {
   content: '\E897';
 }
 
@@ -1626,12 +1631,22 @@ input[type="radio"]:checked {
   background-color: var(--security-bug-background-color);
 }
 
-#private-bug-banner strong {
+#private-bug-banner strong,
+#confidential-bug-banner strong {
   text-transform: uppercase;
 }
 
-#private-bug-banner .groups {
+#private-bug-banner .groups,
+#confidential-bug-banner .groups {
   font-size: var(--font-size-small);
+}
+
+#private-bug-banner + #confidential-bug-banner {
+  inset: calc(var(--global-header-height) + 24px) 0 auto;
+}
+
+:root:has(#private-bug-banner):has(#confidential-bug-banner) {
+  --private-bug-banner-height: 48px;
 }
 
 /**
