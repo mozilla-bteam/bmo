@@ -401,22 +401,33 @@
   IF bug && bug.groups_in.size;
     has_banner = 1;
     is_security_bug = 0;
+    is_confidential_bug = 0;
     FOREACH group IN bug.groups_in;
-      is_security_bug = 1 IF group.secure_mail;
+      IF group.secure_mail;
+        is_security_bug = 1;
+      ELSE;
+        is_confidential_bug = 1;
+      END;
     END;
 %]
-  <div id="private-bug-banner" class="[% IF is_security_bug %]security[% ELSE %]confidential[% END %]">
+  [% IF is_security_bug %]
+  <div id="private-bug-banner" class="security">
     <span class="icon" aria-hidden="true"></span>
     <strong>
-      [% IF is_security_bug %]
-        Security Issue - <a href="https://firefox-source-docs.mozilla.org/bug-mgmt/processes/security-approval.html">
-        Approval Process</a>
-      [% ELSE %]
-        Confidential
-      [% END %]
+      Security Issue - <a href="https://firefox-source-docs.mozilla.org/bug-mgmt/processes/security-approval.html">
+      Approval Process</a>
     </strong>
   </div>
-[% END %]
+  [% END %]
+  [% IF is_confidential_bug %]
+  <div id="confidential-bug-banner">
+    <span class="icon" aria-hidden="true"></span>
+    <strong>
+      Confidential
+    </strong>
+  </div>
+  [% END %]
+[% END %] 
 
 <main id="bugzilla-body" tabindex="-1">
 
