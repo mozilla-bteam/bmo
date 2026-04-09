@@ -10,13 +10,21 @@ and be automatically redirected to the pull request.
 
 **Github Setup Instructions**
 
-* Create or identify a Bugzilla bot account to own this webhook.
+* Create or identify a Bugzilla bot account to own this webhook. The bot
+  account should be least-privileged — grant it only the permissions needed
+  for the integration.
 * A BMO admin must add that bot account to the ``github-webhook-bot`` group
   via the Users admin UI (``/editusers.cgi``).
 * Log in as the bot account and go to Preferences > API Keys.
 * Create a new API key with a descriptive label (e.g.
   ``github-webhook-mozilla-bteam-bmo``). Copy the key value — it will only
   be shown once.
+
+.. warning::
+  This API key also grants full access to the Bugzilla REST API as the bot
+  account. Treat it as a credential: store it only in the GitHub webhook
+  secret field and never share it.
+
 * From the repository main page, click on the Settings tab.
 * Click on Webhooks from the left side menu.
 * Click on the Add Webhook button near the top right.
@@ -124,13 +132,21 @@ repositories, a Firefox status flag may be set to FIXED.
 
 **Github Setup Instructions**
 
-* Create or identify a Bugzilla bot account to own this webhook.
+* Create or identify a Bugzilla bot account to own this webhook. The bot
+  account should be least-privileged — grant it only the permissions needed
+  for the integration.
 * A BMO admin must add that bot account to the ``github-webhook-bot`` group
   via the Users admin UI (``/editusers.cgi``).
 * Log in as the bot account and go to Preferences > API Keys.
 * Create a new API key with a descriptive label (e.g.
   ``github-webhook-mozilla-bteam-bmo-push``). Copy the key value — it will only
   be shown once.
+
+.. warning::
+  This API key also grants full access to the Bugzilla REST API as the bot
+  account. Treat it as a credential: store it only in the GitHub webhook
+  secret field and never share it.
+
 * From the repository main page, click on the Settings tab.
 * Click on Webhooks from the left side menu.
 * Click on the Add Webhook button near the top right.
