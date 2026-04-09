@@ -1088,11 +1088,17 @@ sub update_attachment {
     $bugs{$bug->id} = $bug;
   }
 
-  my $flags     = delete $params->{flags};
-  my $comment   = delete $params->{comment};
-  my $bug_flags = delete $params->{bug_flags};
+  my $flags       = delete $params->{flags};
+  my $comment     = delete $params->{comment};
+  my $is_markdown = delete $params->{is_markdown};
+  my $bug_flags   = delete $params->{bug_flags};
 
   $comment = $comment ? trim($comment) : '';
+
+  # Default to the system use_markdown setting, matching attachment.cgi.
+  if (!defined $is_markdown) {
+    $is_markdown = Bugzilla->params->{use_markdown} ? 1 : 0;
+  }
 
   # Update the values
   foreach my $attachment (@attachments) {
@@ -1138,9 +1144,10 @@ sub update_attachment {
       $bug->add_comment(
         $comment,
         {
-          isprivate  => $attachment->isprivate,
-          type       => CMT_ATTACHMENT_UPDATED,
-          extra_data => $attachment->id
+          isprivate   => $attachment->isprivate,
+          type        => CMT_ATTACHMENT_UPDATED,
+          extra_data  => $attachment->id,
+          is_markdown => $is_markdown,
         }
       );
     }

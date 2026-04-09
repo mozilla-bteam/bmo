@@ -305,6 +305,8 @@ file_name     string   The "file name" that will be displayed in the UI for this
                        attachment.
 summary       string   A short string describing the attachment.
 comment       string   An optional comment to add to the attachment's bug.
+is_markdown   boolean  If ``true``, the ``comment`` will be rendered as Markdown.
+                       Defaults to the system ``use_markdown`` setting.
 content_type  string   The MIME type of the attachment, like ``text/plain``
                        or ``image/png``.
 is_patch      boolean  ``true`` if Bugzilla should treat this attachment as a
