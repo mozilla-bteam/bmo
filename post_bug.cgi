@@ -198,8 +198,11 @@ if ($data_fh || $attach_text || $data_base64) {
       $attach_text =~ s/[\012\015]{1,2}/\012/g;
     }
     $data = $attach_text;
-    if ($attach_text =~ m{^https://github\.com/([\w\-]+)/([\w\-]+)/pull/(\d+)/?$}) {
-      $filename = "github-$1-$2-$3-url.txt";
+    if ($attach_text =~ m{^https://github\.com/([^/]+)/([^/]+)/pull/(\d+)/?$}i) {
+      my ($owner, $repo, $pr) = ($1, $2, $3);
+      $owner =~ s/[^A-Za-z0-9._-]/_/g;
+      $repo  =~ s/[^A-Za-z0-9._-]/_/g;
+      $filename = "github-$owner-$repo-$pr-url.txt";
     }
     else {
       $filename = "file_$id.txt";

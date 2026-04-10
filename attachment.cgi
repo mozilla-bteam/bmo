@@ -578,8 +578,11 @@ sub insert {
       $attach_text =~ s/[\012\015]{1,2}/\012/g;
     }
     $data = $attach_text;
-    if ($attach_text =~ m{^https://github\.com/([\w\-]+)/([\w\-]+)/pull/(\d+)/?$}) {
-      $filename = "github-$1-$2-$3-url.txt";
+    if ($attach_text =~ m{^https://github\.com/([^/]+)/([^/]+)/pull/(\d+)/?$}i) {
+      my ($github_owner, $github_repo, $github_pr) = ($1, $2, $3);
+      $github_owner =~ s/[^A-Za-z0-9._-]+/_/g;
+      $github_repo  =~ s/[^A-Za-z0-9._-]+/_/g;
+      $filename = "github-$github_owner-$github_repo-$github_pr-url.txt";
     }
     else {
       $filename = "file_$bugid.txt";
