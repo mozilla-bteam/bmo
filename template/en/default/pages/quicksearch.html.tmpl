@@ -169,7 +169,7 @@
   <script [% script_nonce FILTER none %]>
     window.addEventListener('DOMContentLoaded', () => {
       const $checkbox = document.getElementById('qs_show_inactive_fields');
-      const inactiveFields = document.querySelectorAll('.qs_fields tr[data-active="0"]');
+      const inactiveFields = document.querySelectorAll('.qs_fields tr[data-active="false"]');
 
       $checkbox.checked = false;
       $checkbox.addEventListener('change', () => {
@@ -193,7 +193,8 @@
     </thead>
     <tbody>
       [% FOREACH desc = table.keys.sort %]
-        <tr data-active="[% table.$desc.active %]" [% IF !table.$desc.active %]hidden[% END %]>
+        <tr data-active="[% table.$desc.active ? 'true' : 'false' %]"
+            [% IF !table.$desc.active %]hidden[% END %]>
           <td class="field_name">[% desc FILTER html %]</td>
           <td class="field_nickname">
             [% FOREACH nickname = table.$desc.nicknames %]
