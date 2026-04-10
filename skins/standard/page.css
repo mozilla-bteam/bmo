@@ -64,21 +64,11 @@
 }
 
 .qs_fields th {
-  padding: 0 .25em;
-}
-
-.qs_fields th.field_nickname {
   text-align: left;
 }
 
 .qs_fields td {
-  padding: .25em;
-  border-top: 1px solid var(--grid-border-color);
   line-height: var(--line-height-comfortable);
-}
-
-.qs_fields .field_name {
-  white-space: nowrap;
 }
 
 /***************/
