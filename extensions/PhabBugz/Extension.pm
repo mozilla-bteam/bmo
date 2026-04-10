@@ -137,7 +137,7 @@ sub object_before_create {
 
   # Only allow phab-bot to set content type to text/x-phabricator-request
   my $content_type = $params->{mimetype};
-  if ($content_type eq PHAB_CONTENT_TYPE
+  if ($content_type && $content_type eq PHAB_CONTENT_TYPE
     && !Bugzilla->request_cache->{allow_phab_revision_attachment})
   {
     Bugzilla->audit(
