@@ -59,7 +59,7 @@
   flex: auto;
 }
 
-.qs_fields tr[data-active="false"] {
+.qs_fields tr.inactive {
   opacity: 0.5;
 }
 
