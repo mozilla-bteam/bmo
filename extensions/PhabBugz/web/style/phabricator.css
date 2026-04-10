@@ -164,6 +164,7 @@ span[class^="review-status-icon-"]::before {
  */
 
 #module-phabricator-revisions .module-content {
+  overflow-x: auto;
   padding: 0;
 }
 
