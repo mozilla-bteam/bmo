@@ -296,7 +296,7 @@ Bugzilla.TextEditor = class TextEditor {
   textareaOnPaste(event) {
     const data = event.clipboardData?.getData('text');
 
-    if (data.match(/^https?:\/\//) && URL.canParse(data)) {
+    if (/^https?:\/\/\S+$/.test(data) && URL.canParse(data)) {
       const { start, end, beforeText, selectedText, afterText } = this.getSelection();
 
       if (selectedText) {
