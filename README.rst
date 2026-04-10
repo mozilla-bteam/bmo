@@ -6,9 +6,6 @@ BMO: bugzilla.mozilla.org
 
 BMO is Mozilla's highly customized version of Bugzilla.
 
-.. image:: https://circleci.com/gh/mozilla-bteam/bmo/tree/master.svg?style=svg
-    :target: https://circleci.com/gh/mozilla-bteam/bmo/tree/master
-
 .. image:: https://readthedocs.org/projects/bmo/badge/?version=latest
     :target: https://bmo.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
@@ -23,12 +20,11 @@ BMO is Mozilla's highly customized version of Bugzilla.
       2.1  Container Arguments
       2.2  Environmental Variables
       2.3  Logging Configuration
-      2.4  Persistent Data Volume
     3. Development Tips
       3.1  Testing Emails
     4. Administrative Tasks
       4.1  Generating cpanfile and cpanfile.snapshot files
-      4.2  Generating a new mozillabteam/bmo-perl-slim base image
+      4.2  Generating a new bmo-perl-slim base image
     5. Support
 
 If you want to contribute to BMO, you can fork this repo and get a local copy
@@ -40,9 +36,8 @@ Using Docker (For Development)
 
 This repository contains a docker-compose file that will create a local Bugzilla for testing.
 
-To use docker compose, ensure you have the latest Docker install for your environment
-(Linux, Windows, or Mac OS). If you are using Ubuntu, then you can read the next section
-to ensure that you have the correct docker setup.
+To use Docker Compose, ensure you have the latest `Docker <https://docs.docker.com/get-started/get-docker/>`_
+install for your environment (Linux, Windows, or macOS).
 
 .. code-block:: bash
 
@@ -82,32 +77,6 @@ Command+Shift+B on macOS. An `extension bundle`_ for VS Code is also available.
 .. _`extension bundle`: https://marketplace.visualstudio.com/items?itemName=dylanwh.bugzilla
 
 
-Ensuring your Docker setup on Ubuntu 16.04
-------------------------------------------
-
-On Ubuntu, Docker can be installed using apt-get. After installing, you need to do run these
-commands to ensure that it has installed fine:
-
-.. code-block:: bash
-
-    sudo groupadd docker # add a new group called "docker"
-    sudo gpasswd -a <your username> docker # add yourself to "docker" group
-
-Log in & log out of your system, so that changes in the above commands will  & do this:
-
-.. code-block:: bash
-
-    sudo service docker restart
-    docker run hello-world
-
-If the output of last command looks like this. then congrats you have installed
-docker successfully:
-
-.. code-block:: bash
-
-    Hello from Docker!
-    This message shows that your installation appears to be working correctly.
-
 Docker Container
 ================
 
@@ -120,7 +89,7 @@ Currently, the entry point takes a single command argument.
 This can be **httpd** or **shell**.
 
 httpd
-    This will start apache listening for connections on ``$PORT``
+    This will start the web server listening for connections on ``$PORT``
 shell
     This will start an interactive shell in the container. Useful for debugging.
 
@@ -192,7 +161,7 @@ BMO_attachment_base
 
   If you would like additional security on attachments to avoid this, set this
   parameter to an alternate URL for your Bugzilla that is not the same as
-  urlbase or sslbase. That is, a different domain name that resolves to this
+  urlbase. That is, a different domain name that resolves to this
   exact same Bugzilla installation.
 
   For added security, you can insert %bugid% into the URL, which will be
@@ -229,7 +198,7 @@ BMO_site_wide_secret
 BMO_jwt_secret
   This secret key is used by your installation for the creation and validation
   of jwts.  It's very important that this key is kept secret and it should be
-  different from the side_wide_secret. Changing this will invalidate all issued
+  different from the site_wide_secret. Changing this will invalidate all issued
   jwts, so all oauth clients will need to start over. As such it should be a
   high level of entropy, as it probably won't change for a very long time.
 
@@ -248,7 +217,7 @@ BMO_shadowdb
   The database name of the read-only database.
 
 BMO_shadowdbhost
-  The hotname or IP address of the read-only database.
+  The hostname or IP address of the read-only database.
 
 BMO_shadowdbport
    The port of the read-only database.
@@ -271,7 +240,7 @@ BMO_use_mailer_queue
   Should be 1 or 0. If 1, the job queue will be used. For testing, only set to 0 if the BMO_mail_delivery_method is None or Test.
 
 USE_NYTPROF
-  Write `Devel::NYTProf`_ profiles out for each requests.
+  Write `Devel::NYTProf`_ profiles out for each request.
   These will be named /app/data/nytprof.$host.$script.$n.$pid, where $host is
   the hostname of the container, script is the name of the script (without
   extension), $n is a number starting from 1 and incrementing for each
@@ -282,8 +251,8 @@ NYTPROF_DIR
 
 LOG4PERL_CONFIG_FILE
   Filename of `Log::Log4perl`_ config file.
-  It defaults to log4perl-syslog.conf.
-  If the file is given as a relative path, it will relative to the /app/conf/ directory.
+  It defaults to log4perl-json.conf.
+  If the file is given as a relative path, it will be relative to the /app/conf/ directory.
 
 .. _`Devel::NYTProf`: https://metacpan.org/pod/Devel::NYTProf
 
@@ -304,7 +273,7 @@ How Bugzilla logs is entirely configured by the environmental variable
 `LOG4PERL_CONFIG_FILE`.  This config file should be familiar to someone
 familiar with log4j, and it is extensively documented in `Log::Log4perl`_.
 
-Many examples are provided in the logs/ directory.
+Many examples are provided in the ``conf/`` directory.
 
 If multiple processes will need to log, it should be configured to log to a socket on port 5880.
 This will be the "cereal" daemon, which will only be started for jobqueue and httpd-type containers.
@@ -360,13 +329,13 @@ Technical Details
 
 This Docker environment is a very scaled-down version of production BMO.
 It uses roughly the same Perl dependencies as production. It is also
-configured to use memcached. The push connector is running but is not
-currently configured, nor is the Phabricator feed daemon.
+configured to use memcached. The push connector and Phabricator feed daemon
+are running but connect to local test services rather than production systems.
 
 It includes a couple example products, some fake users, and some of BMO's
 real groups. Email is disabled for all users; however, it is safe to enable
 email as the box is configured to send all email to the 'admin' user on the
-web vm.
+container.
 
 
 Administrative Tasks
@@ -380,30 +349,22 @@ Generating cpanfile and cpanfile.snapshot files
   docker build -t bmo-cpanfile -f Dockerfile.cpanfile .
   docker run -it -v "$(pwd):/app/result" bmo-cpanfile cp cpanfile cpanfile.snapshot /app/result
 
-Generating a new mozillabteam/bmo-perl-slim base image
+Generating a new bmo-perl-slim base image
 ------------------------------------------------------
 
-The mozillabteam/bmo-perl-slim image is stored in the Mozilla B-Team
-Docker Hub repository. It contains just the Perl dependencies in ``/app/local``
-and other Debian packages needed. Whenever the ``cpanfile`` and
-``cpanfile.snapshot`` files have been changed by the above steps after a
-succcessful merge, a new mozillabteam/bmo-perl-slim image will need to be
-built and pushed to Docker Hub.
+The ``bmo-perl-slim`` base image is stored in Google Artifact Registry. It
+contains just the Perl dependencies in ``/app/local`` and other Debian packages
+needed. Whenever the ``cpanfile`` and ``cpanfile.snapshot`` files have been
+changed by the above steps after a successful merge, a new image will need to
+be built and pushed.
 
-A Docker Hub organization administrator with the correct permissions will
-normally do the ``docker login`` and ``docker push``.
+This is handled by the ``BMO Perl Slim`` GitHub Actions workflow
+(``.github/workflows/perl-slim.yml``), which can be triggered manually via
+``workflow_dispatch``. It builds the image and pushes it to Google Artifact
+Registry with a date-stamped tag.
 
-The ``<DATE>`` value should be the current date in ``YYYYMMDD.X``
-format with X being the current iteration value. For example, ``20191209.1``.
-
-.. code-block:: bash
-
-  docker build -t mozillabteam/bmo-perl-slim:<DATE> -f Dockerfile.bmo-slim .
-  docker login
-  docker push mozillabteam/bmo-perl-slim:<DATE>
-
-After pushing to Docker Hub, you will need to update ``Dockerfile`` to include the new
-built image with correct date. Create a PR, review and commit the new change.
+After the new image is pushed, update the ``FROM`` line in ``Dockerfile`` to
+reference the new tag. Create a PR, review and commit the change.
 
 
 Support

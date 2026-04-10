@@ -208,6 +208,7 @@ my @users = (
     login    => 'github-automation@bmo.tld',
     realname => 'BMO Github Automation',
     password => '*',
+    api_key  => 'G1tHubAutomationApiKeyForWebhookTesting1',
   },
 
   map { {login => $_, realname => (split(/@/, $_, 2))[0], password => '*',} }
@@ -578,6 +579,20 @@ foreach my $field (@fields) {
 }
 
 
+##########################################################################
+# Add bot accounts to github-webhook-bot group
+##########################################################################
+print "adding github-automation to github-webhook-bot group...\n";
+my $github_bot_group = Bugzilla::Group->new({name => 'github-webhook-bot'});
+my $github_auto_user = Bugzilla::User->new({name => 'github-automation@bmo.tld'});
+if ($github_bot_group && $github_auto_user) {
+  $dbh->do(
+    'INSERT IGNORE INTO user_group_map (user_id, group_id, isbless, grant_type)
+          VALUES (?, ?, 0, ?)',
+    undef, $github_auto_user->id, $github_bot_group->id, GRANT_DIRECT
+  );
+}
+
 # Update default security group settings for new products
 my $default_security_group = Bugzilla::Group->new({name => 'core-security'});
 if ($default_security_group) {
@@ -609,8 +624,7 @@ my %set_params = (
     . '&long_desc_type=substring',
   defaultseverity      => 'normal',
   edit_comments_group  => 'editbugs',
-  github_pr_linking_enabled => 1,
-  github_pr_signature_secret => 'B1gS3cret!',
+  github_pr_linking_enabled   => 1,
   github_push_comment_enabled => 1,
   insidergroup         => 'core-security-release',
   last_change_time_non_bot_skip_list => 'automation@bmo.tld',

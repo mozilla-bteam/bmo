@@ -29,8 +29,14 @@
     "bug report."
 
   github_pr_signature_secret =>
-    "Shared secret needed for GitHub webhooks to post pull requests to Bugzilla " _
-    "creating an attachment or for pushes to add comments to a bug."
+    "DEPRECATED: Previously used as a shared secret for GitHub webhooks. " _
+    "Migrate to per-bot API keys instead: add bot accounts to the " _
+    "'github-webhook-bot' group, create a Bugzilla API key for each bot " _
+    "under Preferences > API Keys, and use that API key as the GitHub " _
+    "webhook secret. Individual keys can then be revoked without affecting " _
+    "other integrations. Clear this field once all webhooks are migrated. " _
+    "Note: Bugzilla API keys also grant full REST API access as the bot " _
+    "account, so the bot should be least-privileged and the key treated as a credential."
 
   github_push_comment_enabled =>
     "Enable the ability for Github pushes to add a comment to a related bug report."
