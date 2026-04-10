@@ -158,33 +158,61 @@
     standard field names always take precedence.</p>
 [% END %]
 
-[% SET field_table = {} %]
-[% FOREACH field = quicksearch_field_names.keys %]
-  [% description = field_descs.$field %]
-  [% field_table.$description = quicksearch_field_names.${field} %]
+[% IF quicksearch_extra_field_names %]
+  <p>
+    <label>
+      <input type="checkbox" id="qs_show_inactive_fields" />
+      Show Inactive Fields (You can still search on these fields)
+    </label>
+  </p>
+
+  <script [% script_nonce FILTER none %]>
+    window.addEventListener('DOMContentLoaded', () => {
+      const $checkbox = document.getElementById('qs_show_inactive_fields');
+      const inactiveFields = document.querySelectorAll('.qs_fields tr[data-active="0"]');
+
+      $checkbox.checked = false;
+      $checkbox.addEventListener('change', () => {
+        const showInactive = $checkbox.checked;
+
+        inactiveFields.forEach((row) => {
+          row.hidden = !showInactive;
+        });
+      });
+    });
+  </script>
 [% END %]
 
-
-<table cellspacing="0" cellpadding="0" border="0" class="qs_fields">
-  <thead>
-    <tr>
-      <th class="field_name">Field</th>
-      <th class="field_nickname">Field Name(s) For Search</th>
-    </tr>
-  </thead>
-  <tbody>
-    [% FOREACH desc = field_table.keys.sort %]
+[% BLOCK field_table %]
+  <table cellspacing="0" cellpadding="0" border="0" class="qs_fields">
+    <thead>
       <tr>
-        <td class="field_name">[% desc FILTER html %]</td>
-        <td class="field_nickname">
-          [% FOREACH nickname = field_table.$desc %]
-            <kbd>[% nickname FILTER html %]</kbd>
-            [% ",&nbsp; " UNLESS loop.last %]
-          [% END %]
+        <th class="field_name">Field</th>
+        <th class="field_nickname">Field Names For Search</th>
       </tr>
-    [% END %]
-  </tbody>
-</table>
+    </thead>
+    <tbody>
+      [% FOREACH desc = table.keys.sort %]
+        <tr data-active="[% table.$desc.active %]" [% IF !table.$desc.active %]hidden[% END %]>
+          <td class="field_name">[% desc FILTER html %]</td>
+          <td class="field_nickname">
+            [% FOREACH nickname = table.$desc.nicknames %]
+              <code>[% nickname FILTER html %]</code>
+              [% "<br>" UNLESS loop.last %]
+            [% END %]
+          </td>
+        </tr>
+      [% END %]
+    </tbody>
+  </table>
+[% END %]
+
+<div class="qs_field_table_wrapper">
+  [% INCLUDE field_table table = quicksearch_field_names %]
+  [% IF quicksearch_extra_field_names %]
+    [% INCLUDE field_table table = quicksearch_extra_field_names %]
+  [% END %]
+</div>
 
 <h2 id="advanced_features">Advanced Features</h2>
 

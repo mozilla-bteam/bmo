@@ -46,6 +46,23 @@
   margin-top: 1ex;
 }
 
+.qs_field_table_wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px;
+  overflow-y: auto;
+  max-height: 500px;
+}
+
+.qs_fields {
+  flex: auto;
+}
+
+.qs_fields tr[data-active="0"] {
+  opacity: 0.5;
+}
+
 .qs_fields th {
   padding: 0 .25em;
 }
