@@ -1147,7 +1147,7 @@ sub update_attachment {
           isprivate   => $attachment->isprivate,
           type        => CMT_ATTACHMENT_UPDATED,
           extra_data  => $attachment->id,
-          is_markdown => $is_markdown,
+          is_markdown => ($is_markdown ? 1 : 0),
         }
       );
     }
