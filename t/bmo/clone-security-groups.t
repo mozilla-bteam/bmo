@@ -63,9 +63,8 @@ if ($sec_group_a eq $sec_group_b) {
   $dbh->do(
     'UPDATE products SET security_group_id = ? WHERE id = ?',
     undef, $created_group->id, $prod_b->id);
-  # Clear cached value
-  delete $prod_b->{security_group_id};
-  delete $prod_b->{default_security_group_obj};
+  # Re-fetch product to pick up the new security_group_id
+  $prod_b = Bugzilla::Product->new({id => $prod_b->id});
 
   $sec_group_b = $prod_b->default_security_group;
 
@@ -102,22 +101,11 @@ my @bug_groups = map { $_->name } @{$bug->groups_in};
 ok((grep { $_ eq $sec_group_a } @bug_groups),
   "Bug is in source security group ($sec_group_a)");
 
-# ---- Test the clone logic (extracted from enter_bug.cgi) ----
+# ---- Test the clone logic via Bugzilla::Bug method ----
 
-# Simulate cross-product clone: bug from prod_a, target is prod_b
+# Cross-product clone: bug from prod_a, target is prod_b
 my @clone_groups = map { $_->name } @{$bug->groups_in};
-
-if ($bug->product_id != $prod_b->id
-  && $prod_b->can('default_security_group'))
-{
-  my $source_sec_group = eval { $bug->product_obj->default_security_group };
-  if ($source_sec_group && grep { $_ eq $source_sec_group } @clone_groups) {
-    my $target_sec_group = eval { $prod_b->default_security_group };
-    if ($target_sec_group && !grep { $_ eq $target_sec_group } @clone_groups) {
-      push(@clone_groups, $target_sec_group);
-    }
-  }
-}
+push(@clone_groups, $bug->extra_security_groups_for_clone($prod_b));
 
 ok((grep { $_ eq $sec_group_b } @clone_groups),
   "Cross-product clone adds target security group ($sec_group_b)");
@@ -127,18 +115,7 @@ ok((grep { $_ eq $sec_group_a } @clone_groups),
 # ---- Same-product clone should not duplicate ----
 
 my @same_groups = map { $_->name } @{$bug->groups_in};
-if ($bug->product_id != $prod_a->id
-  && $prod_a->can('default_security_group'))
-{
-  # This condition is false (same product), so nothing should happen
-  my $source_sec = eval { $bug->product_obj->default_security_group };
-  if ($source_sec && grep { $_ eq $source_sec } @same_groups) {
-    my $target_sec = eval { $prod_a->default_security_group };
-    if ($target_sec && !grep { $_ eq $target_sec } @same_groups) {
-      push(@same_groups, $target_sec);
-    }
-  }
-}
+push(@same_groups, $bug->extra_security_groups_for_clone($prod_a));
 
 is(scalar(grep { $_ eq $sec_group_a } @same_groups), 1,
   "Same-product clone doesn't duplicate security group");
@@ -157,17 +134,7 @@ my $public_bug = Bugzilla::Bug->create({
 });
 
 my @pub_groups = map { $_->name } @{$public_bug->groups_in};
-if ($public_bug->product_id != $prod_b->id
-  && $prod_b->can('default_security_group'))
-{
-  my $source_sec = eval { $public_bug->product_obj->default_security_group };
-  if ($source_sec && grep { $_ eq $source_sec } @pub_groups) {
-    my $target_sec = eval { $prod_b->default_security_group };
-    if ($target_sec && !grep { $_ eq $target_sec } @pub_groups) {
-      push(@pub_groups, $target_sec);
-    }
-  }
-}
+push(@pub_groups, $public_bug->extra_security_groups_for_clone($prod_b));
 
 ok(!(grep { $_ eq $sec_group_b } @pub_groups),
   "Public bug clone does NOT get target security group");
