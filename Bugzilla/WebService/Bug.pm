@@ -1006,11 +1006,17 @@ sub add_attachment {
   $dbh->bz_start_transaction();
   my $timestamp = $dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
 
-  my $flags     = delete $params->{flags};
-  my $comment   = delete $params->{comment};
-  my $bug_flags = delete $params->{bug_flags};
+  my $flags       = delete $params->{flags};
+  my $comment     = delete $params->{comment};
+  my $is_markdown = delete $params->{is_markdown};
+  my $bug_flags   = delete $params->{bug_flags};
 
   $comment = $comment ? trim($comment) : '';
+
+  # Default to the system use_markdown setting, matching attachment.cgi.
+  if (!defined $is_markdown) {
+    $is_markdown = Bugzilla->params->{use_markdown} ? 1 : 0;
+  }
 
   foreach my $bug (@bugs) {
     my $attachment = Bugzilla::Attachment->create({
@@ -1035,9 +1041,10 @@ sub add_attachment {
     $bug->add_comment(
       $comment,
       {
-        isprivate  => $attachment->isprivate,
-        type       => CMT_ATTACHMENT_CREATED,
-        extra_data => $attachment->id
+        isprivate   => $attachment->isprivate,
+        type        => CMT_ATTACHMENT_CREATED,
+        extra_data  => $attachment->id,
+        is_markdown => ($is_markdown ? 1 : 0),
       }
     );
 
