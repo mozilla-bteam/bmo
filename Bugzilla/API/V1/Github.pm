@@ -88,7 +88,7 @@ sub pull_request {
   my $title      = $payload->{pull_request}->{title};
   my $pr_number  = $payload->{pull_request}->{number};
   my $repository = $payload->{repository}->{full_name};
-  (my $repo_filename = $repository) =~ s|/|-|g;
+  (my $repo_filename = $repository) =~ s|/|_|g;
 
   # Find bug ID in the title and see if bug exists and client
   # can see it (non-fatal).

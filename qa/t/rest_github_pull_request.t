@@ -150,7 +150,7 @@ $t->get_ok(
   ->status_is(200)->json_is("/attachments/$attach_id/content_type",
   'text/x-github-pull-request')
   ->json_is("/attachments/$attach_id/description", $good_title)
-  ->json_is("/attachments/$attach_id/file_name", 'github-foo-bar-1-url.txt');
+  ->json_is("/attachments/$attach_id/file_name", 'github-foo_bar-1-url.txt');
 
 my $attach_data = $t->tx->res->json->{attachments}->{$attach_id}->{data};
 $attach_data = decode_base64($attach_data);
@@ -203,7 +203,7 @@ $t->get_ok(
   ->status_is(200)->json_is("/attachments/$attach_id_2/content_type",
   'text/x-github-pull-request')
   ->json_is("/attachments/$attach_id_2/description", $good_title)
-  ->json_is("/attachments/$attach_id_2/file_name", 'github-foo-bar-1-url.txt');
+  ->json_is("/attachments/$attach_id_2/file_name", 'github-foo_bar-1-url.txt');
 
 my $attach_data_2 = $t->tx->res->json->{attachments}->{$attach_id_2}->{data};
 $attach_data_2 = decode_base64($attach_data_2);
