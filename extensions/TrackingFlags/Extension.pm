@@ -90,9 +90,12 @@ sub page_before_template {
         $quicksearch_extra_field_names{$key} = {
           nicknames => $field_names->{$key}->{nicknames},
           db_field  => $db_field,
-          # A field is active if it’s an alias like `tracking-firefox-release` or if it’s a real
-          # field that’s active in the database
-          active    => $db_field =~ /_[a-z]+$/ || $active_flag_names{$db_field} ? 1 : 0,
+          # Check if the field is active by looking for a corresponding active tracking flag, e.g.
+          # `cf_tracking_firefox135`, or if it's one of the channel pronouns like
+          # `cf_tracking_firefox_release`, which are created by the BMO extension in
+          # install_update_db but not stored in the tracking flags table. The `$flag_pronoun_re`
+          # regex matches these pronoun fields precisely.
+          active    => ($active_flag_names{$db_field} || $db_field =~ $flag_pronoun_re) ? 1 : 0,
         };
 
         delete $field_names->{$key};
