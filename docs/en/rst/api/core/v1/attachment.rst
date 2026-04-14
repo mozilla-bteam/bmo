@@ -187,6 +187,9 @@ name              type     description
 **content_type**  string   The MIME type of the attachment, like ``text/plain``
                            or ``image/png``.
 comment           string   A comment to add along with this attachment.
+is_markdown       boolean  If ``true``, the ``comment`` will be rendered as
+                           Markdown. Defaults to the system ``use_markdown``
+                           setting.
 is_patch          boolean  ``true`` if Bugzilla should treat this attachment as a
                            patch. If you specify this, you do not need to specify
                            a ``content_type``. The ``content_type`` of the
@@ -305,6 +308,8 @@ file_name     string   The "file name" that will be displayed in the UI for this
                        attachment.
 summary       string   A short string describing the attachment.
 comment       string   An optional comment to add to the attachment's bug.
+is_markdown   boolean  If ``true``, the ``comment`` will be rendered as Markdown.
+                       Defaults to the system ``use_markdown`` setting.
 content_type  string   The MIME type of the attachment, like ``text/plain``
                        or ``image/png``.
 is_patch      boolean  ``true`` if Bugzilla should treat this attachment as a
