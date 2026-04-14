@@ -21,7 +21,30 @@ our @EXPORT = qw( $cf_visible_in_products
   %create_bug_formats
   @default_named_queries
   %autodetect_attach_urls
-  @triage_keyword_products );
+  @triage_keyword_products
+  PRODUCT_CHANNELS
+  $flag_pronoun_re );
+
+use constant PRODUCT_CHANNELS => {
+  'firefox' => {
+    'nightly' => {label => 'Nightly', json_key => 'FIREFOX_NIGHTLY'},
+    'beta'    => {label => 'Beta',    json_key => 'LATEST_FIREFOX_DEVEL_VERSION'},
+    'release' => {label => 'Release', json_key => 'LATEST_FIREFOX_VERSION'},
+    'esr'     => {label => 'ESR',     json_key => 'FIREFOX_ESR'},
+  },
+  'thunderbird' => {
+    'nightly' => {label => 'Daily',   json_key => 'LATEST_THUNDERBIRD_NIGHTLY_VERSION'},
+    'beta'    => {label => 'Beta',    json_key => 'LATEST_THUNDERBIRD_DEVEL_VERSION'},
+    'release' => {label => 'Release', json_key => 'LATEST_THUNDERBIRD_VERSION'},
+  },
+};
+
+our $flag_pronoun_re = do {
+  # Get the Firefox channel list and build a regex pattern. Thunderbird doesn’t
+  # have ESR now but it won't be practically a problem.
+  my $channels_re = join('|', keys %{PRODUCT_CHANNELS->{'firefox'}});
+  qr/^cf_(status|tracking)_(firefox|thunderbird)_($channels_re)$/;
+};
 
 # Creating an attachment whose contents is a URL matching one of these regexes
 # will result in the user being redirected to that URL when viewing the
