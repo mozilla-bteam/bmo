@@ -64,20 +64,6 @@ use Bugzilla::Extension::BMO::Constants;
 use Bugzilla::Extension::BMO::FakeBug;
 use Bugzilla::Extension::BMO::Data;
 
-use constant PRODUCT_CHANNELS => {
-  'firefox' => {
-    'nightly' => {label => 'Nightly', json_key => 'FIREFOX_NIGHTLY'},
-    'beta'    => {label => 'Beta',    json_key => 'LATEST_FIREFOX_DEVEL_VERSION'},
-    'release' => {label => 'Release', json_key => 'LATEST_FIREFOX_VERSION'},
-    'esr'     => {label => 'ESR',     json_key => 'FIREFOX_ESR'},
-  },
-  'thunderbird' => {
-    'nightly' => {label => 'Daily',   json_key => 'LATEST_THUNDERBIRD_NIGHTLY_VERSION'},
-    'beta'    => {label => 'Beta',    json_key => 'LATEST_THUNDERBIRD_DEVEL_VERSION'},
-    'release' => {label => 'Release', json_key => 'LATEST_THUNDERBIRD_VERSION'},
-  },
-};
-
 our $VERSION = '0.1';
 
 #
@@ -2765,24 +2751,19 @@ sub search_params_to_data_structure {
   my ($self, $args) = @_;
   my $params = $args->{search}->_params;
 
-  # Get the Firefox channel list and put it a regex pattern
-  # Thunderbird doesn't have ESR now but it won't be practically a problem
-  my $channels_re = join('|', keys %{PRODUCT_CHANNELS->{'firefox'}});
-  my $flag_re     = qr/^cf_(status|tracking)_(firefox|thunderbird)_($channels_re)$/;
-
   # Replace pronouns for Firefox/Thunderbird Status/Tracking Flags, for example,
   # cf_tracking_firefox_nightly -> cf_tracking_firefox68
   # cf_tracking_firefox_esr     -> cf_tracking_firefox_esr60
   for my $key (keys %$params) {
     # Replace keys
-    if ($key =~ $flag_re) {
+    if ($key =~ $flag_pronoun_re) {
       my ($canonical, $alias) = _get_search_param_name($1, $2, $3);
       ThrowUserError('product_version_pronouns_unavailable') unless $canonical;
       $params->{$canonical} = delete $params->{$key};
     }
 
     # Replace values (custom search)
-    if ($params->{$key} =~ $flag_re) {
+    if ($params->{$key} =~ $flag_pronoun_re) {
       my ($canonical, $alias) = _get_search_param_name($1, $2, $3);
       ThrowUserError('product_version_pronouns_unavailable') unless $canonical;
       $params->{$key} = $canonical;

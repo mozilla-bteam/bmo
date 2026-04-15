@@ -23,6 +23,7 @@ use Bugzilla;
 use Bugzilla::Error;
 use Bugzilla::Hook;
 use Bugzilla::Search::Quicksearch;
+use Bugzilla::Util qw(template_var);
 
 ###############
 # Subroutines #
@@ -31,14 +32,17 @@ use Bugzilla::Search::Quicksearch;
 # For quicksearch.html.
 sub quicksearch_field_names {
   my $fields = Bugzilla::Search::Quicksearch->FIELD_MAP;
+  my $field_descs = template_var('field_descs');
   my %fields_reverse;
 
   # Put longer names before shorter names.
   my @nicknames = sort { length($b) <=> length($a) } (keys %$fields);
   foreach my $nickname (@nicknames) {
     my $db_field = $fields->{$nickname};
-    $fields_reverse{$db_field} ||= [];
-    push(@{$fields_reverse{$db_field}}, $nickname);
+    my $key = $field_descs->{$db_field} || $db_field;
+
+    $fields_reverse{$key} ||= {nicknames => [], db_field => $db_field, active => 1};
+    push(@{$fields_reverse{$key}->{nicknames}}, $nickname);
   }
   return \%fields_reverse;
 }
@@ -70,7 +74,12 @@ if ($id) {
     ThrowCodeError("bad_page_cgi_id");
   }
 
-  my %vars = (quicksearch_field_names => \&quicksearch_field_names,);
+  my %vars;
+
+  if ($id eq 'quicksearch.html') {
+    $vars{quicksearch_field_names} = quicksearch_field_names();
+  }
+
   Bugzilla::Hook::process('page_before_template',
     {page_id => $id, vars => \%vars});
 
