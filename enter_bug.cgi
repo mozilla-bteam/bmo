@@ -456,6 +456,9 @@ my @groups = $cgi->param('groups');
 if ($cloned_bug) {
   my @clone_groups = map { $_->name } @{$cloned_bug->groups_in};
 
+  # Ensure security bugs stay secure when cloned across products (Bug 2028240).
+  push(@clone_groups, $cloned_bug->extra_security_groups_for_clone($product));
+
   # It doesn't matter if there are duplicate names, since all we check
   # for in the template is whether or not the group is set.
   push(@groups, @clone_groups);

@@ -4352,6 +4352,25 @@ sub in_group {
   return grep($_->id == $group->id, @{$self->groups_in}) ? 1 : 0;
 }
 
+# Returns extra group names to add when cloning $self into $target_product.
+# If the bug is in its source product's default security group and the target
+# product has a different one, the target group name is returned so the clone
+# stays secure (Bug 2028240).
+sub extra_security_groups_for_clone {
+  my ($self, $target_product) = @_;
+  return () if $self->product_id == $target_product->id;
+  return () unless $target_product->can('default_security_group');
+
+  my @clone_groups = map { $_->name } @{$self->groups_in};
+  my $source_sec = eval { $self->product_obj->default_security_group };
+  return () unless $source_sec && grep { $_ eq $source_sec } @clone_groups;
+
+  my $target_sec = eval { $target_product->default_security_group };
+  return () unless $target_sec && !grep { $_ eq $target_sec } @clone_groups;
+
+  return ($target_sec);
+}
+
 sub user {
   my $self = shift;
   return $self->{'user'} if exists $self->{'user'};
