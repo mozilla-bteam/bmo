@@ -14,12 +14,12 @@ use 5.10.1;
 use strict;
 use warnings;
 
-use lib qw(. lib local/lib/perl5 t);
-use Support::Files;
+use lib qw(. lib local/lib/perl5);
+use Bugzilla::Test::Files;
 
 # -1 because 006spellcheck.t must not be checked.
-use Test::More tests => scalar(@Support::Files::testitems)
-  + scalar(@Support::Files::test_files) - 1;
+use Test::More tests => scalar(@Bugzilla::Test::Files::testitems)
+  + scalar(@Bugzilla::Test::Files::test_files) - 1;
 
 # Capture the TESTOUT from Test::More or Test::Builder for printing errors.
 # This will handle verbosity for us automatically.
@@ -37,7 +37,7 @@ my $fh;
   }
 }
 
-my @testitems = (@Support::Files::testitems, @Support::Files::test_files);
+my @testitems = (@Bugzilla::Test::Files::testitems, @Bugzilla::Test::Files::test_files);
 
 #add the words to check here:
 my @evilwords = qw(

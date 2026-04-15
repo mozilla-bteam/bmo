@@ -9,13 +9,13 @@
 use 5.10.1;
 use strict;
 use warnings;
-use lib qw(. lib local/lib/perl5 qa/t/lib);
+use lib qw(. lib local/lib/perl5);
 
 use Bugzilla;
 BEGIN { Bugzilla->extensions }
 
 use Mojo::Util qw(dumper);
-use QA::Util;
+use Bugzilla::QA::Util;
 use Test::More 'no_plan';
 use Test::Mojo;
 

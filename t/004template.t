@@ -13,9 +13,9 @@ use 5.10.1;
 use strict;
 use warnings;
 
-use lib qw(. lib local/lib/perl5 t);
+use lib qw(. lib local/lib/perl5);
 
-use Support::Templates;
+use Bugzilla::Test::Templates;
 
 # Bug 137589 - Disable command-line input of CGI.pm when testing
 use CGI qw(-no_debug);

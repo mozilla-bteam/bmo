@@ -11,8 +11,8 @@
 
 use strict;
 use warnings;
-use lib qw(lib ../../lib ../../local/lib/perl5);
-use QA::Util;
+use lib qw(. lib);
+use Bugzilla::QA::Util;
 use Test::More tests => 29;
 my ($config, $xmlrpc, $jsonrpc, $jsonrpc_get) = get_rpc_clients();
 

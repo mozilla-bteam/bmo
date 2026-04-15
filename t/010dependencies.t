@@ -14,9 +14,9 @@ use 5.10.1;
 use strict;
 use warnings;
 
-use lib qw(. lib local/lib/perl5 t);
+use lib qw(. lib local/lib/perl5);
 
-use Support::Files;
+use Bugzilla::Test::Files;
 use Test::More qw(no_plan);
 
 my %mods;
@@ -34,7 +34,7 @@ use constant BASE_REGEX =>
   qr/^use (?:base|parent) (?:-norequire, )?qw\(([^\)]+)/;
 
 # Extract all Perl modules.
-foreach my $file (@Support::Files::testitems) {
+foreach my $file (@Bugzilla::Test::Files::testitems) {
   if ($file =~ /^(.*)\.pm$/) {
     my $module = $1;
     $module =~ s#/#::#g;

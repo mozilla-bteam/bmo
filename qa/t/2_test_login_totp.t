@@ -7,7 +7,7 @@
 
 use strict;
 use warnings;
-use lib qw(lib ../../lib ../../local/lib/perl5);
+use lib qw(. lib);
 
 use Bugzilla;
 use Bugzilla::Util qw(template_var);
@@ -15,7 +15,7 @@ use Bugzilla::Util qw(template_var);
 use Auth::GoogleAuth;
 use Test::More "no_plan";
 
-use QA::Util;
+use Bugzilla::QA::Util;
 
 my ($sel, $config) = get_selenium();
 
