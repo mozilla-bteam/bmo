@@ -197,8 +197,8 @@ if ($data_fh || $attach_text || $data_base64) {
     if (scalar($cgi->param('ispatch'))) {
       $attach_text =~ s/[\012\015]{1,2}/\012/g;
     }
-    $data     = $attach_text;
-    $filename = "file_$id.txt";
+    $data = $attach_text;
+    $filename = github_pr_filename($attach_text) || "file_$id.txt";
   }
   elsif ($data_base64) {
     $data = decode_base64($data_base64);
