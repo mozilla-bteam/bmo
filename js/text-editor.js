@@ -78,6 +78,10 @@ Bugzilla.TextEditor = class TextEditor {
       this.textareaOnInput(event);
     });
 
+    this.$textarea.addEventListener('paste', (/** @type {ClipboardEvent} */ event) => {
+      this.textareaOnPaste(event);
+    });
+
     this.togglePreviewTab();
 
     if (this.useMarkdown) {
@@ -282,6 +286,28 @@ Bugzilla.TextEditor = class TextEditor {
     }
 
     this.togglePreviewTab();
+  }
+
+  /**
+   * Called whenever content is pasted to the `<textarea>`. If the pasted content is a URL and there
+   * is a selection, insert a Markdown link with the URL and the selected text as the label.
+   * @param {ClipboardEvent} event `paste` event.
+   */
+  textareaOnPaste(event) {
+    const data = event.clipboardData?.getData('text');
+
+    if (/^https?:\/\/\S+$/.test(data) && URL.canParse(data)) {
+      const { start, end, beforeText, selectedText, afterText } = this.getSelection();
+
+      if (selectedText) {
+        event.preventDefault();
+
+        this.updateText(`${beforeText}[${selectedText}](${data})${afterText}`, {
+          start: start + 1,
+          end: end + 1,
+        });
+      }
+    }
   }
 
   /**

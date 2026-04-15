@@ -2592,8 +2592,8 @@ sub install_filesystem {
   my $version_obj = {
     source  => $contribute->{repository}{url},
     version => BUGZILLA_VERSION,
-    commit  => $ENV{CIRCLE_SHA1} // 'unknown',
-    build   => $ENV{CIRCLE_BUILD_URL} // 'unknown',
+    commit  => $ENV{GITHUB_SHA} // 'unknown',
+    build   => $ENV{GITHUB_RUN_URL} // 'unknown',
   };
 
   $create_files->{'version.json'} = {

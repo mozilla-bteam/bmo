@@ -55,11 +55,9 @@ sub run_query {
   my ($self, $name) = @_;
   my $method = $name . '_query';
   try {
-    with_writable_database {
-      alarm(PHAB_TIMEOUT);
-      $CURRENT_QUERY = $name;
-      $self->$method;
-    };
+    alarm(PHAB_TIMEOUT);
+    $CURRENT_QUERY = $name;
+    $self->$method;
   }
   catch {
     FATAL($_);
@@ -166,37 +164,10 @@ sub feed_query {
     TRACE("OBJECT PHID: $object_phid");
     INFO("STORY: ($story_id) $story_text");
 
-    # Only interested in changes to revisions for now.
-    if ($object_phid !~ /^PHID-DREV/) {
-      INFO("SKIPPING: Not a revision change");
-      $self->save_last_id($story_id, 'feed');
-      next;
-    }
-
-    # Skip changes done by phab-bot user
-    # If changer does not exist in Bugzilla database
-    # we use the phab-bot account as the changer
-    my $author = Bugzilla::Extension::PhabBugz::User->new_from_query(
-      {phids => [$author_phid]});
-
-    if ($author && $author->bugzilla_id) {
-      if ($author->bugzilla_user->login eq PHAB_AUTOMATION_USER) {
-        INFO("SKIPPING: Change made by Phabricator user");
-        $self->save_last_id($story_id, 'feed');
-        next;
-      }
-    }
-    else {
-      my $phab_user = Bugzilla::User->new({name => PHAB_AUTOMATION_USER});
-      $author = Bugzilla::Extension::PhabBugz::User->new_from_query(
-        {ids => [$phab_user->id]});
-    }
-
-    # Load the revision from Phabricator
-    my $revision = Bugzilla::Extension::PhabBugz::Revision->new_from_query(
-      {phids => [$object_phid]});
-    $self->process_revision_change($revision, $author, $story_text);
-    $self->save_last_id($story_id, 'feed');
+    with_writable_database {
+      $self->_process_feed_story($story_id, $author_phid, $object_phid,
+        $story_text);
+    };
   }
 
   if (Bugzilla->datadog) {
@@ -273,6 +244,59 @@ sub group_query {
   # 4. Set project members to exact list including phab-bot and lando bot user
   # 5. Profit
 
+  # Use the read replica for all BMO database lookups (groups, users, members).
+  # Phabricator API calls inside this block (project create/update/add_member)
+  # are unaffected — they communicate directly with Phabricator and do not go
+  # through Bugzilla->dbh.
+  with_readonly_database {
+    $self->_sync_phabricator_group_projects();
+  };
+
+  if (Bugzilla->datadog) {
+    my $dd = Bugzilla->datadog();
+    $dd->increment('bugzilla.phabbugz.group_query_count');
+  }
+}
+
+sub _process_feed_story {
+  my ($self, $story_id, $author_phid, $object_phid, $story_text) = @_;
+
+  # Only interested in changes to revisions for now.
+  if ($object_phid !~ /^PHID-DREV/) {
+    INFO("SKIPPING: Not a revision change");
+    $self->save_last_id($story_id, 'feed');
+    return;
+  }
+
+  # Skip changes done by phab-bot user
+  # If changer does not exist in Bugzilla database
+  # we use the phab-bot account as the changer
+  my $author = Bugzilla::Extension::PhabBugz::User->new_from_query(
+    {phids => [$author_phid]});
+
+  if ($author && $author->bugzilla_id) {
+    if ($author->bugzilla_user->login eq PHAB_AUTOMATION_USER) {
+      INFO("SKIPPING: Change made by Phabricator user");
+      $self->save_last_id($story_id, 'feed');
+      return;
+    }
+  }
+  else {
+    my $phab_user = Bugzilla::User->new({name => PHAB_AUTOMATION_USER});
+    $author = Bugzilla::Extension::PhabBugz::User->new_from_query(
+      {ids => [$phab_user->id]});
+  }
+
+  # Load the revision from Phabricator
+  my $revision = Bugzilla::Extension::PhabBugz::Revision->new_from_query(
+    {phids => [$object_phid]});
+  $self->process_revision_change($revision, $author, $story_text);
+  $self->save_last_id($story_id, 'feed');
+}
+
+sub _sync_phabricator_group_projects {
+  my ($self) = @_;
+
   my $sync_groups = Bugzilla::Group->match({isactive => 1, isbuggroup => 1});
 
   # Load phab-bot Phabricator user to add as a member of each project group later
@@ -327,8 +351,9 @@ sub group_query {
     # Make sure phab-bot also a member of the new project group so that it can
     # make policy changes to the private revisions
     INFO("Checking project members for " . $project->name);
-    my $set_members          = $self->get_group_members($group);
-    my @set_member_phids     = uniq map { $_->phid } (@$set_members, $phab_user, $lando_user);
+    my $set_members = $self->get_group_members($group);
+    my @set_member_phids
+      = uniq map { $_->phid } (@$set_members, $phab_user, $lando_user);
     my @current_member_phids = uniq map { $_->phid } @{$project->members};
     my ($removed, $added) = diff_arrays(\@current_member_phids, \@set_member_phids);
 
@@ -347,11 +372,6 @@ sub group_query {
       local Bugzilla::Logging->fields->{api_result} = $result;
       INFO("Project " . $project->name . " updated");
     }
-  }
-
-  if (Bugzilla->datadog) {
-    my $dd = Bugzilla->datadog();
-    $dd->increment('bugzilla.phabbugz.group_query_count');
   }
 }
 
@@ -433,30 +453,32 @@ sub readable_answer {
   return 'no';
 }
 
+sub find_uplift_key {
+  my ($question_answers_mapping, $keys) = @_;
+  foreach my $key (@$keys) {
+    return $key if exists $question_answers_mapping->{$key};
+  }
+  return undef;
+}
+
+sub get_uplift_keys_by_label {
+  my ($label) = @_;
+  foreach my $question_def (@{UPLIFT_QUESTIONS()}) {
+    return $question_def->{keys} if $question_def->{label} eq $label;
+  }
+  return [];
+}
+
 sub format_uplift_request_as_markdown {
   my ($repo_short_name, $question_answers_mapping) = @_;
 
-  # Form content will come across a JSON object. Ensure the question/response pairs
-  # are added to the markdown output in the correct order.
-  my @uplift_questions_order = (
-    "User impact if declined",
-    "Code covered by automated testing",
-    "Fix verified in Nightly",
-    "Needs manual QE test",
-    "Steps to reproduce for manual QE testing",
-    "Risk associated with taking this patch",
-    "Explanation of risk level",
-    "String changes made/needed",
-    "Is Android affected?",
-  );
-
   my $comment = "### $repo_short_name Uplift Approval Request\n";
 
-  foreach my $question (@uplift_questions_order) {
-    my $answer = $question_answers_mapping->{$question};
-    my $answer_string = readable_answer($answer);
-
-    $comment .= "- **$question**: $answer_string\n";
+  foreach my $question_def (@{UPLIFT_QUESTIONS()}) {
+    my $key = find_uplift_key($question_answers_mapping, $question_def->{keys});
+    next unless defined $key;
+    my $answer_string = readable_answer($question_answers_mapping->{$key});
+    $comment .= "- **$question_def->{label}**: $answer_string\n";
   }
 
   return $comment;
@@ -522,7 +544,11 @@ sub process_uplift_request_form_change {
   }
 
   # If manual QE is required, set the Bugzilla flag.
-  if ($revision->uplift_request->{'Needs manual QE test'}) {
+  # The value may be a boolean (old format) or a string like "yes"/"no" (new format).
+  my $qe_key = find_uplift_key($revision->uplift_request, get_uplift_keys_by_label(UPLIFT_QE_TEST_LABEL));
+  my $qe_value = $qe_key ? $revision->uplift_request->{$qe_key} : undef;
+  my $needs_qe = $qe_value && ($qe_value eq '1' || lc($qe_value) eq 'yes');
+  if ($needs_qe) {
     INFO('Needs manual QE test is set.');
 
     my @old_flags;
@@ -952,10 +978,10 @@ sub new_stories {
   my $data = {view => 'text'};
   $data->{after} = ($after ? $after : 1);
 
-  # For a specific type of error, we will retry up to 5 times
+  # For a specific type of error, we will retry up to MAX_FEED_RETRIES times
   # before failing.
   my $result;
-  foreach my $try (1 .. 5) {
+  foreach my $try (1 .. PHAB_FEED_MAX_RETRIES) {
     $result = request('feed.query_id', $data, 1);    # Do not throw exception yet
 
     # Skip if an error was not returned or the error is not an invalid object error
@@ -1011,7 +1037,7 @@ sub get_last_id {
   my $last_id   = Bugzilla->dbh->selectrow_array("
         SELECT value FROM phabbugz WHERE name = ?", undef, $type_full);
   $last_id ||= 0;
-  TRACE(uc($type_full) . ": $last_id");
+  INFO(uc($type_full) . ": $last_id");
   return $last_id;
 }
 
@@ -1020,7 +1046,7 @@ sub save_last_id {
 
   # Store the largest last key so we can start from there in the next session
   my $type_full = $type . "_last_id";
-  TRACE("UPDATING " . uc($type_full) . ": $last_id");
+  INFO("UPDATING " . uc($type_full) . ": $last_id");
   Bugzilla->dbh->do("REPLACE INTO phabbugz (name, value) VALUES (?, ?)",
     undef, $type_full, $last_id);
 }

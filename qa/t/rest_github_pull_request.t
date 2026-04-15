@@ -22,7 +22,7 @@ use Test::More;
 my $config  = get_config();
 my $api_key = $config->{admin_user_api_key};
 my $url     = Bugzilla->localconfig->urlbase;
-my $secret  = 'B1gS3cret!';
+my $secret  = $config->{github_automation_user_api_key};
 
 my $t = Test::Mojo->new();
 

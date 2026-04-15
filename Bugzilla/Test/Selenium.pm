@@ -50,8 +50,20 @@ sub click_ok {
   if (!$element) {
     $locator =~ s/\@id/\@name/;
     TRACE("click_ok new locator: $locator");
+    $element = $self->find_element($locator);
   }
+
+  # Scroll element to center of viewport before clicking to prevent
+  # fixed header/nav elements from intercepting the click.
+  $self->scroll_to_center($element) if $element;
+
   $self->driver->click_element_ok($locator, 'xpath', $arg1, $desc);
+}
+
+sub scroll_to_center {
+  my ($self, $element) = @_;
+  $element->execute_script(
+    'arguments[0].scrollIntoView({block: "center", inline: "nearest"})');
 }
 
 sub open_ok {
@@ -300,6 +312,11 @@ sub select_ok {
     $locator =~ s/\@id/\@name/;
     $element = $self->find_element($locator);
   }
+
+  # Scroll select element to center of viewport before clicking options to
+  # prevent fixed header/nav elements from intercepting the click.
+  $self->scroll_to_center($element) if $element;
+
   my @options;
   try {
     @options = $self->driver->find_elements($locator . '/option');

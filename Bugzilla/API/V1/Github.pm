@@ -25,6 +25,8 @@ use Digest::SHA qw(hmac_sha256_hex);
 use JSON::Validator::Joi qw(joi);
 use Mojo::Util  qw(secure_compare);
 
+use constant BUG_RE => qr/\b[Bb]ug(?:[ -]|: )(\d+)\b/;
+
 sub setup_routes {
   my ($class, $r) = @_;
   $r->post('/github/pull_request')->to('V1::Github#pull_request');
@@ -89,7 +91,7 @@ sub pull_request {
 
   # Find bug ID in the title and see if bug exists and client
   # can see it (non-fatal).
-  my ($bug_id) = $title =~ /\b[Bb]ug[ -](\d+)\b/;
+  my ($bug_id) = $title =~ BUG_RE;
   my $bug = Bugzilla::Bug->new($bug_id);
   if ($bug->{error}) {
     $template->process('global/code-error.html.tmpl',
@@ -263,7 +265,7 @@ sub push_comment {
     }
 
     # Find bug ID in the title and see if bug exists
-    my ($bug_id) = $message =~ /\b[Bb]ug[ -](\d+)\b/;
+    my ($bug_id) = $message =~ BUG_RE;
     next if !$bug_id;
 
     # Only include the first line of the commit message
@@ -379,10 +381,50 @@ sub push_comment {
 sub _verify_signature {
   my ($self)             = @_;
   my $payload            = $self->req->body;
-  my $secret             = Bugzilla->params->{github_pr_signature_secret};
   my $received_signature = $self->req->headers->header('X-Hub-Signature-256');
-  my $expected_signature = 'sha256=' . hmac_sha256_hex($payload, $secret);
-  return secure_compare($expected_signature, $received_signature) ? 1 : 0;
+
+  return 0 if !$received_signature;
+
+  # Fast path: check legacy shared secret first during migration period.
+  # Operators should migrate to per-bot API keys and clear this parameter.
+  my $legacy_secret = Bugzilla->params->{github_pr_signature_secret};
+  if ($legacy_secret) {
+    my $expected = 'sha256=' . hmac_sha256_hex($payload, $legacy_secret);
+    return 1 if secure_compare($expected, $received_signature);
+  }
+
+  # Fetch all non-revoked, non-sticky API keys for users in the github-webhook-bot group.
+  # Each bot account uses its own Bugzilla API key as the GitHub webhook secret,
+  # so individual keys can be revoked without affecting other integrations.
+  # Sticky keys are excluded because they are IP-bound and not appropriate for
+  # webhook use from GitHub's IP ranges.
+  my $dbh  = Bugzilla->dbh;
+  my $keys = $dbh->selectall_arrayref(
+    "SELECT uak.id, uak.api_key
+       FROM user_api_keys uak
+       INNER JOIN user_group_map ugm ON ugm.user_id = uak.user_id
+       INNER JOIN " . $dbh->quote_identifier('groups') . " g ON g.id = ugm.group_id
+      WHERE g.name = 'github-webhook-bot'
+        AND uak.revoked = 0
+        AND uak.sticky = 0
+        AND ugm.isbless = 0
+        AND ugm.grant_type = " . GRANT_DIRECT,
+    {Slice => {}}
+  );
+
+  foreach my $key_row (@{$keys}) {
+    my $expected = 'sha256=' . hmac_sha256_hex($payload, $key_row->{api_key});
+    if (secure_compare($expected, $received_signature)) {
+      # Track key usage so operators can see which key last authenticated a webhook request
+      $dbh->do(
+        "UPDATE user_api_keys SET last_used = LOCALTIMESTAMP(0), last_used_ip = ? WHERE id = ?",
+        undef, $self->tx->remote_address, $key_row->{id}
+      );
+      return 1;
+    }
+  }
+
+  return 0;
 }
 
 # If the ref matches a certain branch pattern for the repo we are interested

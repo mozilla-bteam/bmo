@@ -166,4 +166,4 @@ $past = $now->clone->subtract(days => 2);
 is(time_ago($past), '2 days ago', 'time_ago(DateTime 2 days ago) returns "2 days ago"');
 
 $past = $now->clone->subtract(months => 1);
-like(time_ago($past), qr/^(1 month|2[89]|3[01] days) ago$/, 'time_ago(DateTime 1 month ago) is reasonable');
+like(time_ago($past), qr/^(1 month|(2[89]|3[01]) days) ago$/, 'time_ago(DateTime 1 month ago) is reasonable');

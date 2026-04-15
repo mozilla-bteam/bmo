@@ -400,7 +400,7 @@ sub cancelChangeEmail {
 
   $dbh->do(
     q{DELETE FROM tokens WHERE userid = ?
-               AND tokentype = 'emailold' OR tokentype = 'emailnew'}, undef, $userid
+               AND (tokentype = 'emailold' OR tokentype = 'emailnew')}, undef, $userid
   );
 
   $dbh->bz_commit_transaction();

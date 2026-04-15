@@ -103,11 +103,8 @@ sub get {
 
   # Reject access if there is no sense in continuing.
   my $user = Bugzilla->user;
-  my $all_groups
-    = $user->in_group('editusers')
-    || $user->in_group('creategroups')
-    || $user->in_group('mozilla-employee-confidential');
-  if (!$all_groups && !$user->can_bless) {
+  my $can_see_groups = $user->in_group('can_see_groups');
+  if (!$can_see_groups && !$user->can_bless) {
     ThrowUserError('group_cannot_view');
   }
 
@@ -134,7 +131,7 @@ sub get {
   }
 
   if (!defined $params->{ids} && !defined $params->{names}) {
-    if ($all_groups) {
+    if ($can_see_groups) {
       @$groups = Bugzilla::Group->get_all;
     }
     else {
@@ -144,7 +141,7 @@ sub get {
   }
 
   # Filter groups by blessability if user is not allowed to see all groups
-  if (!$all_groups) {
+  if (!$can_see_groups) {
     $groups = [map { $user->can_bless($_) } @{$groups}];
   }
 
