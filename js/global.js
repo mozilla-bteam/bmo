@@ -296,7 +296,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Mozilla Consent Banner
   // Bind open and close events before calling init().
-  if (BUGZILLA.config.cookie_consent_enabled && BUGZILLA.config.cookie_consent_required) {
+  if (
+    BUGZILLA.config.cookie_consent_enabled &&
+    BUGZILLA.config.cookie_consent_required &&
+    // Don’t show the banner on the cookie settings page to avoid hiding the content
+    !window.location.href.endsWith('/page.cgi?id=cookies.html')
+  ) {
     window.addEventListener('mozConsentOpen', openBanner, false);
     window.addEventListener('mozConsentReset', openBanner, false);
     window.addEventListener('mozConsentClose', closeBanner, false);
