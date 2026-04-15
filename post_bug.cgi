@@ -198,13 +198,7 @@ if ($data_fh || $attach_text || $data_base64) {
       $attach_text =~ s/[\012\015]{1,2}/\012/g;
     }
     $data = $attach_text;
-    if ($attach_text =~ m{^https://github\.com/([^/]+)/([^/]+)/pull/(\d+)/?$}i) {
-      my ($owner, $repo, $pr) = ($1, $2, $3);
-      $filename = "github-${owner}_${repo}-$pr-url.txt";
-    }
-    else {
-      $filename = "file_$id.txt";
-    }
+    $filename = github_pr_filename($attach_text) || "file_$id.txt";
   }
   elsif ($data_base64) {
     $data = decode_base64($data_base64);

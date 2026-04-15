@@ -29,7 +29,8 @@ use base qw(Exporter);
   get_text template_var disable_utf8
   enable_utf8 detect_encoding email_filter
   round extract_nicks fetch_product_versions mojo_user_agent
-  is_fake_recipient_address mermaid_quote truncate_string);
+  is_fake_recipient_address mermaid_quote truncate_string
+  github_pr_filename);
 use Bugzilla::Logging;
 use Bugzilla::Constants;
 use Bugzilla::RNG qw(irand);
@@ -1062,6 +1063,17 @@ sub mermaid_quote {
   $text =~ s/\]/#93;/g;
   $text =~ s/"/#34;/g;
   return $text;
+}
+
+# Returns a filename for a GitHub pull request URL, or undef if the text is not
+# a GitHub PR URL. Used when attaching a GitHub PR URL to a bug.
+sub github_pr_filename {
+  my ($url) = @_;
+  if ($url =~ m{^https://github\.com/([^/]+)/([^/]+)/pull/(\d+)/?$}i) {
+    my ($owner, $repo, $pr) = ($1, $2, $3);
+    return "github-${owner}_${repo}-$pr-url.txt";
+  }
+  return undef;
 }
 
 # Return a truncated version of the string provided

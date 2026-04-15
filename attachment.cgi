@@ -578,13 +578,7 @@ sub insert {
       $attach_text =~ s/[\012\015]{1,2}/\012/g;
     }
     $data = $attach_text;
-    if ($attach_text =~ m{^https://github\.com/([^/]+)/([^/]+)/pull/(\d+)/?$}i) {
-      my ($github_owner, $github_repo, $github_pr) = ($1, $2, $3);
-      $filename = "github-${github_owner}_${github_repo}-$github_pr-url.txt";
-    }
-    else {
-      $filename = "file_$bugid.txt";
-    }
+    $filename = github_pr_filename($attach_text) || "file_$bugid.txt";
   }
   elsif ($data_base64) {
     $data = decode_base64($data_base64);
