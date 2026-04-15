@@ -110,8 +110,8 @@
             config => {
                 basepath => basepath,
                 urlbase => urlbase,
-                cookie_consent_enabled => Param("cookie_consent_enabled"),
-                cookie_consent_required => Bugzilla.cgi.cookie_consent_required,
+                cookie_consent_enabled => Param('cookie_consent_enabled') == '1',
+                cookie_consent_required => Bugzilla.cgi.cookie_consent_required == 1,
                 essential_cookies => constants.ESSENTIAL_COOKIES,
             }
             user => {
@@ -427,7 +427,7 @@
     </strong>
   </div>
   [% END %]
-[% END %] 
+[% END %]
 
 <main id="bugzilla-body" tabindex="-1">
 
