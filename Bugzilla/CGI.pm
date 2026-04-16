@@ -696,7 +696,10 @@ sub cookie_consented {
 sub cookie_consent_required {
   my ($self) = @_;
   return 1 if $ENV{CI};
-  my $client_region = $self->http('X-Client-Region') || '';
+  my $client_region
+    = $self->http('X-Sigsci-Client-Geo-Country-Code')
+    || $self->http('X-Client-Region')
+    || '';
   return 1 if any { $client_region eq $_ } COOKIE_CONSENT_COUNTRIES;
   return 0;
 }
