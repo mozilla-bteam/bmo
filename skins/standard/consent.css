@@ -11,24 +11,20 @@
 .moz-consent-banner {
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
-  background: #ffffff;
-  color: #000000;
+  background: var(--primary-region-background-color);
   display: none;
-  font-family: Inter, sans-serif;
   text-size-adjust: 100%;
 }
 .moz-consent-banner.is-visible {
   display: block;
 }
 .moz-consent-banner .moz-consent-banner-content {
-  background: #ffffff;
+  background: var(--primary-region-background-color);
   margin: 0 auto;
   max-width: 1152px;
   padding: 16px 16px 0 16px;
 }
 .moz-consent-banner .moz-consent-banner-heading {
-  color: #000000;
-  font-family: Inter, sans-serif;
   font-size: 1.5rem;
   font-size: 24px;
   margin: 0 0 16px;
@@ -41,7 +37,7 @@
 }
 .moz-consent-banner .moz-consent-banner-copy a:link,
 .moz-consent-banner .moz-consent-banner-copy a:visited {
-  color: #000000;
+  color: inherit;
   text-decoration: underline;
 }
 .moz-consent-banner .moz-consent-banner-copy a:hover,
@@ -59,39 +55,13 @@
   margin-bottom: 16px;
 }
 .moz-consent-banner .moz-consent-banner-button {
-  background-color: #000000;
-  border-radius: 4px;
-  border: 2px solid #000000;
-  box-sizing: border-box;
-  color: #ffffff;
-  cursor: pointer;
-  display: inline-block;
-  font-family: Inter, sans-serif;
   font-size: 16px;
   font-size: 1rem;
   font-weight: bold;
   line-height: 1.5;
   margin-bottom: 16px;
   padding: 6px 24px;
-  text-align: center;
-  transition: background-color 100ms, box-shadow 100ms, color 100ms;
   width: 100%;
-}
-.moz-consent-banner .moz-consent-banner-button:focus {
-  border-color: #0060df;
-  box-shadow: 0 0 0 2px rgba(0, 144, 237, 0.5);
-  outline-offset: 1px;
-}
-.moz-consent-banner .moz-consent-banner-button:hover {
-  background-color: #ededf0;
-  border-color: #000000;
-  box-shadow: none;
-  color: #000000;
-}
-.moz-consent-banner .moz-consent-banner-button:active {
-  background-color: #ededf0;
-  border-color: #5e5e72;
-  color: #000000;
 }
 @media (min-width: 768px) {
   .moz-consent-banner .moz-consent-banner-content {
@@ -131,7 +101,7 @@
   }
   .moz-consent-banner .moz-consent-banner-content {
     border-radius: 16px;
-    box-shadow: 0 5px 16px 2px rgba(29, 17, 51, 0.25);
+    box-shadow: var(--primary-region-box-shadow);
   }
 }
 @media (min-height: 600px) and (min-width: 768px) {
