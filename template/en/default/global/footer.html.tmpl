@@ -27,7 +27,8 @@
 
 [% USE Bugzilla %]
 [% IF Param("cookie_consent_enabled")
-  && Bugzilla.cgi.cookie_consent_required %]
+  && Bugzilla.cgi.cookie_consent_required
+  && !cookie_consent_hidden %]
 <aside class="moz-consent-banner" id="moz-consent-banner" role="region" aria-label="Cookie Banner" data-nosnippet="true">
   <div class="moz-consent-banner-content">
     <h2  class="moz-consent-banner-heading">Help us improve your [% terms.BugzillaTitle %] experience</h2>
@@ -52,4 +53,3 @@
 [% END %]
 </body>
 </html>
-

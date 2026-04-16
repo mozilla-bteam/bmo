@@ -244,6 +244,11 @@ const scroll_element_into_view = ($target, complete) => {
 }
 
 const openBanner = () => {
+  // If the banner element is not present, do not attempt to open the banner
+  if (!document.querySelector('#moz-consent-banner')) {
+    return;
+  }
+
   // Bind click event listeners for banner buttons
   document
     .getElementById("moz-consent-banner-button-accept")

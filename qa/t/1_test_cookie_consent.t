@@ -21,7 +21,13 @@ log_in($sel, $config, 'admin');
 set_parameters($sel,
   {'Administrative Policies' => {'cookie_consent_enabled-on' => undef}});
 
+# Verify that the cookie banner is hidden on the cookie settings page
+$sel->open_ok('/page.cgi?id=cookies.html', 'Go to cookie settings page');
+ok(!$sel->is_element_present('moz-consent-banner'),
+  'Cookie banner hidden on cookie settings page');
+
 # Accept all cookies for admin user
+$sel->open_ok('/home', 'Go to home page');
 $sel->click_ok('moz-consent-banner-button-accept');
 
 # Make sure that a 'moz-consent-pref' cookie was set to yes
