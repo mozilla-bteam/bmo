@@ -23,7 +23,7 @@ set_parameters($sel,
 
 # Verify that the cookie banner is hidden on the cookie settings page
 $sel->open_ok('/page.cgi?id=cookies.html', 'Go to cookie settings page');
-ok(!$sel->click_ok('moz-consent-banner-button-accept'),
+ok(!$sel->is_element_present('moz-consent-banner'),
   'Cookie banner hidden on cookie settings page');
 
 # Accept all cookies for admin user

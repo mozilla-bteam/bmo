@@ -80,6 +80,10 @@ if ($id) {
     $vars{quicksearch_field_names} = quicksearch_field_names();
   }
 
+  if ($id eq 'cookies.html') {
+    $vars{cookie_consent_hidden} = 1;
+  }
+
   Bugzilla::Hook::process('page_before_template',
     {page_id => $id, vars => \%vars});
 

@@ -244,6 +244,11 @@ const scroll_element_into_view = ($target, complete) => {
 }
 
 const openBanner = () => {
+  // If the banner element is not present, do not attempt to open the banner
+  if (!document.querySelector('#moz-consent-banner')) {
+    return;
+  }
+
   // Bind click event listeners for banner buttons
   document
     .getElementById("moz-consent-banner-button-accept")
@@ -296,12 +301,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Mozilla Consent Banner
   // Bind open and close events before calling init().
-  if (
-    BUGZILLA.config.cookie_consent_enabled &&
-    BUGZILLA.config.cookie_consent_required &&
-    // Don’t show the banner on the cookie settings page to avoid hiding the content
-    !window.location.href.endsWith('/page.cgi?id=cookies.html')
-  ) {
+  if (BUGZILLA.config.cookie_consent_enabled && BUGZILLA.config.cookie_consent_required) {
     window.addEventListener('mozConsentOpen', openBanner, false);
     window.addEventListener('mozConsentReset', openBanner, false);
     window.addEventListener('mozConsentClose', closeBanner, false);
