@@ -46,22 +46,29 @@
   margin-top: 1ex;
 }
 
-.qs_fields th {
-  padding: 0 .25em;
+.qs_field_table_wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px;
+  overflow-y: auto;
+  max-height: 500px;
 }
 
-.qs_fields th.field_nickname {
+.qs_fields {
+  flex: auto;
+}
+
+.qs_fields tr.inactive {
+  opacity: 0.5;
+}
+
+.qs_fields th {
   text-align: left;
 }
 
 .qs_fields td {
-  padding: .25em;
-  border-top: 1px solid var(--grid-border-color);
   line-height: var(--line-height-comfortable);
-}
-
-.qs_fields .field_name {
-  white-space: nowrap;
 }
 
 /***************/

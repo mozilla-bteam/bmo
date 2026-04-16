@@ -76,6 +76,34 @@ sub page_before_template {
       {group => 'admin', action => 'access', object => 'administrative_pages'});
     admin_edit($vars);
   }
+  elsif ($page eq 'quicksearch.html') {
+    my $field_names = $vars->{'quicksearch_field_names'};
+    my %quicksearch_extra_field_names;
+    my $active_flags = Bugzilla::Extension::TrackingFlags::Flag->match({is_active => 1});
+    my %active_flag_names = map { $_->{name} => 1 } @$active_flags;
+
+    # Move cf_tracking_* and cf_status_* into a separate var with active flag info
+    foreach my $key (keys %$field_names) {
+      my $db_field = $field_names->{$key}->{db_field};
+
+      if ($db_field =~ /^cf_(tracking|status)_/) {
+        $quicksearch_extra_field_names{$key} = {
+          nicknames => $field_names->{$key}->{nicknames},
+          db_field  => $db_field,
+          # Check if the field is active by looking for a corresponding active tracking flag, e.g.
+          # `cf_tracking_firefox135`, or if it's one of the channel pronouns like
+          # `cf_tracking_firefox_release`, which are created by the BMO extension in
+          # install_update_db but not stored in the tracking flags table. The `$flag_pronoun_re`
+          # regex matches these pronoun fields precisely.
+          active    => ($active_flag_names{$db_field} || $db_field =~ $flag_pronoun_re) ? 1 : 0,
+        };
+
+        delete $field_names->{$key};
+      }
+    }
+
+    $vars->{'quicksearch_extra_field_names'} = \%quicksearch_extra_field_names;
+  }
 }
 
 sub template_before_process {
