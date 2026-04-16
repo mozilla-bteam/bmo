@@ -245,6 +245,23 @@ sub datetime_format_outbound {
 
 sub handle_login {
   my $self = shift;
+
+  # If we're being called using GET, we don't allow cookie-based or Env
+  # login, because GET requests can be done cross-domain, and we don't
+  # want private data showing up on another site unless the user
+  # explicitly gives that site their username and password. (This is
+  # particularly important for JSONP, which would allow a remote site
+  # to use private data without the user's knowledge, unless we had this
+  # protection in place.)
+  if ($self->request->method ne 'POST') {
+
+    # XXX There's no particularly good way for us to get a parameter
+    # to Bugzilla->login at this point, so we pass this information
+    # around using request_cache, which is a bit of a hack. The
+    # implementation of it is in Bugzilla::Auth::Login::Stack.
+    Bugzilla->request_cache->{auth_no_automatic_login} = 1;
+  }
+
   my $path        = $self->path_info;
   my $class       = $self->{dispatch_path}->{$path};
   my $full_method = $self->_bz_method_name;
