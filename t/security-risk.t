@@ -52,48 +52,52 @@ try {
     initial_bug_ids  => [1, 2, 3, 4],
     initial_bugs     => {
       1 => {
-        id         => 1,
-        product    => 'Firefox',
-        component  => 'ComponentA',
-        team       => 'Frontend',
-        sec_level  => 'sec-high',
-        status     => 'RESOLVED',
-        is_open    => 0,
-        is_stalled => 0,
-        created_at => DateTime->new(year => 2000, month => 1, day => 1),
+        id                    => 1,
+        product               => 'Firefox',
+        component             => 'ComponentA',
+        team                  => 'Frontend',
+        sec_level             => 'sec-high',
+        status                => 'RESOLVED',
+        is_open               => 0,
+        is_stalled            => 0,
+        is_unsupported_config => 0,
+        created_at            => DateTime->new(year => 2000, month => 1, day => 1),
       },
       2 => {
-        id         => 2,
-        product    => 'Core',
-        component  => 'ComponentB',
-        team       => 'Backend',
-        sec_level  => 'sec-critical',
-        status     => 'RESOLVED',
-        is_open    => 0,
-        is_stalled => 0,
-        created_at => DateTime->new(year => 2000, month => 1, day => 1),
+        id                    => 2,
+        product               => 'Core',
+        component             => 'ComponentB',
+        team                  => 'Backend',
+        sec_level             => 'sec-critical',
+        status                => 'RESOLVED',
+        is_open               => 0,
+        is_stalled            => 0,
+        is_unsupported_config => 0,
+        created_at            => DateTime->new(year => 2000, month => 1, day => 1),
       },
       3 => {
-        id         => 3,
-        product    => 'Core',
-        component  => 'ComponentB',
-        team       => 'Backend',
-        sec_level  => 'sec-high',
-        status     => 'ASSIGNED',
-        is_open    => 1,
-        is_stalled => 0,
-        created_at => DateTime->new(year => 2000, month => 1, day => 5),
+        id                    => 3,
+        product               => 'Core',
+        component             => 'ComponentB',
+        team                  => 'Backend',
+        sec_level             => 'sec-high',
+        status                => 'ASSIGNED',
+        is_open               => 1,
+        is_stalled            => 0,
+        is_unsupported_config => 0,
+        created_at            => DateTime->new(year => 2000, month => 1, day => 5),
       },
       4 => {
-        id         => 4,
-        product    => 'Firefox',
-        component  => 'ComponentA',
-        team       => 'Frontend',
-        sec_level  => 'sec-critical',
-        status     => 'ASSIGNED',
-        is_open    => 1,
-        is_stalled => 0,
-        created_at => DateTime->new(year => 2000, month => 1, day => 10),
+        id                    => 4,
+        product               => 'Firefox',
+        component             => 'ComponentA',
+        team                  => 'Frontend',
+        sec_level             => 'sec-critical',
+        status                => 'ASSIGNED',
+        is_open               => 1,
+        is_stalled            => 0,
+        is_unsupported_config => 0,
+        created_at            => DateTime->new(year => 2000, month => 1, day => 10),
       },
     },
     events => [
@@ -171,6 +175,104 @@ try {
 }
 catch {
   fail('got an exception during main part of test');
+  diag($_);
+};
+
+# Test that unsupported-config keyword is treated the same as closing a bug.
+try {
+  my $teams = [split /\n/, Bugzilla->params->{report_secbugs_teams}];
+  my $report = Bugzilla::Report::SecurityRisk->new(
+    start_date => DateTime->new(year => 2000, month => 1, day => 9),
+    end_date   => DateTime->new(year => 2000, month => 1, day => 16),
+    sec_keywords     => ['sec-critical', 'sec-high'],
+    teams            => $teams,
+    check_open_state => \&check_open_state_mock,
+    very_old_days    => 45,
+    initial_bug_ids  => [5, 6],
+    initial_bugs     => {
+      5 => {
+        id                    => 5,
+        product               => 'Firefox',
+        component             => 'ComponentA',
+        team                  => 'Frontend',
+        sec_level             => 'sec-high',
+        status                => 'ASSIGNED',
+        is_open               => 0,
+        is_stalled            => 0,
+        is_unsupported_config => 1,
+        created_at            => DateTime->new(year => 2000, month => 1, day => 1),
+      },
+      6 => {
+        id                    => 6,
+        product               => 'Core',
+        component             => 'ComponentB',
+        team                  => 'Backend',
+        sec_level             => 'sec-critical',
+        status                => 'ASSIGNED',
+        is_open               => 1,
+        is_stalled            => 0,
+        is_unsupported_config => 0,
+        created_at            => DateTime->new(year => 2000, month => 1, day => 1),
+      },
+    },
+    events => [
+      {
+        bug_id     => 5,
+        bug_when   => DateTime->new(year => 2000, month => 1, day => 12),
+        field_name => 'keywords',
+        removed    => '',
+        added      => 'unsupported-config',
+      },
+    ],
+  );
+  my $actual_results   = $report->results;
+  my $expected_results = [
+    {
+      date         => DateTime->new(year => 2000, month => 1, day => 9),
+      bugs_by_team => {
+        'Frontend' => {
+
+          # Rewind: unsupported-config was added after the report date, so bug 5 is open.
+          open          => [5],
+          closed        => [],
+          very_old_bugs => [],
+        },
+        'Backend' => {open => [6], closed => [], very_old_bugs => []},
+      },
+      bugs_by_sec_keyword => {
+        'sec-critical' => {open => [6], closed => [], very_old_bugs => []},
+        'sec-high'     => {
+
+          # Rewind: unsupported-config was added after the report date, so bug 5 is open.
+          open          => [5],
+          closed        => [],
+          very_old_bugs => [],
+        },
+      },
+    },
+    {
+      date         => DateTime->new(year => 2000, month => 1, day => 16),
+      bugs_by_team => {
+
+        # Bug 5 has unsupported-config so it counts as closed.
+        'Frontend' => {open => [], closed => [5], very_old_bugs => []},
+        'Backend'  => {open => [6], closed => [], very_old_bugs => []},
+      },
+      bugs_by_sec_keyword => {
+        'sec-critical' => {open => [6], closed => [],  very_old_bugs => []},
+        'sec-high'     => {open => [], closed => [5], very_old_bugs => []},
+      },
+    },
+  ];
+
+  is_deeply(
+    $actual_results,
+    $expected_results,
+    'unsupported-config keyword is treated as closed'
+  );
+}
+catch {
+  fail('got an exception during unsupported-config test');
   diag($_);
 };
 
