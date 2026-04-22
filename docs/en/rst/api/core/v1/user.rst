@@ -68,8 +68,7 @@ Logout
 ------
 
 Log out the user. Basically it invalidates the token provided so it cannot be
-re-used. Does nothing if the token is not in use. Will also clear any existing
-authentication cookies the client may still have stored.
+re-used. Does nothing if the token is not in use.
 
 **Request**
 
@@ -88,9 +87,8 @@ token  string   The user's token used for authentication.
 Valid Login
 -----------
 
-This method will verify whether a client's cookies or current login token is
-still valid or have expired. A valid username that matches must be provided as
-well.
+This method will verify whether a client's current login token is still valid
+or have expired. A valid username that matches must be provided as well.
 
 **Request**
 
@@ -101,7 +99,7 @@ well.
 =========  =======  =============================================================
 name       type     description
 =========  =======  =============================================================
-**login**  string   The login name that matches the provided cookies or token.
+**login**  string   The login name that matches the provided token.
 token      string   Persistent login token currently being used for
                     authentication.
 =========  =======  =============================================================

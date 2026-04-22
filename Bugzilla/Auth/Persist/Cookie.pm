@@ -49,36 +49,39 @@ sub persist_login {
 
   $dbh->bz_commit_transaction();
 
-  # Prevent JavaScript from accessing login cookies.
-  my %cookieargs = ('-httponly' => 1);
+  # If auth_no_persist_login is set, then we don't want to set any cookies
+  if (!Bugzilla->request_cache->{auth_no_persist_login}) {
+    # Prevent JavaScript from accessing login cookies.
+    my %cookieargs = ('-httponly' => 1);
 
-  # Remember cookie only if admin has told so
-  # or admin didn't forbid it and user told to remember.
-  if (
-    Bugzilla->params->{'rememberlogin'} eq 'on'
-    || ( Bugzilla->params->{'rememberlogin'} ne 'off'
-      && $input_params->{'Bugzilla_remember'}
-      && $input_params->{'Bugzilla_remember'} eq 'on')
-    )
-  {
-    # Not a session cookie, so set an infinite expiry
-    $cookieargs{'-expires'} = 'Fri, 01-Jan-2038 00:00:00 GMT';
+    # Remember cookie only if admin has told so
+    # or admin didn't forbid it and user told to remember.
+    if (
+      Bugzilla->params->{'rememberlogin'} eq 'on'
+      || ( Bugzilla->params->{'rememberlogin'} ne 'off'
+        && $input_params->{'Bugzilla_remember'}
+        && $input_params->{'Bugzilla_remember'} eq 'on')
+      )
+    {
+      # Not a session cookie, so set an infinite expiry
+      $cookieargs{'-expires'} = 'Fri, 01-Jan-2038 00:00:00 GMT';
+    }
+    if (Bugzilla->params->{'ssl_redirect'}) {
+
+      # Make these cookies only be sent to us by the browser during
+      # HTTPS sessions, if we're using SSL.
+      $cookieargs{'-secure'} = 1;
+    }
+
+    $cgi->remove_cookie('github_token');
+    $cgi->remove_cookie('Bugzilla_login_request_cookie');
+    $cgi->send_cookie(-name => 'Bugzilla_login', -value => $user->id, %cookieargs);
+    $cgi->send_cookie(
+      -name  => 'Bugzilla_logincookie',
+      -value => $login_cookie,
+      %cookieargs
+    );
   }
-  if (Bugzilla->params->{'ssl_redirect'}) {
-
-    # Make these cookies only be sent to us by the browser during
-    # HTTPS sessions, if we're using SSL.
-    $cookieargs{'-secure'} = 1;
-  }
-
-  $cgi->remove_cookie('github_token');
-  $cgi->remove_cookie('Bugzilla_login_request_cookie');
-  $cgi->send_cookie(-name => 'Bugzilla_login', -value => $user->id, %cookieargs);
-  $cgi->send_cookie(
-    -name  => 'Bugzilla_logincookie',
-    -value => $login_cookie,
-    %cookieargs
-  );
 
   my $securemail_groups
     = Bugzilla->can('securemail_groups')
