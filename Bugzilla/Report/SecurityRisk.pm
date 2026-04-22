@@ -291,12 +291,12 @@ sub _build_results {
 
       # Undo stalled and unsupported-config keyword changes
       if ($event->{field_name} eq 'keywords') {
-        if ($event->{added} =~ /\b\stalled\b/) {
+        if ($event->{added} =~ /\bstalled\b/) {
 
           # If the stalled keyword was added in this event, remove it:
           $bug->{is_stalled} = 0;
         }
-        if ($event->{removed} =~ /\b\stalled\b/) {
+        if ($event->{removed} =~ /\bstalled\b/) {
 
           # If the stalled keyword was removed in this event, add it:
           $bug->{is_stalled} = 1;
@@ -438,7 +438,9 @@ sub _bugs_by_sec_keyword {
 
 sub _is_bug_open {
   my ($self, $status, $is_stalled, $is_unsupported_config) = @_;
-  return ($self->check_open_state->($status)) && !($is_stalled) && !($is_unsupported_config);
+  return (!$is_stalled
+      && !$is_unsupported_config
+      && $self->check_open_state->($status));
 }
 
 sub _find_team {
