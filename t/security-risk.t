@@ -276,4 +276,87 @@ catch {
   diag($_);
 };
 
+# Test the opposite rewind direction: unsupported-config was REMOVED after the
+# earlier report date.  The rewind should restore the flag, making the bug appear
+# closed in the historical snapshot even though it is open by the end date.
+try {
+  my $teams = [split /\n/, Bugzilla->params->{report_secbugs_teams}];
+  my $report = Bugzilla::Report::SecurityRisk->new(
+    start_date => DateTime->new(year => 2000, month => 1, day => 9),
+    end_date   => DateTime->new(year => 2000, month => 1, day => 16),
+    sec_keywords     => ['sec-critical', 'sec-high'],
+    teams            => $teams,
+    check_open_state => \&check_open_state_mock,
+    very_old_days    => 45,
+    initial_bug_ids  => [7],
+    initial_bugs     => {
+      7 => {
+        id                    => 7,
+        product               => 'Firefox',
+        component             => 'ComponentA',
+        team                  => 'Frontend',
+        sec_level             => 'sec-high',
+        status                => 'ASSIGNED',
+        is_open               => 1,
+        is_stalled            => 0,
+        is_unsupported_config => 0,
+        created_at            => DateTime->new(year => 2000, month => 1, day => 1),
+      },
+    },
+    events => [
+      {
+        bug_id     => 7,
+        bug_when   => DateTime->new(year => 2000, month => 1, day => 12),
+        field_name => 'keywords',
+        removed    => 'unsupported-config',
+        added      => '',
+      },
+    ],
+  );
+  my $actual_results   = $report->results;
+  my $expected_results = [
+    {
+      date         => DateTime->new(year => 2000, month => 1, day => 9),
+      bugs_by_team => {
+        'Frontend' => {
+
+          # Rewind: unsupported-config was removed after the report date, so bug 7
+          # is restored to closed in the historical snapshot.
+          open          => [],
+          closed        => [7],
+          very_old_bugs => [],
+        },
+        'Backend' => {open => [], closed => [], very_old_bugs => []},
+      },
+      bugs_by_sec_keyword => {
+        'sec-critical' => {open => [], closed => [], very_old_bugs => []},
+        'sec-high'     => {open => [], closed => [7], very_old_bugs => []},
+      },
+    },
+    {
+      date         => DateTime->new(year => 2000, month => 1, day => 16),
+      bugs_by_team => {
+
+        # By the end date the keyword is gone, so bug 7 is open.
+        'Frontend' => {open => [7], closed => [], very_old_bugs => []},
+        'Backend'  => {open => [], closed => [], very_old_bugs => []},
+      },
+      bugs_by_sec_keyword => {
+        'sec-critical' => {open => [], closed => [], very_old_bugs => []},
+        'sec-high'     => {open => [7], closed => [], very_old_bugs => []},
+      },
+    },
+  ];
+
+  is_deeply(
+    $actual_results,
+    $expected_results,
+    'removing unsupported-config keyword is rewound correctly in historical snapshots'
+  );
+}
+catch {
+  fail('got an exception during unsupported-config removal rewind test');
+  diag($_);
+};
+
 done_testing;
