@@ -224,14 +224,6 @@ sub page_before_template {
     require Bugzilla::Extension::BMO::Reports::Groups;
     Bugzilla::Extension::BMO::Reports::Groups::members_report($page, $vars);
   }
-  elsif ($page eq 'recruiting_dashboard.html') {
-    require Bugzilla::Extension::BMO::Reports::Recruiting;
-    Bugzilla::Extension::BMO::Reports::Recruiting::report($vars);
-  }
-  elsif ($page eq 'internship_dashboard.html') {
-    require Bugzilla::Extension::BMO::Reports::Internship;
-    Bugzilla::Extension::BMO::Reports::Internship::report($vars);
-  }
   elsif ($page eq 'email_queue.html') {
     Bugzilla->cgi->base_redirect('view_job_queue.cgi');
   }
@@ -1924,9 +1916,6 @@ sub post_bug_after_creation {
   {
     $self->_post_employee_incident_bug($args);
   }
-  elsif ($format eq 'swag') {
-    $self->_post_gear_bug($args);
-  }
   elsif ($format eq 'mozpr') {
     $self->_post_mozpr_bug($args);
   }
@@ -2021,69 +2010,6 @@ sub _post_employee_incident_bug {
     warn "Failed to create additional employee-incident bug: $error" if $error;
     $vars->{'message'} = 'employee_incident_creation_failed';
   }
-}
-
-sub _post_gear_bug {
-  my ($self, $args) = @_;
-  my $vars  = $args->{vars};
-  my $bug   = $vars->{bug};
-  my $input = Bugzilla->input_params;
-
-  my ($team, $code) = $input->{teamcode} =~ /^(.+?) \((\d+)\)$/;
-  my @request = (
-    "Date Required: $input->{date_required}",
-    "$input->{firstname} $input->{lastname}",
-    $input->{email}, $input->{mozspace}, $team, $code, $input->{purpose},
-  );
-  my @recipient = (
-    "$input->{shiptofirstname} $input->{shiptolastname}",
-    $input->{shiptoemail},
-    $input->{shiptoaddress1},
-    $input->{shiptoaddress2},
-    $input->{shiptocity},
-    $input->{shiptostate},
-    $input->{shiptopostcode},
-    $input->{shiptocountry},
-    "Phone: $input->{shiptophone}",
-    $input->{shiptoidrut},
-  );
-
-  # the csv has 14 item fields
-  my @items = map { trim($_) } split(/\n/, $input->{items});
-  my @csv;
-  while (@items) {
-    my @batch;
-    if (scalar(@items) > 14) {
-      @batch = splice(@items, 0, 14);
-    }
-    else {
-      @batch = @items;
-      push @batch, '' for scalar(@items) .. 13;
-      @items = ();
-    }
-    push @csv, [@request, @batch, @recipient];
-  }
-
-  # csv quoting and concat
-  foreach my $line (@csv) {
-    foreach my $field (@$line) {
-      if ($field =~ s/"/""/g || $field =~ /,/) {
-        $field = qq#"$field"#;
-      }
-    }
-    $line = join(',', @$line);
-  }
-
-  $self->_add_attachment(
-    $args,
-    {
-      data        => join("\n", @csv),
-      description => "Items (CSV)",
-      filename    => "gear_" . $bug->id . ".csv",
-      mimetype    => "text/csv",
-    }
-  );
-  $bug->update($bug->creation_ts);
 }
 
 sub _post_mozpr_bug {
@@ -2897,10 +2823,6 @@ sub app_startup {
       $c->reply->file($c->app->home->child('extensions/BMO/web/images/favicon.ico'));
     }
   );
-
-  $r->any('/:REWRITE_itrequest' => [REWRITE_itrequest => qr{form[\.:]itrequest}])
-    ->to('CGI#enter_bug_cgi' =>
-      {'product' => 'Infrastructure & Operations', 'format' => 'itrequest'});
   $r->any('/:REWRITE_mozlist' => [REWRITE_mozlist => qr{form[\.:]mozlist}])
     ->to(
     'CGI#enter_bug_cgi' => {'product' => 'mozilla.org', 'format' => 'mozlist'});
@@ -2918,13 +2840,6 @@ sub app_startup {
     'CGI#enter_bug_cgi' => {'product' => 'mozilla.org', 'format' => 'recoverykey'});
   $r->any('/:REWRITE_legal' => [REWRITE_legal => qr{form[\.:]legal}])
     ->to('CGI#enter_bug_cgi' => {'product' => 'Legal', 'format' => 'legal'},);
-  $r->any(
-    '/:REWRITE_recruiting' => [REWRITE_recruiting => qr{form[\.:]recruiting}])
-    ->to(
-    'CGI#enter_bug_cgi' => {'product' => 'Recruiting', 'format' => 'recruiting'});
-  $r->any('/:REWRITE_intern' => [REWRITE_intern => qr{form[\.:]intern}])
-    ->to(
-    'CGI#enter_bug_cgi' => {'product' => 'Recruiting', 'format' => 'intern'});
   $r->any('/:REWRITE_mozpr' => [REWRITE_mozpr => qr{form[\.:]mozpr}])
     ->to('CGI#enter_bug_cgi' => {'product' => 'Mozilla PR', 'format' => 'mozpr'},
     );
@@ -2934,24 +2849,9 @@ sub app_startup {
       {'product' => 'mozilla.org', 'format' => 'employee-incident'});
   $r->any('/:REWRITE_brownbag' => [REWRITE_brownbag => qr{form[\.:]brownbag}])
     ->to('CGI#https_air_mozilla_org_requests' => {});
-  $r->any('/:REWRITE_finance' => [REWRITE_finance => qr{form[\.:]finance}])
-    ->to('CGI#enter_bug_cgi' => {'product' => 'Finance', 'format' => 'finance'});
-  $r->any('/:REWRITE_moz_project_review' =>
-      [REWRITE_moz_project_review => qr{form[\.:]moz[\.\-:]project[\.\-:]review}])
-    ->to('CGI#enter_bug_cgi' =>
-      {'product' => 'mozilla.org', 'format' => 'moz-project-review'});
   $r->any('/:REWRITE_docs' => [REWRITE_docs => qr{form[\.:]docs?}])
     ->to('CGI#enter_bug_cgi' =>
       {'product' => 'Developer Documentation', 'format' => 'doc'});
-  $r->any('/:REWRITE_mdn' => [REWRITE_mdn => qr{form[\.:]mdn?}])
-    ->to('CGI#enter_bug_cgi' =>
-      {'format' => 'mdn', 'product' => 'developer.mozilla.org'});
-  $r->any(
-    '/:REWRITE_swag_gear' => [REWRITE_swag_gear => qr{form[\.:](?:swag|gear)}])
-    ->to('CGI#enter_bug_cgi' => {'format' => 'swag', 'product' => 'Marketing'});
-  $r->any('/:REWRITE_costume' => [REWRITE_costume => qr{form[\.:]costume}])
-    ->to(
-    'CGI#enter_bug_cgi' => {'product' => 'Marketing', 'format' => 'costume'});
   $r->any('/:REWRITE_ipp' => [REWRITE_ipp => qr{form[\.:]ipp}])
     ->to('CGI#enter_bug_cgi' =>
       {'product' => 'Internet Public Policy', 'format' => 'ipp'});
@@ -2962,10 +2862,6 @@ sub app_startup {
       [REWRITE_user_engagement => qr{form[\.:]user[\.\-:]engagement}])
     ->to('CGI#enter_bug_cgi' =>
       {'format' => 'user-engagement', 'product' => 'Marketing'});
-  $r->any('/:REWRITE_mobile_compat' =>
-      [REWRITE_mobile_compat => qr{form[\.:]mobile[\.\-:]compat}])
-    ->to('CGI#enter_bug_cgi' =>
-      {'product' => 'Tech Evangelism', 'format' => 'mobile-compat'});
   $r->any(
     '/:REWRITE_web_bounty' => [REWRITE_web_bounty => qr{form[\.:]web[\.:]bounty}])
     ->to(
@@ -3001,12 +2897,6 @@ sub app_startup {
     ->to('CGI#page_cgi' => {'id' => 'triage_request.html'});
   $r->any('/:REWRITE_crm_CRM' => [REWRITE_crm_CRM => qr{form[\.:](?:crm|CRM)}])
     ->to('CGI#enter_bug_cgi' => {'format' => 'crm', 'product' => 'Marketing'});
-  $r->any('/:REWRITE_nda' => [REWRITE_nda => qr{form[\.:]nda}])
-    ->to('CGI#enter_bug_cgi' => {'product' => 'Legal', 'format' => 'nda'});
-  $r->any('/:REWRITE_name_clearance' =>
-      [REWRITE_name_clearance => qr{form[\.:]name[\.:]clearance}])
-    ->to(
-    'CGI#enter_bug_cgi' => {'format' => 'name-clearance', 'product' => 'Legal'});
   $r->any('/:REWRITE_shield_studies' =>
       [REWRITE_shield_studies => qr{form[\.:]shield[\.:]studies}])
     ->to(

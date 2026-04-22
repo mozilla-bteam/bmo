@@ -25,65 +25,6 @@ my ($sel, $config) = get_selenium();
 log_in($sel, $config, 'admin');
 set_parameters($sel, {"Bug Fields" => {"useclassification-off" => undef}});
 
-# mktgevent and swag are dependent so we create the mktgevent bug first so
-# we can provide the bug id to swag
-
-## mktgevent
-#
-#_check_product('Marketing');
-#_check_component('Marketing', 'Event Requests');
-#_check_component('Marketing', 'Swag Requests');
-#_check_group('mozilla-corporation-confidential');
-#
-## FIXME figure out how to use format= with file_bug_in_product
-#
-#$sel->open_ok("/enter_bug.cgi?product=Marketing&format=mktgevent");
-#$sel->wait_for_page_to_load_ok(WAIT_TIME);
-#$sel->title_is("Event Request Form", "Open custom bug entry form - mktgevent");
-#$sel->type_ok("firstname", "Bugzilla", "Enter first name");
-#$sel->type_ok("lastname", "Administrator", "Enter last name");
-#$sel->type_ok("email", $config->{'admin_user_login'}, "Enter email address");
-#$sel->type_ok("eventname", "Event Name", "Enter event name");
-#$sel->type_ok("website", $config->{'browser_url'}, "Enter web site");
-#$sel->type_ok("goals", "Goals for the event", "Enter goals");
-#$sel->type_ok("date", "2032/01/01", "Enter date");
-#$sel->type_ok("successmeasure", "Success Measure", "Enter measure of success");
-#$sel->click_ok("doing", "value=Other", "Select what doing");
-#$sel->type_ok("doing-other-what", "What will you be doing at the event", "Enter other what doing");
-#$sel->select_ok("attendees", "value=1-99", "Select number of attendees");
-#$sel->select_ok("audience", "value=Contributors", "Select targeted audience");
-#$sel->click_ok("commit", undef, "Submit bug data to post_bug.cgi");
-#$sel->wait_for_page_to_load_ok(WAIT_TIME);
-#$sel->is_text_present_ok('has been added to the database', 'Bug created');
-#my $mktgevent_bug_id = $sel->get_value('//input[@name="id" and @type="hidden"]');
-#
-## swag
-#
-#$sel->open_ok("/enter_bug.cgi?product=Marketing&format=swag");
-#$sel->wait_for_page_to_load_ok(WAIT_TIME);
-#$sel->title_is("Swag Request Form", "Open custom bug entry form - swag");
-#$sel->type_ok("firstname", "Bugzilla", "Enter first name");
-#$sel->type_ok("lastname", "Administrator", "Enter last name");
-#$sel->type_ok("dependson", $mktgevent_bug_id, "Enter event request bug id");
-#$sel->type_ok("email", $config->{'admin_user_login'}, "Enter email address");
-#$sel->type_ok("cc", $config->{'unprivileged_user_login'}, "Enter cc address");
-#$sel->type_ok("additional", "Specific swag needed", "Enter specific swag needed");
-#$sel->type_ok("shiptofirstname", "Bugzilla", "Enter ship to first name");
-#$sel->type_ok("shiptolastname", "Administrator", "Enter ship to last name");
-#$sel->type_ok("shiptoaddress", "100 Some Street", "Enter ship to address");
-#$sel->type_ok("shiptoaddress2", "Suite 200", "Enter ship to address 2");
-#$sel->type_ok("shiptocity", "Mountain View", "Enter ship to city");
-#$sel->type_ok("shiptostate", "California", "Enter ship to state");
-#$sel->type_ok("shiptocountry", "USA", "Enter ship to country");
-#$sel->type_ok("shiptopcode", "94041", "Enter ship to postal code");
-#$sel->type_ok("shiptophone", "1-800-555-1212", "Enter ship to phone");
-#$sel->type_ok("shiptoidrut", "What is this?", "Enter ship to personal id/rut");
-#$sel->type_ok("comment", "--- Bug created by Selenium ---", "Enter bug description");
-#$sel->click_ok("commit", undef, "Submit bug data to post_bug.cgi");
-#$sel->wait_for_page_to_load_ok(WAIT_TIME);
-#$sel->is_text_present_ok('has been added to the database', 'Bug created');
-#my $swag_bug_id = $sel->get_value('//input[@name="id" and @type="hidden"]');
-
 # trademark
 
 _check_product('Marketing');
@@ -103,81 +44,13 @@ $sel->type_ok(
 $sel->click_ok("commit", undef, "Submit bug data to post_bug.cgi");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->is_text_present_ok('has been added to the database', 'Bug created');
-my $trademark_bug_id
-  = $sel->get_value('//input[@name="id" and @type="hidden"]');
 
-# itrequest
+# mozlist
 
 _check_product('mozilla.org');
-_check_product('Infrastructure & Operations');
-_check_component('Infrastructure & Operations', 'WebOps: Other');
-_check_version('Infrastructure & Operations', 'other');
-_check_group('infra');
-
-#$sel->open_ok("/enter_bug.cgi?product=mozilla.org&format=itrequest");
-#$sel->wait_for_page_to_load_ok(WAIT_TIME);
-#$sel->title_is("Mozilla Corporation/Foundation IT Requests", "Open custom bug entry form - itrequest");
-#$sel->click_ok("component_webops_other", "Select request type");
-#$sel->type_ok("cc", $config->{'unprivileged_user_login'}, "Enter cc address");
-#$sel->type_ok("short_desc", "Bug created by Selenium", "Enter request summary");
-#$sel->type_ok("comment", "--- Bug created by Selenium ---", "Enter request description");
-#$sel->click_ok("commit", undef, "Submit bug data to post_bug.cgi");
-#$sel->wait_for_page_to_load_ok(WAIT_TIME);
-#$sel->is_text_present_ok('has been added to the database', 'Bug created');
-#my $itrequest_bug_id = $sel->get_value('//input[@name="id" and @type="hidden"]');
-
-# brownbag
-
-#$sel->open_ok("/enter_bug.cgi?product=mozilla.org&format=brownbag");
-#$sel->wait_for_page_to_load_ok(WAIT_TIME);
-#$sel->title_is("Mozilla Corporation Brownbag Requests", "Open custom bug entry form - brownbag");
-#$sel->type_ok("presenter", "Bugzilla Administrator", "Enter presenter");
-#$sel->type_ok("topic", "Automated testing of Bugzilla", "Enter topic");
-#$sel->type_ok("date", "01/01/2012", "Enter date");
-#$sel->select_ok("time_hour", "value=1", "Select hour");
-#$sel->select_ok("time_minute", "value=30", "Select minute");
-#$sel->select_ok("ampm", "value=PM", "Select am/pm");
-#$sel->select_ok("audience", "value=Employees Only", "Select audience");
-#$sel->check_ok("airmozilla", "Select need airmozilla");
-#$sel->check_ok("dialin", "Select need dial in");
-#$sel->check_ok("archive", "Select need to be archived");
-#$sel->check_ok("ithelp", "Select need it help");
-#$sel->type_ok("cc", $config->{'unprivileged_user_login'}, "Enter cc address");
-#$sel->type_ok("description", "--- Bug created by Selenium ---", "Enter request description");
-#$sel->click_ok("commit", undef, "Submit bug data to post_bug.cgi");
-#$sel->wait_for_page_to_load_ok(WAIT_TIME);
-#$sel->is_text_present_ok('has been added to the database', 'Bug created');
-#my $brownbag_bug_id = $sel->get_value('//input[@name="id" and @type="hidden"]');
-
-# presentation
-
-#$sel->open_ok("/enter_bug.cgi?product=mozilla.org&format=presentation");
-#$sel->wait_for_page_to_load_ok(WAIT_TIME);
-#$sel->title_is("Mozilla Corporation Mountain View Presentation Request", "Open custom bug entry form - presentation");
-#$sel->type_ok("presenter", "Bugzilla Administrator", "Enter presenter");
-#$sel->type_ok("topic", "Automated testing of Bugzilla", "Enter topic");
-#$sel->type_ok("date", "01/01/2012", "Enter date");
-#$sel->select_ok("time_hour", "value=1", "Select hour");
-#$sel->select_ok("time_minute", "value=30", "Select minute");
-#$sel->select_ok("ampm", "value=PM", "Select am/pm");
-#$sel->select_ok("audience", "value=Employees Only", "Select audience");
-#$sel->check_ok("airmozilla", "Select need airmozilla");
-#$sel->check_ok("dialin", "Select need dial in");
-#$sel->check_ok("archive", "Select need to be archived");
-#$sel->check_ok("ithelp", "Select need it help");
-#$sel->type_ok("cc", $config->{'unprivileged_user_login'}, "Enter cc address");
-#$sel->type_ok("description", "--- Bug created by Selenium ---", "Enter request description");
-#$sel->click_ok("commit", undef, "Submit bug data to post_bug.cgi");
-#$sel->wait_for_page_to_load_ok(WAIT_TIME);
-#$sel->is_text_present_ok('has been added to the database', 'Bug created');
-#my $presentation_bug_id = $sel->get_value('//input[@name="id" and @type="hidden"]');
-
-_check_component('mozilla.org', 'Discussion Forums');
-
-#mozlist
-
 _check_version('mozilla.org', 'other');
 _check_component('mozilla.org', 'Discussion Forums');
+_check_group('infra');
 
 $sel->open_ok("/enter_bug.cgi?product=mozilla.org&format=mozlist");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
@@ -199,58 +72,6 @@ $sel->type_ok(
 $sel->click_ok("commit", undef, "Submit bug data to post_bug.cgi");
 $sel->wait_for_page_to_load_ok(WAIT_TIME);
 $sel->is_text_present_ok('has been added to the database', 'Bug created');
-my $mozlist_bug_id = $sel->get_value('//input[@name="id" and @type="hidden"]');
-
-_check_product('Mozilla PR');
-_check_component('Mozilla PR', 'China - AMO');
-_check_group('mozilla-confidential');
-
-#mozpr
-
-_check_group('pr-private');
-
-#$sel->open_ok("/enter_bug.cgi?product=Mozilla PR&format=mozpr");
-#$sel->wait_for_page_to_load_ok(WAIT_TIME);
-#$sel->title_is("Create a PR Request", "Open custom bug entry form - mozpr");
-#$sel->select_ok("location", "value=China", "Select location");
-#$sel->select_ok("component", "value=China - AMO", "Select component");
-#$sel->select_ok("fakecomp", "value=AMO", "Select fake component");
-#$sel->type_ok("cc", $config->{'unprivileged_user_login'}, "Enter cc address");
-#$sel->type_ok("short_desc", "Bug created by Selenium", "Enter bug summary");
-#$sel->type_ok("comment", "--- Bug created by Selenium ---", "Enter bug description");
-#$sel->click_ok("commit", undef, "Submit bug data to post_bug.cgi");
-#$sel->wait_for_page_to_load_ok(WAIT_TIME);
-#$sel->is_text_present_ok('has been added to the database', 'Bug created');
-#my $mozpr_bug_id = $sel->get_value('//input[@name="id" and @type="hidden"]');
-
-# legal
-
-_check_product('Legal');
-_check_component('Legal', 'Contract Request');
-_check_group('mozilla-employee-confidential');
-
-$sel->open_ok("/enter_bug.cgi?product=Legal&format=legal");
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->title_is("Mozilla Corporation Legal Requests",
-  "Open custom bug entry form - legal");
-$sel->select_ok("component", "value=Contract Request", "Select request type");
-$sel->select_ok(
-  "business_unit",
-  "value=Connected Devices",
-  "Select business unit"
-);
-$sel->type_ok("short_desc", "Bug created by Selenium", "Enter request summary");
-$sel->type_ok("cc", $config->{'unprivileged_user_login'}, "Enter cc address");
-$sel->type_ok("important_dates", "Important dates", "Enter important dates");
-$sel->type_ok(
-  "comment",
-  "--- Bug created by Selenium ---",
-  "Enter request description"
-);
-$sel->click_ok("commit", undef, "Submit bug data to post_bug.cgi");
-$sel->wait_for_page_to_load_ok(WAIT_TIME);
-$sel->is_text_present_ok('has been added to the database', 'Bug created');
-my $legal_bug_id = $sel->get_value('//input[@name="id" and @type="hidden"]');
 
 set_parameters($sel, {"Bug Fields" => {"useclassification-on" => undef}});
 logout($sel);
