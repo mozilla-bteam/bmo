@@ -299,7 +299,10 @@ Bugzilla.TextEditor = class TextEditor {
     if (/^https?:\/\/\S+$/.test(data) && URL.canParse(data)) {
       const { start, end, beforeText, selectedText, afterText } = this.getSelection();
 
-      if (selectedText) {
+      // Check if the URL can be inserted as a Markdown link without breaking existing markup; if
+      // the selected text is already part of a Markdown link, the pasted URL will be inserted as
+      // plain text instead to avoid breaking the existing link.
+      if (selectedText && !beforeText.endsWith('](') && !afterText.startsWith(')')) {
         event.preventDefault();
 
         this.updateText(`${beforeText}[${selectedText}](${data})${afterText}`, {
