@@ -2905,6 +2905,11 @@ sub app_startup {
       [REWRITE_client_bounty => qr{form[\.:]client[\.:]bounty}])
     ->to(
     'CGI#enter_bug_cgi' => {'product' => 'Firefox', 'format' => 'client-bounty'});
+  $r->any('/:REWRITE_mdn' => [REWRITE_mdn => qr{form[\.:]mdn}]
+    => sub {
+      my $c = shift;
+      $c->redirect_to('/enter_bug.cgi?product=developer.mozilla.org');
+    });
 
   # Redirects to external forms
   $r->any( '/:REWRITE_dev_engagement_event' =>
