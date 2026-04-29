@@ -958,6 +958,15 @@ Bugzilla.Storage = class LocalStorage {
  */
 Bugzilla.String = class String {
   /**
+   * Check if a string is a valid URL.
+   * @param {string} string The string to check.
+   * @returns {boolean} `true` if the string is a valid URL, `false` otherwise.
+   */
+  static isURL(string) {
+    return /^(?:https?|mailto):\/\/\S+$/.test(string) && URL.canParse(string);
+  }
+
+  /**
    * Escape special characters in a string so it can be used for `new RegExp()`.
    * @param {string} string Input string.
    * @returns {string} Escaped string.
