@@ -286,9 +286,7 @@ our %group_auto_cc = (
 # Users in 'include' group will be forced into using the form.
 our %create_bug_formats = (
   'Data Compliance' => {'format' => 'data-compliance', 'include' => 'everyone',},
-  'developer.mozilla.org' => {'format' => 'mdn',        'include' => 'everyone',},
   'Legal'                 => {'format' => 'legal',      'include' => 'everyone',},
-  'Recruiting'            => {'format' => 'recruiting', 'include' => 'everyone',},
   'Toolkit'               => {'component' => 'Blocklist Policy Requests',
                               'format' => 'blocklist', 'include' => 'everyone',},
   'Internet Public Policy' => {'format' => 'ipp', 'include' => 'everyone',},
