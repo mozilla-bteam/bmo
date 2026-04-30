@@ -305,8 +305,8 @@ Bugzilla.TextEditor = class TextEditor {
       if (
         selectedText &&
         !Bugzilla.String.isURL(selectedText) &&
-        !beforeText.endsWith("](") &&
-        !afterText.startsWith(")")
+        !beforeText.endsWith('](') &&
+        !afterText.startsWith(')')
       ) {
         event.preventDefault();
 
