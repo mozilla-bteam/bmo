@@ -963,7 +963,7 @@ Bugzilla.String = class String {
    * @returns {boolean} `true` if the string is a valid URL, `false` otherwise.
    */
   static isURL(string) {
-    return /^(?:https?|mailto):\S+$/.test(string) && URL.canParse(string);
+    return /^(?:https?:\/\/|mailto:)\S+$/.test(string) && URL.canParse(string);
   }
 
   /**
