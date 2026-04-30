@@ -296,13 +296,18 @@ Bugzilla.TextEditor = class TextEditor {
   textareaOnPaste(event) {
     const data = event.clipboardData?.getData('text');
 
-    if (/^https?:\/\/\S+$/.test(data) && URL.canParse(data)) {
+    if (Bugzilla.String.isURL(data)) {
       const { start, end, beforeText, selectedText, afterText } = this.getSelection();
 
       // Check if the URL can be inserted as a Markdown link without breaking existing markup; if
-      // the selected text is already part of a Markdown link, the pasted URL will be inserted as
-      // plain text instead to avoid breaking the existing link.
-      if (selectedText && !beforeText.endsWith('](') && !afterText.startsWith(')')) {
+      // the selected text is already a valid URL or part of a Markdown link, the pasted URL will be
+      // inserted as plain text instead to avoid breaking the existing link.
+      if (
+        selectedText &&
+        !Bugzilla.String.isURL(selectedText) &&
+        !beforeText.endsWith('](') &&
+        !afterText.startsWith(')')
+      ) {
         event.preventDefault();
 
         this.updateText(`${beforeText}[${selectedText}](${data})${afterText}`, {
@@ -370,7 +375,7 @@ Bugzilla.TextEditor = class TextEditor {
         start: start - 1,
         end: end - 1,
       });
-    } else if (selectedText.match(/^(https?|mailto):/) || !selectedText) {
+    } else if (!selectedText || Bugzilla.String.isURL(selectedText)) {
       // Convert any URL to a markup, and let the user enter the label
       this.updateText(`${beforeText}[](${selectedText ?? 'url'})${afterText}`, {
         start: start + 1,
