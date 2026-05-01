@@ -2700,7 +2700,9 @@ sub set_all {
 
   # And set custom fields.
   my @custom_fields
-    = grep { $_->type != FIELD_TYPE_EXTENSION } Bugzilla->active_custom_fields;
+    = grep { $_->type != FIELD_TYPE_EXTENSION } Bugzilla->active_custom_fields(
+        {product => $self->product_obj, component => $self->component_obj}
+    );
   foreach my $field (@custom_fields) {
     my $fname = $field->name;
     if (exists $params->{$fname}) {

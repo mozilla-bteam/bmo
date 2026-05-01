@@ -1747,6 +1747,35 @@ sub _bug_to_hash {
     }
   }
 
+  # Include stored values for CFs not enabled for this product/component.
+  # Data is always loaded from DB (see DB_COLUMNS); we just surface it here
+  # when the value is non-empty so callers aren't silently missing data.
+  my %seen_cf = map { $_->name => 1 } @custom_fields;
+  my @hidden_cfs = grep { !$seen_cf{$_->name} && $_->type != FIELD_TYPE_EXTENSION }
+    Bugzilla->active_custom_fields({skip_extensions => 1});
+  foreach my $field (@hidden_cfs) {
+    my $name = $field->name;
+    next if !filter_wants($params, $name, ['default', 'custom']);
+    if ($field->type == FIELD_TYPE_MULTI_SELECT) {
+      my @values = @{$bug->$name};
+      next unless @values;
+      $item{$name} = [map { $self->type('string', $_) } @values];
+    }
+    else {
+      my $value = $bug->$name;
+      next if !defined($value) || $value eq '';
+      if ($field->type == FIELD_TYPE_BUG_ID) {
+        $item{$name} = $self->type('int', $value);
+      }
+      elsif ($field->type == FIELD_TYPE_DATETIME || $field->type == FIELD_TYPE_DATE) {
+        $item{$name} = $self->type('dateTime', $value);
+      }
+      else {
+        $item{$name} = $self->type('string', $value);
+      }
+    }
+  }
+
   # Timetracking fields are only sent if the user can see them.
   if ($user->is_timetracker) {
     if (filter_wants $params, 'estimated_time') {
