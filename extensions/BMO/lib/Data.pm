@@ -149,6 +149,7 @@ tie(
     "Testing"                                       => [],
     "Thunderbird"                                   => [],
     "Toolkit"                                       => [],
+    "Web Compatibility"                             => [],
     "WebExtensions"                                 => [],
   },
   qr/^cf_due_date$/ => {
