@@ -53,9 +53,10 @@ has 'initial_bugs' => (
       component  => Str,
       team       => Maybe [Str],
       sec_level  => Str,
-      status     => Str,
-      is_stalled => Bool,
-      is_open    => Bool,
+      status                => Str,
+      is_stalled            => Bool,
+      is_unsupported_config => Bool,
+      is_open               => Bool,
       created_at => $DateTime,
     ],
   ],
@@ -167,6 +168,8 @@ sub _build_initial_bugs {
   my $bugs_list = Bugzilla::Bug->new_from_list($self->initial_bug_ids);
   for my $bug (@$bugs_list) {
     my $is_stalled = grep { lc($_->name) eq 'stalled' } @{$bug->keyword_objects};
+    my $is_unsupported_config
+      = grep { lc($_->name) eq 'unsupported-config' } @{$bug->keyword_objects};
     $bugs->{$bug->id} = {
       id        => $bug->id,
       product   => $bug->product,
@@ -182,9 +185,12 @@ sub _build_initial_bugs {
         }
         @{$bug->keyword_objects}
       )->name,
-      status     => $bug->status->name,
-      is_stalled => scalar $is_stalled,
-      is_open    => $self->_is_bug_open($bug->status->name, scalar $is_stalled),
+      status                => $bug->status->name,
+      is_stalled            => scalar $is_stalled,
+      is_unsupported_config => scalar $is_unsupported_config,
+      is_open               => $self->_is_bug_open(
+        $bug->status->name, scalar $is_stalled, scalar $is_unsupported_config
+      ),
       created_at => datetime_from($bug->creation_ts),
     };
   }
@@ -261,7 +267,9 @@ sub _build_results {
       # Undo bug status changes
       if ($event->{field_name} eq 'bug_status') {
         $bug->{status} = $event->{removed};
-        $bug->{is_open} = $self->_is_bug_open($bug->{status}, $bug->{is_stalled});
+        $bug->{is_open} = $self->_is_bug_open(
+          $bug->{status}, $bug->{is_stalled}, $bug->{is_unsupported_config}
+        );
       }
 
       # Undo sec keyword changes
@@ -281,19 +289,31 @@ sub _build_results {
         }
       }
 
-      # Undo stalled keyword changes
+      # Undo stalled and unsupported-config keyword changes
       if ($event->{field_name} eq 'keywords') {
-        if ($event->{added} =~ /\b\stalled\b/) {
+        if ($event->{added} =~ /\bstalled\b/) {
 
           # If the stalled keyword was added in this event, remove it:
           $bug->{is_stalled} = 0;
         }
-        if ($event->{removed} =~ /\b\stalled\b/) {
+        if ($event->{removed} =~ /\bstalled\b/) {
 
           # If the stalled keyword was removed in this event, add it:
           $bug->{is_stalled} = 1;
         }
-        $bug->{is_open} = $self->_is_bug_open($bug->{status}, $bug->{is_stalled});
+        if ($event->{added} =~ /\bunsupported-config\b/) {
+
+          # If unsupported-config was added in this event, remove it:
+          $bug->{is_unsupported_config} = 0;
+        }
+        if ($event->{removed} =~ /\bunsupported-config\b/) {
+
+          # If unsupported-config was removed in this event, add it:
+          $bug->{is_unsupported_config} = 1;
+        }
+        $bug->{is_open} = $self->_is_bug_open(
+          $bug->{status}, $bug->{is_stalled}, $bug->{is_unsupported_config}
+        );
       }
 
       $e++;
@@ -417,8 +437,10 @@ sub _bugs_by_sec_keyword {
 }
 
 sub _is_bug_open {
-  my ($self, $status, $is_stalled) = @_;
-  return ($self->check_open_state->($status)) && !($is_stalled);
+  my ($self, $status, $is_stalled, $is_unsupported_config) = @_;
+  return (!$is_stalled
+      && !$is_unsupported_config
+      && $self->check_open_state->($status));
 }
 
 sub _find_team {

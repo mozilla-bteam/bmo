@@ -28,12 +28,9 @@ sub handle_login {
   ThrowCodeError('unknown_method', {method => $full_method})
     if (!$class or $method =~ /^_/);
 
-  # We never want to create a new session unless the user is calling the
-  # login method.  Setting dont_persist_session makes
-  # Bugzilla::Auth::_handle_login_result() skip calling persist_login().
-  if ($full_method ne 'User.login') {
-    Bugzilla->request_cache->{dont_persist_session} = 1;
-  }
+  # We never want to persist sessions for webservices. Setting auth_no_persist_login
+  # makes Bugzilla::Auth::Persist::Cookie skip setting session cookies.
+  Bugzilla->request_cache->{auth_no_persist_login} = 1;
 
   try {
     require_module($class);

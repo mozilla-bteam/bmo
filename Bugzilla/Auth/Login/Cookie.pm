@@ -36,46 +36,44 @@ sub get_login_info {
   my $dbh    = Bugzilla->dbh;
   my ($user_id, $login_cookie, $is_internal);
 
-  if (!Bugzilla->request_cache->{auth_no_automatic_login}) {
-    $login_cookie = $cgi->cookie("Bugzilla_logincookie");
-    $user_id      = $cgi->cookie("Bugzilla_login");
+  $login_cookie = $cgi->cookie("Bugzilla_logincookie");
+  $user_id      = $cgi->cookie("Bugzilla_login");
 
-    # If cookies cannot be found, this could mean that they haven't
-    # been made available yet. In this case, look at Bugzilla_cookie_list.
-    unless ($login_cookie) {
-      my $cookie = first { $_->name eq 'Bugzilla_logincookie' }
-      @{$cgi->{'Bugzilla_cookie_list'}};
-      $login_cookie = $cookie->value if $cookie;
-    }
-    unless ($user_id) {
-      my $cookie = first { $_->name eq 'Bugzilla_login' }
-      @{$cgi->{'Bugzilla_cookie_list'}};
-      $user_id = $cookie->value if $cookie;
-    }
-    $self->cookie($login_cookie);
+  # If cookies cannot be found, this could mean that they haven't
+  # been made available yet. In this case, look at Bugzilla_cookie_list.
+  unless ($login_cookie) {
+    my $cookie = first { $_->name eq 'Bugzilla_logincookie' }
+    @{$cgi->{'Bugzilla_cookie_list'}};
+    $login_cookie = $cookie->value if $cookie;
+  }
+  unless ($user_id) {
+    my $cookie = first { $_->name eq 'Bugzilla_login' }
+    @{$cgi->{'Bugzilla_cookie_list'}};
+    $user_id = $cookie->value if $cookie;
+  }
+  $self->cookie($login_cookie);
 
-    # If the call is for a web service, and an api token is provided, check
-    # it is valid.
-    if (i_am_webservice()) {
-      if (exists Bugzilla->input_params->{Bugzilla_api_token}) {
-        my $api_token = delete Bugzilla->input_params->{Bugzilla_api_token};
-        my ($token_user_id, undef, undef, $token_type)
-          = Bugzilla::Token::GetTokenData($api_token);
-        if ( !defined $token_type
-          || $token_type ne 'api_token'
-          || $user_id != $token_user_id)
-        {
-          Bugzilla->check_rate_limit('token_mismatch');
-          ThrowUserError('auth_invalid_token', {token => $api_token});
-        }
-        $is_internal = 1;
+  # If the call is for a web service, and an api token is provided, check
+  # it is valid.
+  if (i_am_webservice()) {
+    if (exists Bugzilla->input_params->{Bugzilla_api_token}) {
+      my $api_token = delete Bugzilla->input_params->{Bugzilla_api_token};
+      my ($token_user_id, undef, undef, $token_type)
+        = Bugzilla::Token::GetTokenData($api_token);
+      if ( !defined $token_type
+        || $token_type ne 'api_token'
+        || $user_id != $token_user_id)
+      {
+        Bugzilla->check_rate_limit('token_mismatch');
+        ThrowUserError('auth_invalid_token', {token => $api_token});
       }
-      elsif ($login_cookie && Bugzilla->usage_mode == USAGE_MODE_REST) {
+      $is_internal = 1;
+    }
+    elsif ($login_cookie && Bugzilla->usage_mode == USAGE_MODE_REST) {
 
-        # REST requires an api-token when using cookie authentication
-        # fall back to a non-authenticated request
-        $login_cookie = '';
-      }
+      # REST requires an api-token when using cookie authentication
+      # fall back to a non-authenticated request
+      $login_cookie = '';
     }
   }
 
