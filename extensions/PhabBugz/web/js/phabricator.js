@@ -261,6 +261,11 @@ const Phabricator = {
 
         // Othe edges in the same row.
         otherEdges: [],
+
+        // Target column indices for fork edges drawn from this node's dot up
+        // to the top of its row. Populated when one of this node's children
+        // gets routed to a column other than this node's own.
+        forkEdges: [],
       };
       rev.graph = graph;
 
@@ -306,15 +311,18 @@ const Phabricator = {
         if (graph.index === null) {
           // If all parents still have remaining children, put this node
           // at the first parent's index, and move the remaining children of
-          // the first child into a new index.
+          // the first child into a new index. The fork itself is recorded on
+          // the parent so that it is drawn in the parent's row (emanating
+          // from the parent's dot), rather than in this node's row.
           //
-          // | <--- edge for remaining chidlren
+          // |        <- edge for remaining children (now at new index)
           // |
-          // | o <- this node
-          //  \|
-          //   |
-          //   o <- parent
-          //   |
+          // o        <- this node (takes parent's index)
+          // |
+          // | \
+          // |  \
+          // o   |    <- parent (fork drawn here)
+          // |
           //
           const parentIndex = graph.parentIndices[0];
           graph.index = parentIndex;
@@ -323,9 +331,14 @@ const Phabricator = {
           edges.delete(parentIndex);
           edges.set(newParentIndex, parentEdge);
 
-          // Redirect the edge for the remaining children.
+          // Record the fork on the parent so it is drawn in the parent's row.
+          parentEdge.parent.graph.forkEdges.push(newParentIndex);
+
+          // The edge for the remaining children now passes through this row
+          // vertically at its new index.
           for (const edge of graph.otherEdges) {
             if (edge.from === parentIndex) {
+              edge.from = newParentIndex;
               edge.to = newParentIndex;
               break;
             }
@@ -340,6 +353,7 @@ const Phabricator = {
       if (graph.hasChildren) {
         edges.set(graph.index, {
           remainingChildren: new Set(visibleChildren),
+          parent: rev,
         });
       }
 
@@ -391,6 +405,21 @@ const Phabricator = {
         const path = document.createElementNS(svgns, "path");
         svg.append(path);
         path.setAttribute("d", `M ${x} ${y} L ${x} 0`);
+        path.setAttribute("fill", "none");
+        path.setAttribute("stroke", color);
+        path.setAttribute("stroke-width", "1");
+      }
+
+      // Fork edges to children at other columns. The curve emanates from
+      // this node's dot up to the top of the row at the target column.
+      for (const toIndex of graph.forkEdges) {
+        const toX = this.toNodeX(toIndex);
+
+        const path = document.createElementNS(svgns, "path");
+        svg.append(path);
+        path.setAttribute("d",
+                          `M ${x} ${y} ` +
+                          `C ${x} 0,  ${toX} ${y},  ${toX} 0`);
         path.setAttribute("fill", "none");
         path.setAttribute("stroke", color);
         path.setAttribute("stroke-width", "1");
