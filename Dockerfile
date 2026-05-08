@@ -2,12 +2,10 @@ FROM us-docker.pkg.dev/moz-fx-bugzilla-prod/bugzilla-prod/bmo-perl-slim:20251202
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-ARG CI
 ARG GITHUB_SHA
 ARG GITHUB_SERVER_URL
 ARG GITHUB_RUN_ID
 
-ENV CI=${CI}
 ENV GITHUB_SHA=${GITHUB_SHA}
 ENV GITHUB_RUN_URL=${GITHUB_SERVER_URL}/mozilla-bteam/bmo/actions/runs/${GITHUB_RUN_ID}
 
