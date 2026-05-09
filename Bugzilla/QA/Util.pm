@@ -7,9 +7,12 @@
 
 # -*- Mode: perl; indent-tabs-mode: nil -*-
 
-package QA::Util;
+package Bugzilla::QA::Util;
 
+use 5.10.1;
 use strict;
+use warnings;
+
 use Data::Dumper;
 use Test::More;
 use Test::WWW::Selenium;
@@ -34,7 +37,7 @@ BEGIN {
 }
 
 use base qw(Exporter);
-@QA::Util::EXPORT = qw(
+@Bugzilla::QA::Util::EXPORT = qw(
   trim
   url_quote
   random_string
@@ -65,9 +68,8 @@ use base qw(Exporter);
 );
 
 # How long we wait for pages to load.
-use constant WAIT_TIME => 60000;
-use constant CONF_FILE => $ENV{BZ_QA_CONF_FILE}
-  // "../config/selenium_test.conf";
+use constant WAIT_TIME   => 60000;
+use constant CONF_FILE   => $ENV{BZ_QA_CONF_FILE} // "conf/selenium_test.conf";
 use constant CHROME_MODE => 1;
 
 #####################
@@ -154,15 +156,15 @@ sub get_xmlrpc_client {
     = $config->{browser_url}
     . "/xmlrpc.cgi";
 
-  require QA::RPC::XMLRPC;
-  my $rpc = new QA::RPC::XMLRPC(proxy => $xmlrpc_url);
+  require Bugzilla::QA::RPC::XMLRPC;
+  my $rpc = new Bugzilla::QA::RPC::XMLRPC(proxy => $xmlrpc_url);
   return ($rpc, $config);
 }
 
 sub get_jsonrpc_client {
   my ($get_mode) = @_;
-  require QA::RPC::JSONRPC;
-  my $rpc = new QA::RPC::JSONRPC();
+  require Bugzilla::QA::RPC::JSONRPC;
+  my $rpc = new Bugzilla::QA::RPC::JSONRPC();
 
   # If we don't set a long timeout, then the Bug.add_comment test
   # where we add a too-large comment fails.
@@ -325,7 +327,6 @@ sub go_to_bug {
   my $bug_title = $sel->get_title();
   utf8::encode($bug_title) if utf8::is_utf8($bug_title);
   $sel->title_like(qr/^$bug_id /, $bug_title);
-  sleep(1); # FIXME: Sometimes we try to click edit bug before it is ready so wait a second
   $sel->click_ok('mode-btn-readonly', 'Click Edit Bug') if !$no_edit;
   $sel->click_ok('action-menu-btn', 'Expand action menu');
   $sel->click_ok('action-expand-all', 'Expand all modal panels');

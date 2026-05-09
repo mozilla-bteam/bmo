@@ -5,7 +5,7 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-package Support::Templates;
+package Bugzilla::Test::Templates;
 
 use 5.10.1;
 use strict;
@@ -13,14 +13,14 @@ use warnings;
 
 use lib 't';
 use base qw(Exporter);
-@Support::Templates::EXPORT
+@Bugzilla::Test::Templates::EXPORT
   = qw(@languages @include_paths @english_default_include_paths
   %include_path @referenced_files %actual_files $num_actual_files);
 
 use Bugzilla;
 use Bugzilla::Constants;
 use Bugzilla::Install::Util qw(template_include_path);
-use Support::Files;
+use Bugzilla::Test::Files;
 
 use File::Find;
 use File::Spec;
@@ -30,7 +30,7 @@ our @english_default_include_paths
   = (File::Spec->catdir(bz_locations()->{'templatedir'}, 'en', 'default'));
 
 # And the extensions too
-foreach my $extension (@Support::Files::extensions) {
+foreach my $extension (@Bugzilla::Test::Files::extensions) {
   my $dir = File::Spec->catdir($extension, 'template', 'en', 'default');
   if (-e $dir) {
     push @english_default_include_paths, $dir;
@@ -100,7 +100,7 @@ foreach my $include_path (@include_paths) {
 # in the @referenced_files array to be used by the 004template.t test.
 my %seen;
 
-foreach my $file (@Support::Files::testitems) {
+foreach my $file (@Bugzilla::Test::Files::testitems) {
   open(FILE, $file);
   my @lines = <FILE>;
   close(FILE);

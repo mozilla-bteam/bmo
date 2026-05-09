@@ -8,7 +8,7 @@
 
 use strict;
 use warnings;
-use lib qw(. lib local/lib/perl5 qa/t/lib);
+use lib qw(. lib local/lib/perl5);
 
 use Bugzilla;
 use Bugzilla::User;
@@ -16,7 +16,7 @@ use Bugzilla::Test::Util qw(create_user);
 
 BEGIN { Bugzilla->extensions }
 
-use QA::Util;
+use Bugzilla::QA::Util;
 use Test::More;
 use Test::Mojo;
 use Capture::Tiny qw(capture);

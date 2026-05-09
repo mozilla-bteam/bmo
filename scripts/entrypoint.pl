@@ -132,11 +132,7 @@ sub cmd_load_test_data {
     '--param',     'use_mailer_queue=0'
   );
 
-  if ($ENV{BZ_QA_CONFIG}) {
-    chdir '/app/qa/config';
-    run_quiet('perl', 'generate_test_data.pl');
-    chdir '/app';
-  }
+  run_quiet('perl', 'scripts/generate_test_data.pl') if $ENV{BZ_QA_CONFIG};
 }
 
 sub cmd_push_data {
@@ -144,39 +140,32 @@ sub cmd_push_data {
 }
 
 sub cmd_test_sanity {
-  my @tests = @_;
-  run('prove', '-I/app', '-I/app/local/lib/perl5', '-qf', @tests);
+  my @args = @_;
+  run('prove', '-I/app', '-I/app/local/lib/perl5', @args);
 }
 
 sub cmd_test_webservices {
-  cmd_test_qa('{webservice,rest}_*.t');
+  cmd_test_qa(@_);
 }
 
 sub cmd_test_selenium {
-  my $file_pattern = '*test_*.t';
-  if ($ENV{SELENIUM_GROUP}) {
-    $file_pattern = $ENV{SELENIUM_GROUP} . '_test_*.t';
-  }
-  cmd_test_qa($file_pattern);
+  cmd_test_qa(@_);
 }
 
 sub cmd_test_qa {
-  my $test_files = shift;
+  my (@args) = @_;
   $ENV{HTTP_BACKEND} = 'simple';
   $ENV{MOJO_MODE}    = 'production';
 
   cmd_load_test_data();
   check_data_dir();
-  mkdir '/app/artifacts' if !-d '/app/artifacts';
 
   assert_database()->get;
   my $httpd_exit_f = run_cereal_and_httpd('-DHTTPD_IN_SUBDIR', '-DACCESS_LOGS');
   my $prove_exit_f = run_prove(
     prove_cmd => [
-      'prove', '-qf', '-I/app', '-I/app/local/lib/perl5',
-      sub { glob $test_files },
+      'prove', '-I/app', '-I/app/local/lib/perl5', @args
     ],
-    prove_dir => '/app/qa/t',
   );
   exit Future->wait_any($prove_exit_f, $httpd_exit_f)->get;
 }
@@ -189,7 +178,7 @@ sub cmd_prove {
 }
 
 sub cmd_test_bmo {
-  my (@prove_args) = @_;
+  my (@args) = @_;
   $ENV{HTTP_BACKEND} = 'hypnotoad';
 
   cmd_load_test_data();
@@ -210,7 +199,7 @@ sub cmd_test_bmo {
 
   my $httpd_exit_f = run_cereal_and_httpd('-DACCESS_LOGS');
   my $prove_exit_f = run_prove(
-    prove_cmd => ['prove', '-I/app', '-I/app/local/lib/perl5', @prove_args],
+    prove_cmd => ['prove', '-I/app', '-I/app/local/lib/perl5', @args],
   );
 
   exit Future->wait_any($prove_exit_f, $httpd_exit_f)->get;
@@ -220,7 +209,6 @@ sub run_prove {
   my (%param) = @_;
 
   my $prove_cmd = $param{prove_cmd};
-  my $prove_dir = $param{prove_dir};
   assert_httpd()->then(sub {
     my $loop = IO::Async::Loop->new;
     $loop->connect(socktype => 'stream', host => 'localhost', service => 5880,)
@@ -229,7 +217,6 @@ sub run_prove {
       my $prove_exit_f = $loop->new_future;
       my $prove        = IO::Async::Process->new(
         code => sub {
-          chdir $prove_dir if $prove_dir;
           my @cmd = (map { ref $_ eq 'CODE' ? $_->() : $_ } @$prove_cmd);
           warn "run @cmd\n";
           exec @cmd;

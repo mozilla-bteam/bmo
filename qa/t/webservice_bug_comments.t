@@ -11,10 +11,10 @@
 
 use strict;
 use warnings;
-use lib qw(lib ../../lib ../../local/lib/perl5);
+use lib qw(. lib);
 use DateTime;
-use QA::Util;
-use QA::Tests qw(STANDARD_BUG_TESTS PRIVATE_BUG_USER);
+use Bugzilla::QA::Util;
+use Bugzilla::QA::Tests qw(STANDARD_BUG_TESTS PRIVATE_BUG_USER);
 use Test::More tests => 331;
 my ($config, @clients) = get_rpc_clients();
 
@@ -48,7 +48,7 @@ sub test_comments {
 
 
     my $creation_day;
-    if ($rpc->isa('QA::RPC::XMLRPC')) {
+    if ($rpc->isa('Bugzilla::QA::RPC::XMLRPC')) {
       $creation_day = $creation_time->ymd('');
     }
     else {

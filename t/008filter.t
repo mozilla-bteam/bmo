@@ -19,12 +19,12 @@ use 5.10.1;
 use strict;
 use warnings;
 
-use lib qw(. lib local/lib/perl5 t);
+use lib qw(. lib local/lib/perl5);
 
 use Bugzilla::Constants;
-use Support::Templates;
+use Bugzilla::Test::Templates;
 use File::Spec;
-use Test::More tests => $Support::Templates::num_actual_files;
+use Test::More tests => $Bugzilla::Test::Templates::num_actual_files;
 use Cwd;
 
 # Undefine the record separator so we can read in whole files at once
@@ -33,14 +33,14 @@ my $topdir    = cwd;
 $/ = undef;
 our %safe;
 
-foreach my $path (@Support::Templates::include_paths) {
+foreach my $path (@Bugzilla::Test::Templates::include_paths) {
   $path =~ s|\\|/|g if ON_WINDOWS;    # convert \ to / in path if on windows
   $path =~ m|template/([^/]+)/([^/]+)|;
   my $lang   = $1;
   my $flavor = $2;
 
   chdir $topdir;                      # absolute path
-  my @testitems = Support::Templates::find_actual_files($path);
+  my @testitems = Bugzilla::Test::Templates::find_actual_files($path);
   chdir $topdir;                      # absolute path
 
   next unless @testitems;

@@ -7,12 +7,12 @@
 
 use strict;
 use warnings;
-use lib qw(lib ../.. ../../local/lib/perl5);
+use lib qw(. lib);
 
 use Bugzilla;
 BEGIN { Bugzilla->extensions }
 
-use QA::Util;
+use Bugzilla::QA::Util;
 use Test::More "no_plan";
 use Test::Mojo;
 

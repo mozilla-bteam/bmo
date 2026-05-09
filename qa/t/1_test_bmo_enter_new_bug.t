@@ -14,11 +14,11 @@
 
 use strict;
 use warnings;
-use lib qw(lib ../../lib ../../local/lib/perl5);
+use lib qw(. lib);
 
 use Test::More "no_plan";
 
-use QA::Util;
+use Bugzilla::QA::Util;
 
 my ($sel, $config) = get_selenium();
 

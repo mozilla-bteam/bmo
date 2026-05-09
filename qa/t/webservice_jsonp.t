@@ -7,10 +7,10 @@
 
 use strict;
 use warnings;
-use lib qw(lib ../../lib ../../local/lib/perl5);
+use lib qw(. lib);
 use Test::More tests => 85;
-use QA::Util;
-my $jsonrpc_get = QA::Util::get_jsonrpc_client('GET');
+use Bugzilla::QA::Util;
+my $jsonrpc_get = Bugzilla::QA::Util::get_jsonrpc_client('GET');
 
 my @chars = (0 .. 9, 'A' .. 'Z', 'a' .. 'z', '_[].');
 

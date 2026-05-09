@@ -6,7 +6,7 @@
 # defined by the Mozilla Public License, v. 2.0.
 
 
-package Support::Files;
+package Bugzilla::Test::Files;
 
 use 5.10.1;
 use strict;

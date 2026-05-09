@@ -11,11 +11,11 @@
 
 use strict;
 use warnings;
-use lib qw(lib ../../lib ../../local/lib/perl5);
+use lib qw(. lib);
 use Data::Dumper;
 use DateTime;
-use QA::Util;
-use QA::Tests qw(bug_tests PRIVATE_BUG_USER);
+use Bugzilla::QA::Util;
+use Bugzilla::QA::Tests qw(bug_tests PRIVATE_BUG_USER);
 use Test::More tests => 979;
 my ($config, @clients) = get_rpc_clients();
 

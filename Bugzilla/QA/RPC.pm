@@ -7,11 +7,15 @@
 
 # -*- Mode: perl; indent-tabs-mode: nil -*-
 
-package QA::RPC;
+package Bugzilla::QA::RPC;
+
+use 5.10.1;
 use strict;
+use warnings;
+
 use Data::Dumper;
-use QA::Util;
-use QA::Tests qw(PRIVATE_BUG_USER create_bug_fields);
+use Bugzilla::QA::Util;
+use Bugzilla::QA::Tests qw(PRIVATE_BUG_USER create_bug_fields);
 use Storable qw(dclone);
 use Test::More;
 
@@ -278,7 +282,7 @@ sub bz_test_bug {
       my $creation_day;
 
       # XML-RPC and JSON-RPC have different date formats.
-      if ($self->isa('QA::RPC::XMLRPC')) {
+      if ($self->isa('Bugzilla::QA::RPC::XMLRPC')) {
         $creation_day = $creation_time->ymd('');
       }
       else {

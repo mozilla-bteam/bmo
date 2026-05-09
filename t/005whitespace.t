@@ -13,24 +13,24 @@ use 5.10.1;
 use strict;
 use warnings;
 
-use lib qw(. lib local/lib/perl5 t);
+use lib qw(. lib local/lib/perl5);
 
-use Support::Files;
-use Support::Templates;
+use Bugzilla::Test::Files;
+use Bugzilla::Test::Templates;
 
 use File::Spec;
 use Test::More tests => (
-      scalar(@Support::Files::testitems)
-    + scalar(@Support::Files::test_files)
-    + $Support::Templates::num_actual_files)
+      scalar(@Bugzilla::Test::Files::testitems)
+    + scalar(@Bugzilla::Test::Files::test_files)
+    + $Bugzilla::Test::Templates::num_actual_files)
   * 3;
 
-my @testitems = (@Support::Files::testitems, @Support::Files::test_files);
-for my $path (@Support::Templates::include_paths) {
+my @testitems = (@Bugzilla::Test::Files::testitems, @Bugzilla::Test::Files::test_files);
+for my $path (@Bugzilla::Test::Templates::include_paths) {
   push(
     @testitems,
     map(File::Spec->catfile($path, $_),
-      Support::Templates::find_actual_files($path))
+      Bugzilla::Test::Templates::find_actual_files($path))
   );
 }
 

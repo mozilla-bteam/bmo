@@ -11,9 +11,9 @@
 
 use strict;
 use warnings;
-use lib qw(lib ../../lib ../../local/lib/perl5);
+use lib qw(. lib);
 use Test::More tests => 77;
-use QA::Util;
+use Bugzilla::QA::Util;
 
 use constant DESCRIPTION => 'Group created by Group.create';
 

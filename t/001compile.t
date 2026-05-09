@@ -14,13 +14,13 @@ use 5.10.1;
 use strict;
 use warnings;
 
-use lib qw(. lib local/lib/perl5 t);
+use lib qw(. lib local/lib/perl5);
 use Config;
-use Support::Files;
+use Bugzilla::Test::Files;
 use Test::More;
 
 BEGIN {
-  plan tests => @Support::Files::testitems + @Support::Files::test_files;
+  plan tests => @Bugzilla::Test::Files::testitems + @Bugzilla::Test::Files::test_files;
 
   use_ok('Bugzilla::Constants');
   use_ok('Bugzilla::Install::Requirements');
@@ -69,7 +69,7 @@ sub compile_file {
     $libs .= join ' ', map {"-I\"$_\""} split /$Config{path_sep}/, $ENV{PERL5LIB};
   }
   my $perl   = qq{"$^X"};
-  my $output = `$perl $libs -c$T -MSupport::Systemexec $file 2>&1`;
+  my $output = `$perl $libs -c$T -MBugzilla::Test::Systemexec $file 2>&1`;
   chomp $output;
   my $return_val = $?;
   $output =~ s/^\Q$file\E syntax OK$//ms;
@@ -77,7 +77,7 @@ sub compile_file {
   ok(!$return_val, $file) or diag('--ERROR');
 }
 
-my @testitems = (@Support::Files::testitems, @Support::Files::test_files);
+my @testitems = (@Bugzilla::Test::Files::testitems, @Bugzilla::Test::Files::test_files);
 my $file_features = map_files_to_features();
 
 # Test the scripts by compiling them

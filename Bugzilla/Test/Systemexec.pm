@@ -5,15 +5,21 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-# -*- Mode: perl; indent-tabs-mode: nil -*-
+package Bugzilla::Test::Systemexec;
 
-package QA::RPC::XMLRPC;
+use 5.10.1;
 use strict;
-use base qw(QA::RPC XMLRPC::Lite);
+use warnings;
 
-use constant TYPE           => 'XML-RPC';
-use constant DATETIME_REGEX => qr/^\d{8}T\d\d:\d\d:\d\d$/;
+use parent qw(Exporter);
+@Bugzilla::Test::Systemexec::EXPORT = qw(system exec);
+
+sub system($$@) {
+  1;
+}
+
+sub exec($$@) {
+  1;
+}
 
 1;
-
-__END__
