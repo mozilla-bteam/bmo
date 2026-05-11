@@ -20,11 +20,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Create directory for artifacts
         run: mkdir build_info
-      - name: Build Docker image
-        run: docker compose -f docker-compose.test.yml build bmo.test
-      - name: Copy version.json and build push data
+      - name: Build and then copy version.json and build push data
         run: |
-          docker compose -f docker-compose.test.yml run --no-deps --name push_data bmo.test push_data
+          docker compose run --build --no-deps --name push_data bmo.test push_data
           docker cp push_data:/app/push_data/blog.push.txt build_info/blog.push.txt
           docker cp push_data:/app/push_data/markdown.push.txt build_info/markdown.push.txt
           docker cp push_data:/app/push_data/bug.push.txt build_info/bug.push.txt
@@ -70,7 +68,6 @@ jobs:
           tags: |
             ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}/bmo:${{ github.ref_name }}
           build-args: |
-            CI=1
             GITHUB_SHA=${{ github.sha }}
             GITHUB_SERVER_URL=${{ github.server_url }}
             GITHUB_RUN_ID=${{ github.run_id }}
