@@ -389,7 +389,8 @@ sub bugmail_recipients {
           = Bugzilla::Component->new({
           name => $ra->{'old'}, product => $product, cache => 1
           });
-        $oldComponentId = $component->id;
+        # Check if component found in case it has changed since this change was stored
+        $oldComponentId = $component->id if $component;
       }
     }
   }
