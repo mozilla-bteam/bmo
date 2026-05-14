@@ -21,6 +21,7 @@ use Bugzilla::Mailer qw(MessageToMTA);
 use Bugzilla::Extension::PhabBugz::Constants;
 use Bugzilla::Extension::PhabBugz::User;
 use Bugzilla::Extension::PhabBugz::Util qw(request);
+use Bugzilla::Util qw(clean_text);
 
 use Try::Tiny;
 
@@ -136,7 +137,12 @@ sub object_before_create {
   return if $class ne 'Bugzilla::Attachment';
 
   # Only allow phab-bot to set content type to text/x-phabricator-request
-  my $content_type = $params->{mimetype};
+  # Normalize before comparing — storage applies clean_text() (control-char
+  # substitution + trim) after this hook runs, so variants like
+  # "text/x-phabricator-request " or "text/x-phabricator-request\x00" would
+  # bypass an un-normalized eq check.
+  my $content_type = clean_text($params->{mimetype} // '');
+  $params->{mimetype} = $content_type if $content_type;
   if ($content_type && $content_type eq PHAB_CONTENT_TYPE
     && !Bugzilla->request_cache->{allow_phab_revision_attachment})
   {

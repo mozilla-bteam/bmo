@@ -49,24 +49,11 @@ our $flag_pronoun_re = do {
 # Creating an attachment whose contents is a URL matching one of these regexes
 # will result in the user being redirected to that URL when viewing the
 # attachment.
-
-sub phabricator_url_re {
-  my $phab_uri
-    = Bugzilla->params->{phabricator_base_uri} || 'https://example.com';
-  return qr/^\Q${phab_uri}\ED\d+$/i;
-}
-
 our %autodetect_attach_urls = (
   github_pr => {
     title        => 'GitHub Pull Request',
     regex        => qr#^https://github\.com/[^/]+/[^/]+/pull/\d+/?$#i,
     content_type => 'text/x-github-pull-request',
-    can_review   => 1,
-  },
-  Phabricator => {
-    title        => 'Phabricator',
-    regex        => \&phabricator_url_re,
-    content_type => 'text/x-phabricator-request',
     can_review   => 1,
   },
   google_docs => {
