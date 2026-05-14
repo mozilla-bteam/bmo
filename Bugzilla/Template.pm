@@ -58,6 +58,15 @@ sub SAFE_URL_REGEXP {
   return qr/($safe_protocols):[^:\s<>\"][^\s<>\"]+[\w\/]/i;
 }
 
+sub is_safe_url {
+  my $url = shift;
+  return 0 unless $url;
+  my $safe_url_regexp = SAFE_URL_REGEXP();
+  return 1 if $url =~ /^$safe_url_regexp$/;
+  return 1 if $url =~ /^[^\s<>\":]+[\w\/]$/i;
+  return 0;
+}
+
 # Convert the constants in the Bugzilla::Constants module into a hash we can
 # pass to the template object for reflection into its "constants" namespace
 # (which is like its "variables" namespace, but for constants).  To do so, we
@@ -984,19 +993,7 @@ sub create {
       },
 
       # Check whether the URL is safe.
-      'is_safe_url' => sub {
-        my $url = shift;
-        return 0 unless $url;
-
-        my $safe_url_regexp = SAFE_URL_REGEXP();
-        return 1 if $url =~ /^$safe_url_regexp$/;
-
-        # Pointing to a local file with no colon in its name is fine.
-        return 1 if $url =~ /^[^\s<>\":]+[\w\/]$/i;
-
-        # If we come here, then we cannot guarantee it's safe.
-        return 0;
-      },
+      'is_safe_url' => \&is_safe_url,
 
       # Allow templates to generate a token themselves.
       'issue_hash_token' => \&Bugzilla::Token::issue_hash_token,

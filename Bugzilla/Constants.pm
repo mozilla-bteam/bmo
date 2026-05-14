@@ -485,9 +485,9 @@ use constant MAX_STS_AGE => 31536000;
 
 # Protocols which are considered as safe.
 use constant SAFE_PROTOCOLS => (
-  'afs',    'cid',         'ftp', 'gopher', 'http', 'https',
-  'irc',    'ircs',        'mid', 'news',   'nntp', 'prospero',
-  'telnet', 'view-source', 'wais'
+  'afs',    'cid',  'ftp', 'gopher', 'http', 'https',
+  'irc',    'ircs', 'mid', 'news',   'nntp', 'prospero',
+  'telnet', 'wais'
 );
 
 # Valid MIME types for attachments.
