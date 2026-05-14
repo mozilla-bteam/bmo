@@ -1062,6 +1062,8 @@ sub mermaid_quote {
   $text =~ s/\[/#91;/g;
   $text =~ s/\]/#93;/g;
   $text =~ s/"/#34;/g;
+  $text =~ s/</#60;/g;
+  $text =~ s/>/#62;/g;
   return $text;
 }
 
