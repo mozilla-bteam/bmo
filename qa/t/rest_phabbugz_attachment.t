@@ -141,8 +141,9 @@ $t->post_ok(
 # upgraded "text/plain" to "text/x-phabricator-request" when the data matched the
 # Phabricator URL regex. The fix guards the upgrade with allow_phab_revision_attachment.
 
-my $phab_base = Bugzilla->params->{phabricator_base_uri} || 'https://example.com';
-my $phab_url  = "${phab_base}D9999";
+my $phab_base = Bugzilla->params->{phabricator_base_uri} || 'https://example.com/';
+$phab_base =~ s{/?$}{/};
+my $phab_url = "${phab_base}D9999";
 
 my $upgrade_attachment = {
   summary      => 'URL auto-upgrade bypass probe',
