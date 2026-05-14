@@ -317,17 +317,30 @@ sub Send {
         Bugzilla::Hook::process('bugmail_referenced_bugs',
           {updated_bug => $bug, referenced_bugs => $referenced_bugs});
 
+        # Reuse the already-filtered, hook-processed entry from $referenced_bugs
+        # for the blocker's short_desc. The blocker id was added to @referenced_bugs
+        # earlier; after visible_bugs filtering and bugmail_referenced_bugs hook
+        # processing above, its entry (if the user can see it) is already in
+        # $referenced_bugs with any SecureMail redaction applied.
+        my $blocker_short_desc;
+        if ($params->{dep_only}) {
+          my $blocker_id = $params->{blocker}->id;
+          my ($blocker_entry) = grep { $_->{id} == $blocker_id } @$referenced_bugs;
+          $blocker_short_desc = $blocker_entry->{short_desc} if $blocker_entry;
+        }
+
         my $sent_mail = sendMail({
-          to              => $user,
-          bug             => $bug,
-          comments        => $comments,
-          date            => $date,
-          changer         => $changer,
-          watchers        => exists $watching{$user_id} ? $watching{$user_id} : undef,
-          diffs           => \@diffs,
-          rels_which_want => \%rels_which_want,
-          referenced_bugs => $referenced_bugs,
-          dep_only        => $params->{dep_only}
+          to                 => $user,
+          bug                => $bug,
+          comments           => $comments,
+          date               => $date,
+          changer            => $changer,
+          watchers           => exists $watching{$user_id} ? $watching{$user_id} : undef,
+          diffs              => \@diffs,
+          rels_which_want    => \%rels_which_want,
+          referenced_bugs    => $referenced_bugs,
+          dep_only           => $params->{dep_only},
+          blocker_short_desc => $blocker_short_desc,
         });
         push(@sent, $user->login) if $sent_mail;
       }
@@ -356,8 +369,9 @@ sub sendMail {
   my $watchingRef     = $params->{watchers};
   my @diffs           = @{$params->{diffs}};
   my $relRef          = $params->{rels_which_want};
-  my $referenced_bugs = $params->{referenced_bugs};
-  my $dep_only        = $params->{dep_only};
+  my $referenced_bugs    = $params->{referenced_bugs};
+  my $dep_only           = $params->{dep_only};
+  my $blocker_short_desc = $params->{blocker_short_desc};
   my $attach_id;
 
   # Only display changes the user is allowed see.
@@ -457,8 +471,9 @@ sub sendMail {
     changedfieldnames  => \@changedfieldnames,
     new_comments       => \@send_comments,
     threadingmarker => build_thread_marker($bug->id, $user->id, !$bug->lastdiffed),
-    referenced_bugs => $referenced_bugs,
-    bugmailtype     => $bugmailtype,
+    referenced_bugs    => $referenced_bugs,
+    bugmailtype        => $bugmailtype,
+    blocker_short_desc => $blocker_short_desc,
   };
 
   if (Bugzilla->get_param_with_override('use_mailer_queue')) {
