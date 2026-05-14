@@ -73,7 +73,7 @@ Product/Component: [%+ bug.product +%] :: [%+ bug.component %]
       [% IF change.blocker %]
         [% terms.Bug %] [%+ bug.id %] depends on [% terms.bug %] [%+ change.blocker.id %], which changed state.
 
-[% IF blocker_short_desc -%]
+[% IF blocker_short_desc.length -%]
 [%+ terms.Bug %] [%+ change.blocker.id %] Summary: [% blocker_short_desc %]
 [% END -%]
 [%+ urlbase %]show_bug.cgi?id=[% change.blocker.id %]
