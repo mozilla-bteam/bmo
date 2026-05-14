@@ -726,6 +726,14 @@ sub create {
   my $class = shift;
   my $dbh   = Bugzilla->dbh;
 
+  # Normalize mimetype before the object_before_create hook fires so every
+  # extension sees the same cleaned value that _check_content_type would
+  # produce, closing the class of bypass where raw user input passes an eq
+  # check but is stored as a different type after clean_text normalization.
+  if (ref $_[0] && defined $_[0]->{mimetype}) {
+    $_[0]->{mimetype} = clean_text($_[0]->{mimetype});
+  }
+
   $class->check_required_create_fields(@_);
   my $params = $class->run_create_validators(@_);
 

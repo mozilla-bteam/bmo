@@ -17,9 +17,10 @@ use MIME::Base64 qw(encode_base64);
 use Test::Mojo;
 use Test::More;
 
-my $config        = get_config();
-my $admin_api_key = $config->{admin_user_api_key};
-my $url           = Bugzilla->localconfig->urlbase;
+my $config               = get_config();
+my $admin_api_key        = $config->{admin_user_api_key};
+my $unprivileged_api_key = $config->{unprivileged_user_api_key};
+my $url                  = Bugzilla->localconfig->urlbase;
 
 my $t = Test::Mojo->new();
 
@@ -114,5 +115,57 @@ $t->get_ok(
   ->status_is(200)
   ->json_is("/attachments/$attach_id/content_type" => 'text/plain',
     'Content type was silently reverted by the hook');
+
+### Section 5: Whitespace-bypass — trailing space in Phabricator content type (CVE fix 1)
+# Bug 2036552: "text/x-phabricator-request " bypassed the object_before_create eq
+# check before the storage layer trimmed it. The fix normalizes before comparing.
+
+my $whitespace_attachment = {
+  summary      => 'Whitespace bypass probe',
+  content_type => "$phab_content_type ",
+  data         => encode_base64($attach_data),
+  file_name    => 'phabricator-D9999-url.txt',
+  is_patch     => 0,
+  is_private   => 0,
+};
+
+$t->post_ok(
+  $url . "rest/bug/$bug_id/attachment" =>
+    {'X-Bugzilla-API-Key' => $unprivileged_api_key} => json => $whitespace_attachment)
+  ->status_is(400, 'Trailing-space Phabricator mimetype is blocked')
+  ->json_like('/message' => qr/content.type/i,
+    'Error message mentions content type');
+
+### Section 6: URL auto-upgrade bypass — text/plain + Phabricator URL data (CVE fix 2)
+# Bug 2036552: attachment_process_data ran after object_before_create and silently
+# upgraded "text/plain" to "text/x-phabricator-request" when the data matched the
+# Phabricator URL regex. The fix guards the upgrade with allow_phab_revision_attachment.
+
+my $phab_base = Bugzilla->params->{phabricator_base_uri} || 'https://example.com';
+my $phab_url  = "${phab_base}D9999";
+
+my $upgrade_attachment = {
+  summary      => 'URL auto-upgrade bypass probe',
+  content_type => 'text/plain',
+  data         => encode_base64($phab_url),
+  file_name    => 'phabricator-D9999-url.txt',
+  is_patch     => 0,
+  is_private   => 0,
+};
+
+$t->post_ok(
+  $url . "rest/bug/$bug_id/attachment" =>
+    {'X-Bugzilla-API-Key' => $unprivileged_api_key} => json => $upgrade_attachment)
+  ->status_is(201, 'Attachment with Phabricator URL data accepted as text/plain');
+
+my ($upgrade_attach_id) = keys %{$t->tx->res->json->{attachments}};
+ok($upgrade_attach_id, "Auto-upgrade probe attachment created with id $upgrade_attach_id");
+
+$t->get_ok(
+  $url . "rest/bug/attachment/$upgrade_attach_id" =>
+    {'X-Bugzilla-API-Key' => $unprivileged_api_key})
+  ->status_is(200)
+  ->json_is("/attachments/$upgrade_attach_id/content_type" => 'text/plain',
+    'Phabricator URL data did not auto-upgrade content type for unprivileged user');
 
 done_testing();
