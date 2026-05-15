@@ -47,8 +47,12 @@ our $flag_pronoun_re = do {
 };
 
 sub phabricator_url_re {
-  my $phab_uri
-    = Bugzilla->params->{phabricator_base_uri} || 'https://example.com';
+  my $params = Bugzilla->params;
+  return qr/(?!)/ unless $params->{phabricator_enabled};
+
+  my $phab_uri = $params->{phabricator_base_uri};
+  return qr/(?!)/ unless $phab_uri;
+
   return qr/^\Q${phab_uri}\ED\d+$/i;
 }
 
