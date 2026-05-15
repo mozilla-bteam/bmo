@@ -1197,7 +1197,12 @@ sub attachment_process_data {
   }
 
   if (my $detected = _detect_attached_url($url)) {
-    return if !$detected->{can_user_set}; # Do not allow normal users to set
+
+    # Some detected content types are reserved for automation/non-user flows
+    # (for example, specialized URL attachments) and must not be auto-assigned
+    # from this user-submitted plain-text URL path.
+    return if !$detected->{can_user_set};
+
     $attributes->{mimetype} = $detected->{content_type};
     $attributes->{ispatch}  = 0;
   }
