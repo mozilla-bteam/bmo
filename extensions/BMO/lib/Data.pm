@@ -46,6 +46,16 @@ our $flag_pronoun_re = do {
   qr/^cf_(status|tracking)_(firefox|thunderbird)_($channels_re)$/;
 };
 
+sub phabricator_url_re {
+  my $params = Bugzilla->params;
+  return qr/(?!)/ unless $params->{phabricator_enabled};
+
+  my $phab_uri = $params->{phabricator_base_uri};
+  return qr/(?!)/ unless $phab_uri;
+
+  return qr/^\Q${phab_uri}\ED\d+$/i;
+}
+
 # Creating an attachment whose contents is a URL matching one of these regexes
 # will result in the user being redirected to that URL when viewing the
 # attachment.
@@ -55,6 +65,14 @@ our %autodetect_attach_urls = (
     regex        => qr#^https://github\.com/[^/]+/[^/]+/pull/\d+/?$#i,
     content_type => 'text/x-github-pull-request',
     can_review   => 1,
+    can_user_set => 1,
+  },
+  phabricator => {
+    title        => 'Phabricator',
+    regex        => \&phabricator_url_re,
+    content_type => 'text/x-phabricator-request',
+    can_review   => 1,
+    can_user_set => 0,
   },
   google_docs => {
     title => 'Google Doc',
@@ -62,6 +80,7 @@ our %autodetect_attach_urls = (
       qr#^https://docs\.google\.com/(?:document|spreadsheets|presentation)/d/#i,
     content_type => 'text/x-google-doc',
     can_review   => 0,
+    can_user_set => 1,
   },
 );
 
