@@ -93,6 +93,8 @@ my %set_params = (
   defaultseverity            => '--',          # BMO CHANGE
   timetrackinggroup          => 'editbugs',    # BMO CHANGE
   letsubmitterchoosepriority => 1,             # BMO CHANGE
+  phabricator_enabled        => 1,
+  phabricator_base_uri       => 'https://phabricator.test.example.com/',
 );
 
 my $params_modified;

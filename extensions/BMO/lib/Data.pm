@@ -67,7 +67,7 @@ our %autodetect_attach_urls = (
     can_review   => 1,
     can_user_set => 1,
   },
-  Phabricator => {
+  phabricator => {
     title        => 'Phabricator',
     regex        => \&phabricator_url_re,
     content_type => 'text/x-phabricator-request',
