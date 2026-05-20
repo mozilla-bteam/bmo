@@ -1114,6 +1114,8 @@ sub notify {
     $recipients{$addressee->email} = $addressee;
   }
 
+  return unless keys %recipients;
+
   # Process and send notification for each recipient.
   # If there are users in the CC list who don't have an account,
   # use the default language for email notifications.
