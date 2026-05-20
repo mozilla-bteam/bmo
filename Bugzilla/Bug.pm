@@ -1608,8 +1608,9 @@ sub _check_bug_file_loc {
   return '' if $url eq '';
 
   # On bug entry, if bug_file_loc is "http://", the default, use an
-  # empty value instead. However, on bug editing people can set that
-  # back if they *really* want to.
+  # empty value instead. On bug editing, "http://" is not generally
+  # accepted by the safe URL validation below; it is only allowed if it
+  # is already stored on the bug and remains unchanged.
   if (!ref $invocant && $url eq 'http://') {
     return '';
   }
