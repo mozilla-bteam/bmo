@@ -1533,11 +1533,11 @@
     [% IF is_safe_url(bug.bug_file_loc) %]
       <a href="[% bug.bug_file_loc FILTER html %]" target="_blank" rel="nofollow noreferrer"
         title="[% bug.bug_file_loc FILTER truncate(256) FILTER html %]"
-        class="bug-url" data-safe="1">
+        class="bug-url">
         [%~ link_text FILTER html ~%]
       </a>
     [% ELSE %]
-      <span class="bug-url" data-safe="0"
+      <span class="bug-url"
         title="[% bug.bug_file_loc FILTER truncate(256) FILTER html %]">
         [%~ link_text FILTER html ~%]
       </span>
