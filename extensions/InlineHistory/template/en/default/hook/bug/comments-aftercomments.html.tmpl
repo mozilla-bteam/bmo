@@ -141,7 +141,7 @@
     [%~%]<a href="[% value FILTER html FILTER js %]" target="_blank" rel="nofollow noreferrer">
     [%~%][% value FILTER ih_short_value FILTER html FILTER js %]</a>
     [%~ ELSE ~%]
-    [%~%][% value FILTER ih_short_value FILTER html FILTER js %]
+    [%~%]<span title="[% value FILTER html FILTER js %]">[% value FILTER ih_short_value FILTER html FILTER js %]</span>
     [%~ END ~%]
   [% ELSIF change.fieldname == 'see_also' %]
     [% FOREACH see_also = value %]
