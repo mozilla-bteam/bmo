@@ -280,25 +280,6 @@ $(function() {
             $('#attachments tr.attach-obsolete').toggle();
         });
 
-    // URL --> unsafe warning
-    $('.bug-url')
-        .click(function(event) {
-            var that = $(this);
-            event.stopPropagation();
-            if (!that.data('safe')) {
-                event.preventDefault();
-                if (confirm('This is considered an unsafe URL and could possibly be harmful. ' +
-                            'The full URL is:\n\n' + that.attr('href') + '\n\nContinue?'))
-                {
-                    try {
-                        window.open(that.attr('href'));
-                    } catch(ex) {
-                        alert('Malformed URL');
-                    }
-                }
-            }
-        });
-
     // top btn
     $('#top-btn')
         .click(function(event) {

@@ -440,9 +440,13 @@
 
       CASE 'bug_file_loc';
         %]
+        [% IF is_safe_url(value) %]
         <a href="[% value FILTER html %]" target="_blank" rel="nofollow noreferrer"
-           class="bug-url" data-safe="[% is_safe_url(value) ? 1 : 0 %]"
+           class="bug-url" data-safe="1"
         >[% value FILTER truncate(40) FILTER html %]</a>
+        [% ELSE %]
+        <span class="bug-url" data-safe="0">[% value FILTER truncate(40) FILTER html %]</span>
+        [% END %]
         [%
 
       CASE 'see_also';

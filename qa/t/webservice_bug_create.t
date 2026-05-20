@@ -13,7 +13,7 @@ use strict;
 use warnings;
 use lib qw(lib ../../lib ../../local/lib/perl5);
 use Storable qw(dclone);
-use Test::More tests => 305;
+use Test::More tests => 323;
 use QA::Util;
 use QA::Tests qw(create_bug_fields PRIVATE_BUG_USER);
 
@@ -142,6 +142,20 @@ my $fields = {
   comment_is_private => {
     invalid =>
       {faultstring => 'you are not allowed to.+comments.+private', value => 1,}
+  },
+  url => {
+    javascript => {
+      faultstring => 'is not a valid URL for the URL field',
+      value       => 'javascript:alert(document.domain)//',
+    },
+    data => {
+      faultstring => 'is not a valid URL for the URL field',
+      value       => 'data:text/html,<script>alert(1)</script>',
+    },
+    vbscript => {
+      faultstring => 'is not a valid URL for the URL field',
+      value       => 'vbscript:msgbox(1)',
+    },
   },
 };
 

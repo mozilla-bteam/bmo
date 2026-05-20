@@ -137,10 +137,12 @@
   [% ELSIF change.buglist %]
     [% value FILTER bug_list_link FILTER js %]
   [% ELSIF change.fieldname == 'bug_file_loc' %]
-    [%~%]<a href="[% value FILTER html FILTER js %]" target="_blank" rel="nofollow noreferrer"
-      [%~ ' onclick="return inline_history.confirmUnsafeUrl(this.href)"'
-          UNLESS is_safe_url(value) %]>
+    [%~ IF is_safe_url(value) ~%]
+    [%~%]<a href="[% value FILTER html FILTER js %]" target="_blank" rel="nofollow noreferrer">
     [%~%][% value FILTER ih_short_value FILTER html FILTER js %]</a>
+    [%~ ELSE ~%]
+    [%~%][% value FILTER ih_short_value FILTER html FILTER js %]
+    [%~ END ~%]
   [% ELSIF change.fieldname == 'see_also' %]
     [% FOREACH see_also = value %]
       [% IF see_also.bug_id %]

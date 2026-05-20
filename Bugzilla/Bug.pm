@@ -1605,14 +1605,33 @@ sub _check_bug_file_loc {
   my ($invocant, $url) = @_;
   return '' if !defined $url;
   $url = trim($url);
+  return '' if $url eq '';
 
   # On bug entry, if bug_file_loc is "http://", the default, use an
   # empty value instead. However, on bug editing people can set that
   # back if they *really* want to.
   if (!ref $invocant && $url eq 'http://') {
-    $url = '';
+    return '';
   }
-  return $url;
+
+  # Allowlist scheme check — mirrors the is_safe_url template helper so
+  # what passes here is exactly what renders as a clickable link.
+  my $safe_url_regexp = SAFE_URL_REGEXP();
+  return $url if $url =~ /^$safe_url_regexp$/;
+
+  # Colon-free relative path / local reference (matches is_safe_url
+  # second branch in Bugzilla/Template.pm).
+  return $url if $url =~ /^[^\s<>\":]+[\w\/]$/i;
+
+  # Allow an already-stored unsafe value to pass through unchanged so that
+  # edits to other fields on the bug are not blocked. Unsafe values are
+  # rendered as plain text by templates; a DB cleanup script will scrub them.
+  if (ref $invocant) {
+    my $current = $invocant->{bug_file_loc} // '';
+    return $url if $url eq $current;
+  }
+
+  ThrowUserError('bug_file_loc_invalid', {url => $url});
 }
 
 sub _check_bug_status {
