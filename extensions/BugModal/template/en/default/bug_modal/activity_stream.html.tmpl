@@ -445,7 +445,7 @@
            class="bug-url" data-safe="1"
         >[% value FILTER truncate(40) FILTER html %]</a>
         [% ELSE %]
-        <span class="bug-url" data-safe="0">[% value FILTER truncate(40) FILTER html %]</span>
+        <span class="bug-url" data-safe="0" title="[% value FILTER html %]">[% value FILTER truncate(40) FILTER html %]</span>
         [% END %]
         [%
 
