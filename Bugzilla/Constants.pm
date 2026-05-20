@@ -171,6 +171,7 @@ use Memoize;
   MAX_STS_AGE
 
   SAFE_PROTOCOLS
+  SAFE_URL_REGEXP
   LEGAL_CONTENT_TYPES
 
   MIN_SMALLINT
@@ -489,6 +490,11 @@ use constant SAFE_PROTOCOLS => (
   'irc',    'ircs', 'mid', 'news',   'nntp', 'prospero',
   'telnet', 'wais'
 );
+
+sub SAFE_URL_REGEXP {
+  my $safe_protocols = join('|', SAFE_PROTOCOLS);
+  return qr/($safe_protocols):[^:\s<>\"][^\s<>\"]+[\w\/]/i;
+}
 
 # Valid MIME types for attachments.
 use constant LEGAL_CONTENT_TYPES => (

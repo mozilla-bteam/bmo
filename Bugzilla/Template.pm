@@ -52,11 +52,6 @@ use constant FORMAT_2_SIZE => [19, 55];
 our %SHARED_PROVIDERS;
 our $COLOR_QUOTES = 1;
 
-# Pseudo-constant.
-sub SAFE_URL_REGEXP {
-  my $safe_protocols = join('|', SAFE_PROTOCOLS);
-  return qr/($safe_protocols):[^:\s<>\"][^\s<>\"]+[\w\/]/i;
-}
 
 sub is_safe_url {
   my $url = shift;

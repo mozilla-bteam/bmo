@@ -312,6 +312,12 @@
       <strong>[% type FILTER html %]</strong>
     [% END %].
 
+  [% ELSIF error == "bug_file_loc_invalid" %]
+    [% title = "Invalid URL" %]
+    <code>[% url FILTER html %]</code> is not a valid URL for the URL field.
+    Only safe protocols (http, https, ftp, and similar) are allowed.
+    Protocols such as "javascript:", "data:", and "vbscript:" are not permitted.
+
   [% ELSIF error == "bug_url_invalid" %]
     [% title = "Invalid $terms.Bug URL" %]
     <code>[% url FILTER html %]</code> is not a valid URL to [% terms.abug %].

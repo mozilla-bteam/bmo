@@ -126,9 +126,10 @@ use constant WS_ERROR_CODE => {
   comment_tag_too_long  => 127,
   comment_tag_too_short => 128,
 
-  # See Also errors
-  bug_url_invalid  => 112,
-  bug_url_too_long => 112,
+  # Bug Url errors
+  bug_url_invalid      => 112,
+  bug_url_too_long     => 112,
+  bug_file_loc_invalid => 112,
 
   # Insidergroup Errors
   user_not_insider => 113,
