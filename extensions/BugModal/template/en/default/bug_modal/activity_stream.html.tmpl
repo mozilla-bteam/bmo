@@ -442,10 +442,9 @@
         %]
         [% IF is_safe_url(value) %]
         <a href="[% value FILTER html %]" target="_blank" rel="nofollow noreferrer"
-           class="bug-url" data-safe="1"
-        >[% value FILTER truncate(40) FILTER html %]</a>
+           class="bug-url">[% value FILTER truncate(40) FILTER html %]</a>
         [% ELSE %]
-        <span class="bug-url" data-safe="0" title="[% value FILTER html %]">[% value FILTER truncate(40) FILTER html %]</span>
+        <span class="bug-url" title="[% value FILTER html %]">[% value FILTER truncate(40) FILTER html %]</span>
         [% END %]
         [%
 
