@@ -23,6 +23,7 @@
       attachment_rendered = 0;
       Hook.process("row");
       NEXT IF attachment_rendered;
+      NEXT IF attachment.isspam
     %]
     <tr data-attachment-id="[% attachment.id FILTER none %]" class="
         [%~ " bz_private" IF attachment.isprivate %]

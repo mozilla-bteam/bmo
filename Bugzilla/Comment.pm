@@ -360,12 +360,34 @@ sub bug {
   return $bug;
 }
 
+sub is_spam {
+  my ($self) = @_;
+  foreach my $my_tag (@{$self->tags}) {
+    if (lc($my_tag) eq "spam") {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+sub is_attachment_created {
+  my ($self) = @_;
+  return 1 if $self->type == CMT_ATTACHMENT_CREATED;
+  return 0;
+}
+
 sub is_about_attachment {
   my ($self) = @_;
   return 1
     if ($self->type == CMT_ATTACHMENT_CREATED
     or $self->type == CMT_ATTACHMENT_UPDATED);
   return 0;
+}
+
+sub raw_attachment_id {
+  my ($self) = @_;
+  return undef if not $self->is_about_attachment;
+  return $self->extra_data;
 }
 
 sub attachment {
