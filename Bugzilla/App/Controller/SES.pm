@@ -142,8 +142,15 @@ sub _confirm_subscription {
     return;
   }
 
-  my $ua  = ua();
-  my $res = $ua->get($message->{SubscribeURL});
+  if ($subscribe_url !~ m{\Ahttps://sns\.[a-z0-9-]+\.amazonaws\.com/}i) {
+    WARN('Bad SubscriptionConfirmation request: SubscribeURL not an AWS SNS endpoint');
+    $self->_respond(400 => 'Bad Request');
+    return;
+  }
+
+  my $ua = ua();
+  $ua->max_redirect(0);
+  my $res = $ua->get($subscribe_url);
   if (!$res->is_success) {
     WARN('Bad response from SubscribeURL: ' . $res->status_line);
     $self->_respond(400 => 'Bad Request');
