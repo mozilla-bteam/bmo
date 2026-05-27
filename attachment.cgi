@@ -417,14 +417,18 @@ sub view {
     if Bugzilla->user->id;
 
   my $disposition
-    = Bugzilla->params->{'allow_attachment_display'} ? 'inline' : 'attachment';
+    = (Bugzilla->params->{'allow_attachment_display'}
+      && !Bugzilla::Attachment::is_executable_content_type($contenttype))
+    ? 'inline'
+    : 'attachment';
   my $filename_star = qq{UTF-8''} . url_escape(encode('UTF-8', $filename));
 
   print $cgi->header(
-    -type                => $contenttype,
-    -content_disposition => "$disposition; filename*=$filename_star",
-    -content_length      => $attachment->datasize,
-    -Cache_Control       => 'no-store, private'
+    -type                    => $contenttype,
+    -content_disposition     => "$disposition; filename*=$filename_star",
+    -content_length          => $attachment->datasize,
+    -Cache_Control           => 'no-store, private',
+    -X_Content_Type_Options  => 'nosniff',
   );
   disable_utf8();
   print $attachment->data;
