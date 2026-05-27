@@ -53,10 +53,6 @@ our %SHARED_PROVIDERS;
 our $COLOR_QUOTES = 1;
 
 
-sub is_safe_url {
-  return Bugzilla::Util::is_safe_url(@_);
-}
-
 # Convert the constants in the Bugzilla::Constants module into a hash we can
 # pass to the template object for reflection into its "constants" namespace
 # (which is like its "variables" namespace, but for constants).  To do so, we
@@ -983,7 +979,7 @@ sub create {
       },
 
       # Check whether the URL is safe.
-      'is_safe_url' => \&is_safe_url,
+      'is_safe_url' => \&Bugzilla::Util::is_safe_url,
 
       # Allow templates to generate a token themselves.
       'issue_hash_token' => \&Bugzilla::Token::issue_hash_token,
