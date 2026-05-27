@@ -30,6 +30,7 @@ my @safe_cases = (
   ['ftp://ftp.example.com/file',    'ftp URL'],
   ['local/relative/path',           'local relative path (no colon)'],
   ['local/relative/path/',          'local relative path ending with slash'],
+  ['0',                             'string zero relative path'],
 );
 
 my @unsafe_cases = (
