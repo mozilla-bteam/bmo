@@ -143,12 +143,13 @@ sub _confirm_subscription {
     return;
   }
 
-  my $subscribe_uri = URI->new($subscribe_url);
-  my $subscribe_host = $subscribe_uri->host // '';
-  my $subscribe_port = $subscribe_uri->port;
+  my $subscribe_uri = try { URI->new($subscribe_url) } catch { undef };
+  my $subscribe_host = $subscribe_uri ? lc($subscribe_uri->host // '') : '';
+  my $subscribe_port = $subscribe_uri ? $subscribe_uri->port : undef;
   if (
-    lc($subscribe_uri->scheme // '') ne 'https'
-    || $subscribe_host !~ m{\Asns\.[a-z0-9]+(?:-[a-z0-9]+)*\.amazonaws\.com\z}i
+    !$subscribe_uri
+    || lc($subscribe_uri->scheme // '') ne 'https'
+    || $subscribe_host !~ m{\Asns\.(?=[a-z0-9-]*[a-z])[a-z0-9]+(?:-[a-z0-9]+)*\.amazonaws\.com\z}
     || ($subscribe_port // 443) != 443
     )
   {
