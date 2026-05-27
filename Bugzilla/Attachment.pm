@@ -526,12 +526,15 @@ sub _check_is_private {
 =item C<is_executable_content_type($type)>
 
 Returns 1 if the given MIME type can execute scripts when rendered inline by
-a browser (SVG, XML variants, HTML, JavaScript, etc.). These attachments are
-always served with C<Content-Disposition: attachment> regardless of the
-C<allow_attachment_display> parameter.
+a browser (SVG, XML variants, HTML, JavaScript, etc.).
 
-This is a security-policy check. It is separate from C<is_viewable>, which
-only tests browser rendering capability.
+This is a security-policy check used to determine whether inline display of an
+attachment type should be considered unsafe. Callers may use this result when
+deciding whether an attachment may be displayed inline or should instead be
+treated as a download.
+
+C<is_viewable> is related to this check and consults it; it does not only test
+browser rendering capability independently of this security policy.
 
 =back
 
