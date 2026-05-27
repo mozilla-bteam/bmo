@@ -36,6 +36,7 @@ my @unsafe_cases = (
   ['view-source:javascript:alert(1)',   'view-source:javascript: bypass (CVE case)'],
   ['view-source:http://example.com/',   'view-source:http:// no longer safe'],
   ['javascript:alert(1)',               'javascript: scheme'],
+  ['JAVASCRIPT:alert(1)',               'javascript: scheme uppercase'],
   ['data:text/html,<script>x</script>', 'data: scheme'],
   ['vbscript:msgbox(1)',                'vbscript: scheme'],
   ['mailto:user@example.com',           'mailto: (not in SAFE_PROTOCOLS)'],
