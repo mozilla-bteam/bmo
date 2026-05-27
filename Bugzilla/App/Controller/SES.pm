@@ -148,8 +148,8 @@ sub _confirm_subscription {
   my $subscribe_port = $subscribe_uri->port;
   if (
     lc($subscribe_uri->scheme // '') ne 'https'
-    || $subscribe_host !~ m{\Asns\.[a-z0-9-]+\.amazonaws\.com\z}i
-    || $subscribe_port != 443
+    || $subscribe_host !~ m{\Asns\.[a-z0-9]+(?:-[a-z0-9]+)*\.amazonaws\.com\z}i
+    || ($subscribe_port // 443) != 443
     )
   {
     WARN('Bad SubscriptionConfirmation request: SubscribeURL not an AWS SNS endpoint');
