@@ -90,6 +90,14 @@ my $mock_ses = mock 'Bugzilla::App::Controller::SES' => (
 
 my @valid_cases = (
   [
+    'https://sns.us-east-1.amazonaws.com',
+    'us-east-1 without trailing slash'
+  ],
+  [
+    'https://sns.us-east-1.amazonaws.com:443/?Action=ConfirmSubscription&Token=port443',
+    'us-east-1 with explicit port 443'
+  ],
+  [
     'https://sns.us-east-1.amazonaws.com/?Action=ConfirmSubscription&Token=abc123',
     'us-east-1'
   ],
