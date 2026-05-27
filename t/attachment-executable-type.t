@@ -18,7 +18,7 @@ BEGIN {
 
 my $func = \&Bugzilla::Attachment::is_executable_content_type;
 
-# Safe types — must be served inline
+# Non-executable (safe-to-render-inline) types
 my @safe = (
   'image/png',
   'image/jpeg',
@@ -38,7 +38,7 @@ my @safe = (
   'video/ogg',
 );
 
-# Executable types — must be forced to attachment
+# Executable (not safe-to-render-inline) types
 my @executable = (
   'image/svg+xml',
   'text/html',
