@@ -541,7 +541,9 @@ browser rendering capability independently of this security policy.
 =cut
 
 sub is_executable_content_type {
-  my $type = lc(shift // '');
+  my ($type, $method_type) = @_;
+  $type = $method_type if defined $method_type;
+  $type = lc($type // '');
   $type =~ s/\s*;.*$//;
   return 0 if $type =~ m{^(audio|video)/};
   return $_SAFE_INLINE_TYPES{$type} ? 0 : 1;
