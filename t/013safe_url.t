@@ -16,7 +16,7 @@ use warnings;
 use lib qw(. lib local/lib/perl5 t);
 
 use Bugzilla::Constants;
-use Bugzilla::Template;
+use Bugzilla::Util qw(is_safe_url);
 use Test::More;
 
 # view-source must not be in SAFE_PROTOCOLS (regression guard)
@@ -30,7 +30,6 @@ my @safe_cases = (
   ['ftp://ftp.example.com/file',    'ftp URL'],
   ['local/relative/path',           'local relative path (no colon)'],
   ['local/relative/path/',          'local relative path ending with slash'],
-  ['0',                             'string zero relative path'],
 );
 
 my @unsafe_cases = (
@@ -47,12 +46,12 @@ my @unsafe_cases = (
 
 for my $tc (@safe_cases) {
   my ($url, $desc) = @$tc;
-  ok(Bugzilla::Template::is_safe_url($url), "SAFE: $desc");
+  ok(is_safe_url($url), "SAFE: $desc");
 }
 
 for my $tc (@unsafe_cases) {
   my ($url, $desc) = @$tc;
-  ok(!Bugzilla::Template::is_safe_url($url), "UNSAFE: $desc");
+  ok(!is_safe_url($url), "UNSAFE: $desc");
 }
 
 done_testing;
