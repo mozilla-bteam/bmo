@@ -31,9 +31,10 @@ use_ok('Bugzilla::WebService::Util', qw(fix_credentials));
   }
 }
 
-# CGI normalizes HTTP headers to uppercase with underscores (HTTP_X_BUGZILLA_FOO).
-# The X_ prefix is stripped by $cgi->http(), so keys match API_AUTH_HEADERS constants
-# e.g. X_BUGZILLA_API_KEY, X_BUGZILLA_LOGIN, X_BUGZILLA_PASSWORD, X_BUGZILLA_TOKEN.
+# CGI normalizes HTTP headers to uppercase with underscores, typically as
+# HTTP_X_BUGZILLA_FOO in the environment. $cgi->http() looks them up without
+# the leading HTTP_, so these tests pass X_BUGZILLA_* keys such as
+# X_BUGZILLA_API_KEY, X_BUGZILLA_LOGIN, X_BUGZILLA_PASSWORD, and X_BUGZILLA_TOKEN.
 
 # Headers only — no body params
 {
