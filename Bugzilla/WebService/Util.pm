@@ -294,8 +294,7 @@ sub fix_credentials {
   }
 
   # Allow user to pass in login=foo&password=bar as a convenience
-  # even if not calling GET /login. We also do not delete them as
-  # GET /login requires "login" and "password".
+  # even if not calling GET /login.
   # Headers take precedence: always remove body params but only promote
   # them to Bugzilla_* keys when headers haven't already set those keys.
   if (exists $params->{'login'} && exists $params->{'password'}) {
