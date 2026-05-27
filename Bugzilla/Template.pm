@@ -54,12 +54,7 @@ our $COLOR_QUOTES = 1;
 
 
 sub is_safe_url {
-  my $url = shift;
-  return 0 if !defined($url) || $url eq '';
-  my $safe_url_regexp = SAFE_URL_REGEXP();
-  return 1 if $url =~ /^$safe_url_regexp$/;
-  return 1 if $url =~ /^[^\s<>\":]+[\w\/]$/i;
-  return 0;
+  return Bugzilla::Util::is_safe_url(@_);
 }
 
 # Convert the constants in the Bugzilla::Constants module into a hash we can

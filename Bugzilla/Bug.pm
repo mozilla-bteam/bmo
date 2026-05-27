@@ -1615,11 +1615,9 @@ sub _check_bug_file_loc {
     return '';
   }
 
-  # Use the same allowlist logic as the is_safe_url template helper so
-  # what passes here is exactly what renders as a clickable link.
-  # require avoids a circular dependency (Bugzilla::Template uses Bugzilla::Bug).
-  require Bugzilla::Template;
-  return $url if Bugzilla::Template::is_safe_url($url);
+  # Use shared allowlist logic so what passes here is exactly what
+  # renders as a clickable link in templates.
+  return $url if is_safe_url($url);
 
   # Allow an already-stored unsafe value to pass through unchanged so that
   # edits to other fields on the bug are not blocked. Unsafe values are

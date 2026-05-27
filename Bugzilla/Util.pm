@@ -24,6 +24,7 @@ use base qw(Exporter);
   trim wrap_hard wrap_comment find_wrap_point
   format_time validate_date validate_time datetime_from time_ago
   file_mod_time is_7bit_clean
+  is_safe_url
   bz_crypt generate_random_password
   validate_email_syntax clean_text
   get_text template_var disable_utf8
@@ -226,6 +227,15 @@ sub html_light_quote {
     );
   }
   return $scrubber->scrub($text);
+}
+
+sub is_safe_url {
+  my $url = shift;
+  return 0 if !defined($url) || $url eq '';
+  my $safe_url_regexp = SAFE_URL_REGEXP();
+  return 1 if $url =~ /^$safe_url_regexp$/;
+  return 1 if $url =~ /^[^\s<>\":]+[\w\/]$/i;
+  return 0;
 }
 
 sub email_filter {
