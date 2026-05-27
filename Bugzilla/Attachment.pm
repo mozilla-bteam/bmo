@@ -105,6 +105,19 @@ use constant VALIDATOR_DEPENDENCIES =>
 use constant UPDATE_VALIDATORS =>
   {isobsolete => \&Bugzilla::Object::check_boolean,};
 
+  my %_SAFE_INLINE_TYPES = map { $_ => 1 } qw(
+  image/png
+  image/jpeg
+  image/gif
+  image/webp
+  image/avif
+  image/bmp
+  image/x-icon
+  application/pdf
+  text/plain
+  text/csv
+);
+
 ###############################
 ####      Accessors      ######
 ###############################
@@ -277,10 +290,9 @@ sub isprivate {
 
 =item C<is_viewable>
 
-Returns 1 if the attachment has a content-type viewable in this browser.
-Note that we don't use $cgi->Accept()'s ability to check if a content-type
-matches, because this will return a value even if it's matched by the generic
-*/* which most browsers add to the end of their Accept: headers.
+Returns 1 if the attachment content-type is safe to display inline (i.e.
+not in the executable/unsafe category). Delegates to
+C<is_executable_content_type>.
 
 =back
 
@@ -288,20 +300,7 @@ matches, because this will return a value even if it's matched by the generic
 
 sub is_viewable {
   my $contenttype = $_[0]->contenttype;
-  my $cgi         = Bugzilla->cgi;
-
-  # We assume we can view all text and image types.
-  return 1 if ($contenttype =~ /^(text|image)\//);
-
-  # Modern browsers support PDF as well.
-  return 1 if ($contenttype eq 'application/pdf');
-
-  # If it's not one of the above types, we check the Accept: header for any
-  # types mentioned explicitly.
-  my $accept = join(",", $cgi->Accept());
-  return 1 if ($accept =~ /^(.*,)?\Q$contenttype\E(,.*)?$/);
-
-  return 0;
+  return is_executable_content_type($contenttype) ? 0 : 1;
 }
 
 =over
@@ -521,6 +520,29 @@ sub _check_is_private {
 =pod
 
 =head2 Class Methods
+
+=over
+
+=item C<is_executable_content_type($type)>
+
+Returns 1 if the given MIME type can execute scripts when rendered inline by
+a browser (SVG, XML variants, HTML, JavaScript, etc.). These attachments are
+always served with C<Content-Disposition: attachment> regardless of the
+C<allow_attachment_display> parameter.
+
+This is a security-policy check. It is separate from C<is_viewable>, which
+only tests browser rendering capability.
+
+=back
+
+=cut
+
+sub is_executable_content_type {
+  my $type = lc(shift // '');
+  $type =~ s/\s*;.*$//;
+  return 0 if $type =~ m{^(audio|video)/};
+  return $_SAFE_INLINE_TYPES{$type} ? 0 : 1;
+}
 
 =over
 
