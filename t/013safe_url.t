@@ -16,7 +16,7 @@ use warnings;
 use lib qw(. lib local/lib/perl5 t);
 
 use Bugzilla::Constants;
-use Bugzilla::Template;
+use Bugzilla::Util qw(is_safe_url);
 use Test::More;
 
 # view-source must not be in SAFE_PROTOCOLS (regression guard)
@@ -36,6 +36,7 @@ my @unsafe_cases = (
   ['view-source:javascript:alert(1)',   'view-source:javascript: bypass (CVE case)'],
   ['view-source:http://example.com/',   'view-source:http:// no longer safe'],
   ['javascript:alert(1)',               'javascript: scheme'],
+  ['JAVASCRIPT:alert(1)',               'javascript: scheme uppercase'],
   ['data:text/html,<script>x</script>', 'data: scheme'],
   ['vbscript:msgbox(1)',                'vbscript: scheme'],
   ['mailto:user@example.com',           'mailto: (not in SAFE_PROTOCOLS)'],
@@ -45,12 +46,12 @@ my @unsafe_cases = (
 
 for my $tc (@safe_cases) {
   my ($url, $desc) = @$tc;
-  ok(Bugzilla::Template::is_safe_url($url), "SAFE: $desc");
+  ok(is_safe_url($url), "SAFE: $desc");
 }
 
 for my $tc (@unsafe_cases) {
   my ($url, $desc) = @$tc;
-  ok(!Bugzilla::Template::is_safe_url($url), "UNSAFE: $desc");
+  ok(!is_safe_url($url), "UNSAFE: $desc");
 }
 
 done_testing;

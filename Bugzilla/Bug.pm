@@ -1615,14 +1615,9 @@ sub _check_bug_file_loc {
     return '';
   }
 
-  # Allowlist scheme check — mirrors the is_safe_url template helper so
-  # what passes here is exactly what renders as a clickable link.
-  my $safe_url_regexp = SAFE_URL_REGEXP();
-  return $url if $url =~ /^$safe_url_regexp$/;
-
-  # Colon-free relative path / local reference (matches is_safe_url
-  # second branch in Bugzilla/Template.pm).
-  return $url if $url =~ /^[^\s<>\":]+[\w\/]$/i;
+  # Use shared allowlist logic so what passes here is exactly what
+  # renders as a clickable link in templates.
+  return $url if is_safe_url($url);
 
   # Allow an already-stored unsafe value to pass through unchanged so that
   # edits to other fields on the bug are not blocked. Unsafe values are
