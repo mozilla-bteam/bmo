@@ -272,13 +272,28 @@ $(function() {
             }
         });
 
-    // toggle obsolete attachments
-    $('#attachments-obsolete-btn')
-        .click(function(event) {
-            event.preventDefault();
-            $(event.target).text(($('#attachments tr:hidden').length ? 'Hide Obsolete' : 'Show Obsolete'));
-            $('#attachments tr.attach-obsolete').toggle();
-        });
+    // toggle obsolete/external attachments
+    let attachObsoleteShowing = false;
+    let attachExternalShowing = false;
+
+    function updateAttachmentRows() {
+        $('#attachments tr.attach-obsolete').toggle(attachObsoleteShowing);
+        $('#attachments tr.attach-external:not(.attach-obsolete)').toggle(attachExternalShowing);
+        $('#attachments-obsolete-btn').text(attachObsoleteShowing ? 'Hide Obsolete' : 'Show Obsolete');
+        $('#attachments-external-btn').text(attachExternalShowing ? 'Hide External' : 'Show External');
+    }
+
+    $('#attachments-obsolete-btn').click(function(event) {
+        event.preventDefault();
+        attachObsoleteShowing = !attachObsoleteShowing;
+        updateAttachmentRows();
+    });
+
+    $('#attachments-external-btn').click(function(event) {
+        event.preventDefault();
+        attachExternalShowing = !attachExternalShowing;
+        updateAttachmentRows();
+    });
 
     // URL --> unsafe warning
     $('.bug-url')
