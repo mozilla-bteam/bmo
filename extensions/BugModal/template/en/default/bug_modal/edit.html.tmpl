@@ -1403,11 +1403,15 @@
 [% IF active_attachments || obsolete_attachments || user.id %]
   [%
     sub = [];
+    visible_attachments = active_attachments - external_attachments;
     IF active_attachments + obsolete_attachments == 0;
       sub.push("No files");
     END;
-    IF active_attachments;
-      sub.push(active_attachments _ " file" _ (active_attachments == 1 ? "" : "s"));
+    IF visible_attachments;
+      sub.push(visible_attachments _ " file" _ (visible_attachments == 1 ? "" : "s"));
+    END;
+    IF external_attachments;
+      sub.push(external_attachments _ " external file" _ (external_attachments == 1 ? "" : "s"));
     END;
     IF obsolete_attachments;
       sub.push(obsolete_attachments _ " obsolete file" _ (obsolete_attachments == 1 ? "" : "s"));
