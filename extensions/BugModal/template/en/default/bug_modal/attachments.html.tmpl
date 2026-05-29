@@ -23,12 +23,14 @@
       attachment_rendered = 0;
       Hook.process("row");
       NEXT IF attachment_rendered;
+      is_external = attachment_hide_types.${attachment.contenttype} ? 1 : 0;
     %]
     <tr data-attachment-id="[% attachment.id FILTER none %]" class="
         [%~ " bz_private" IF attachment.isprivate %]
         [%~ " attach-obsolete" IF attachment.isobsolete %]
+        [%~ " attach-external" IF is_external %]
         [%~ " attach-patch" IF attachment.can_review %]
-    " [% IF attachment.isobsolete %]style="display:none"[% END %]>
+    " [% IF attachment.isobsolete || is_external %]style="display:none"[% END %]>
       <td class="attach-desc-td">
         <div class="attach-desc">
           <a href="[% basepath FILTER none %]attachment.cgi?id=[% attachment.id FILTER none %]"
@@ -102,6 +104,9 @@
       <a href="[% basepath FILTER none %]attachment.cgi?bugid=[% bug.id FILTER uri %]&amp;action=enter" id="attachments-add-link">
         <button type="button" role="none" id="attachments-add-btn" class="secondary">Attach New File</button>
       </a>
+    [% END %]
+    [% IF external_attachments %]
+      <button type="button" id="attachments-external-btn" class="secondary">Show External</button>
     [% END %]
     [% IF obsolete_attachments %]
       <button type="button" id="attachments-obsolete-btn" class="secondary">Show Obsolete</button>
