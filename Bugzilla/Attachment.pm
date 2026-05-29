@@ -105,7 +105,7 @@ use constant VALIDATOR_DEPENDENCIES =>
 use constant UPDATE_VALIDATORS =>
   {isobsolete => \&Bugzilla::Object::check_boolean,};
 
-  my %_SAFE_INLINE_TYPES = map { $_ => 1 } qw(
+my %_SAFE_INLINE_TYPES = map { $_ => 1 } qw(
   image/png
   image/jpeg
   image/gif
@@ -290,17 +290,40 @@ sub isprivate {
 
 =item C<is_viewable>
 
-Returns 1 if the attachment content-type is safe to display inline (i.e.
-not in the executable/unsafe category). Delegates to
-C<is_executable_content_type>.
+Returns 1 if the attachment content-type is safe to display inline in the
+current deployment context. Delegates to C<is_safe_inline_content_type>.
 
 =back
 
 =cut
 
 sub is_viewable {
-  my $contenttype = $_[0]->contenttype;
-  return is_executable_content_type($contenttype) ? 0 : 1;
+  return is_safe_inline_content_type($_[0]->contenttype) ? 1 : 0;
+}
+
+=over
+
+=item C<is_safe_inline_content_type($type)>
+
+Returns 1 if C<$type> is safe to serve with C<Content-Disposition: inline>
+given the current deployment configuration.
+
+Types on the strict allowlist (C<%_SAFE_INLINE_TYPES>, audio/*, video/*) are
+always safe. C<text/html> is additionally permitted when the attachment domain
+is an isolated origin (C<attachment_base_is_isolated> returns true), which
+ensures the HTML cannot access main-site session cookies.
+
+=back
+
+=cut
+
+sub is_safe_inline_content_type {
+  my ($type) = @_;
+  return 1 unless is_executable_content_type($type);
+  my $t = lc($type // '');
+  $t =~ s/\s*;.*$//;
+  return 1 if $t eq 'text/html' && attachment_base_is_isolated();
+  return 0;
 }
 
 =over
