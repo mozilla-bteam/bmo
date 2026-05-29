@@ -19,7 +19,7 @@ use base qw(Exporter);
   css_class_quote html_light_quote
   i_am_cgi i_am_webservice is_webserver_group
   correct_urlbase remote_ip
-  validate_ip do_ssl_redirect_if_required use_attachbase
+  validate_ip do_ssl_redirect_if_required use_attachbase attachment_base_is_isolated
   diff_arrays on_main_db css_url_rewrite
   trim wrap_hard wrap_comment find_wrap_point
   format_time validate_date validate_time datetime_from time_ago
@@ -44,11 +44,12 @@ use Digest;
 use Email::Address;
 use Encode qw(encode decode resolve_alias);
 use Encode::Guess;
-use English qw(-no_match_vars $EGID);
+use English         qw(-no_match_vars $EGID);
 use List::MoreUtils qw(any none);
 use Mojo::UserAgent ();
-use Mojo::JSON qw(decode_json);
-use POSIX qw(floor ceil);
+use Mojo::JSON      qw(decode_json);
+use POSIX           qw(floor ceil);
+use URI;
 use Scalar::Util qw(tainted blessed);
 use Text::Wrap;
 use Try::Tiny;
@@ -157,7 +158,7 @@ sub html_light_quote {
 
   if (!Bugzilla->feature('html_desc')) {
     my $safe = join('|', @allow);
-    my $chr = chr(1);
+    my $chr  = chr(1);
 
     # First, escape safe elements.
     $text =~ s#<($safe)>#$chr$1$chr#go;
@@ -178,7 +179,7 @@ sub html_light_quote {
     push(@allow, qw(a blockquote q span));
 
     # Allowed protocols.
-    my $safe_protocols = join('|', SAFE_PROTOCOLS);
+    my $safe_protocols  = join('|', SAFE_PROTOCOLS);
     my $protocol_regexp = qr{(^(?:$safe_protocols):|^[^:]+$)}i;
 
     # Deny all elements and attributes unless explicitly authorized.
@@ -243,7 +244,7 @@ sub email_filter {
   if (!Bugzilla->user->id) {
     my @emails = Email::Address->parse($toencode);
     if (scalar @emails) {
-      my @hosts = map { quotemeta($_->host) } @emails;
+      my @hosts    = map { quotemeta($_->host) } @emails;
       my $hosts_re = join('|', @hosts);
       $toencode =~ s/\@(?:$hosts_re)//g;
       return $toencode;
@@ -440,6 +441,15 @@ sub use_attachbase {
   return ($attachbase ne '' && $attachbase ne $urlbase);
 }
 
+sub attachment_base_is_isolated {
+  return 0 unless use_attachbase();
+  my $attachbase = Bugzilla->localconfig->attachment_base;
+  $attachbase =~ s/\%bugid\%/0/;
+  my $ab_host = URI->new($attachbase)->host                    // '';
+  my $ub_host = URI->new(Bugzilla->localconfig->urlbase)->host // '';
+  return ($ab_host ne '' && lc($ab_host) ne lc($ub_host)) ? 1 : 0;
+}
+
 sub diff_arrays {
   my ($old_ref, $new_ref, $attrib) = @_;
   $attrib ||= 'name';
@@ -530,7 +540,7 @@ sub wrap_comment {
 
 sub find_wrap_point {
   my ($string, $maxpos) = @_;
-  if (!$string) { return 0 }
+  if (!$string)                  { return 0 }
   if (length($string) < $maxpos) { return length($string) }
   my $wrappoint = rindex($string, ",", $maxpos);    # look for comma
   if ($wrappoint <= 0) {                            # can't find comma
@@ -592,7 +602,7 @@ sub datetime_from {
   # In the database, this is the "0" date.
   use Carp qw(cluck);
   cluck("undefined date") unless defined $date;
-  return undef unless defined $date;
+  return undef            unless defined $date;
   return undef if $date =~ /^0000/;
 
   my @time;
@@ -660,10 +670,12 @@ sub time_ago {
 
   # DateTime object or seconds
   my $ss = ref($param) ? time() - $param->epoch : $param;
+
   # Use floor for intermediate calculations to avoid rounding issues
   my $mm = floor($ss / 60);
   my $hh = floor($ss / (60 * 60));
   my $dd = floor($ss / (60 * 60 * 24));
+
   # They are not the best definition of month and year,
   # but they should be good enough to be used here.
   my $mo = floor($ss / (60 * 60 * 24 * 30));
@@ -788,7 +800,7 @@ sub validate_date {
   if ($ts) {
     $date2 = time2str("%Y-%m-%d", $ts);
 
-    $date =~ s/(\d+)-0*(\d+?)-0*(\d+?)/$1-$2-$3/;
+    $date  =~ s/(\d+)-0*(\d+?)-0*(\d+?)/$1-$2-$3/;
     $date2 =~ s/(\d+)-0*(\d+?)-0*(\d+?)/$1-$2-$3/;
   }
   my $ret = ($ts && $date eq $date2);
@@ -935,7 +947,7 @@ sub detect_encoding {
   # Encode::Detect sometimes mis-detects UTF-8 as Windows-1252
   if ($encoding && $encoding eq 'cp1252') {
     my $decoder = guess_encoding($data, ('utf8', 'cp1252'));
-    $encoding = ref $decoder ? $decoder->name : 'utf8'; # Fall back to utf8 if guess_encoding fails
+    $encoding = ref $decoder ? $decoder->name : 'utf8';    # Fall back to utf8 if guess_encoding fails
   }
 
   return $encoding;

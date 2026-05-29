@@ -33,7 +33,7 @@ use Encode qw(encode find_encoding from_to);
 use URI;
 use URI::QueryParam;
 use File::Basename qw(basename);
-use MIME::Base64 qw(decode_base64);
+use MIME::Base64   qw(decode_base64);
 
 # For most scripts we don't make $cgi and $template global variables. But
 # when preparing Bugzilla for mod_perl, this script used these
@@ -221,7 +221,7 @@ sub validateContext {
 # attachbase and token authentication is used when required.
 sub get_attachment {
   my @field_names = @_ ? @_ : qw(id);
-  my $C = Bugzilla->request_cache->{mojo_controller};
+  my $C           = Bugzilla->request_cache->{mojo_controller};
 
   my %attachments;
 
@@ -239,7 +239,7 @@ sub get_attachment {
       }
       $attachments{$field_name} = $attachment;
     }
-    my @args = map { $_ . '=' . $attachments{$_}->id } @field_names;
+    my @args       = map { $_ . '=' . $attachments{$_}->id } @field_names;
     my $cgi_params = $cgi->canonicalize_query(@field_names, 't', 'Bugzilla_login',
       'Bugzilla_password');
     push(@args, $cgi_params) if $cgi_params;
@@ -392,7 +392,7 @@ sub view {
 
   if ($do_redirect) {
     my $uri = URI->new('attachment.cgi');
-    $uri->query_param(id => $attachment->id);
+    $uri->query_param(id           => $attachment->id);
     $uri->query_param(content_type => $contenttype) if $contenttype_override;
     $cgi->base_redirect($uri->as_string);
   }
@@ -418,17 +418,17 @@ sub view {
 
   my $disposition
     = (Bugzilla->params->{'allow_attachment_display'}
-      && !Bugzilla::Attachment::is_executable_content_type($contenttype))
+      && Bugzilla::Attachment::is_safe_inline_content_type($contenttype))
     ? 'inline'
     : 'attachment';
   my $filename_star = qq{UTF-8''} . url_escape(encode('UTF-8', $filename));
 
   print $cgi->header(
-    -type                    => $contenttype,
-    -content_disposition     => "$disposition; filename*=$filename_star",
-    -content_length          => $attachment->datasize,
-    -Cache_Control           => 'no-store, private',
-    -X_Content_Type_Options  => 'nosniff',
+    -type                   => $contenttype,
+    -content_disposition    => "$disposition; filename*=$filename_star",
+    -content_length         => $attachment->datasize,
+    -Cache_Control          => 'no-store, private',
+    -X_Content_Type_Options => 'nosniff',
   );
   disable_utf8();
   print $attachment->data;
@@ -455,9 +455,9 @@ sub interdiff {
 sub diff {
 
   # Retrieve and validate parameters
-  my $format = validateFormat('html', 'raw');
+  my $format     = validateFormat('html', 'raw');
   my $attachment = $format eq 'raw' ? get_attachment() : validateID();
-  my $context = validateContext();
+  my $context    = validateContext();
 
   # If it is not a patch, view normally.
   if (!$attachment->ispatch) {
@@ -581,11 +581,11 @@ sub insert {
     if (scalar($cgi->param('ispatch'))) {
       $attach_text =~ s/[\012\015]{1,2}/\012/g;
     }
-    $data = $attach_text;
+    $data     = $attach_text;
     $filename = github_pr_filename($attach_text) || "file_$bugid.txt";
   }
   elsif ($data_base64) {
-    $data = decode_base64($data_base64);
+    $data     = decode_base64($data_base64);
     $filename = $cgi->param('filename') || "file_$bugid";
   }
   else {
@@ -640,7 +640,8 @@ sub insert {
     my $bug_status = $cgi->param('bug_status') || '';
     ($bug_status) = grep { $_->name eq $bug_status } @{$bug->status->can_change_to};
 
-    if ( $bug_status
+    if (
+         $bug_status
       && $bug_status->is_open
       && ($bug_status->name ne 'UNCONFIRMED' || $bug->product_obj->allows_unconfirmed)
       )
@@ -668,19 +669,19 @@ sub insert {
   $dbh->bz_commit_transaction;
 
   # Persist details of what changed and redirect to show_bug page.
-  my $recipients = {'changer' => $user, 'owner' => $owner};
-  my $sent_bugmail = Bugzilla::BugMail::Send($bugid, $recipients);
+  my $recipients          = {'changer' => $user, 'owner' => $owner};
+  my $sent_bugmail        = Bugzilla::BugMail::Send($bugid, $recipients);
   my $content_type_method = $cgi->param('contenttypemethod');
 
   my $last_sent_attachment_change = {
     attachment => {
-      id => $attachment->id,
-      bug_id => $attachment->bug_id,
+      id          => $attachment->id,
+      bug_id      => $attachment->bug_id,
       contenttype => $attachment->contenttype,
       description => $attachment->description,
     },
-    type => 'created',
-    recipient_count => scalar @{$sent_bugmail->{sent}},
+    type                => 'created',
+    recipient_count     => scalar @{$sent_bugmail->{sent}},
     content_type_method => $content_type_method,
   };
   $C->flash(last_sent_attachment_changes => [$last_sent_attachment_change]);
@@ -782,7 +783,7 @@ sub update {
 
   # If the user submitted a comment while editing the attachment,
   # add the comment to the bug. Do this after having validated isprivate!
-  my $comment = $cgi->param('comment');
+  my $comment     = $cgi->param('comment');
   my $is_markdown = Bugzilla->params->{use_markdown} ? 1 : 0;
   if ($cgi->param('markdown_off')) {
     $is_markdown = 0;
@@ -860,17 +861,18 @@ sub update {
 
   my $last_sent_attachment_change = {
     attachment => {
-      id => $attachment->id,
-      bug_id => $attachment->bug_id,
+      id          => $attachment->id,
+      bug_id      => $attachment->bug_id,
       contenttype => $attachment->contenttype,
       description => $attachment->description,
     },
-    type => 'updated',
+    type            => 'updated',
     recipient_count => scalar @{$sent_bugmail->{sent}},
   };
   $C->flash(last_sent_attachment_changes => [$last_sent_attachment_change]);
 
-  my $redirect_url = Bugzilla->localconfig->urlbase . 'show_bug.cgi?id=' . $bug->id;
+  my $redirect_url
+    = Bugzilla->localconfig->urlbase . 'show_bug.cgi?id=' . $bug->id;
   $C->redirect_to($redirect_url);
 }
 
@@ -880,9 +882,9 @@ sub delete_attachment {
   my $dbh  = Bugzilla->dbh;
   my $C    = Bugzilla->request_cache->{mojo_controller};
 
-  $user->in_group('can_delete_attachments')
-    || ThrowUserError('auth_failure',
-    {group => 'can_delete_attachments', action => 'delete', object => 'attachment'});
+  $user->in_group('can_delete_attachments') || ThrowUserError('auth_failure',
+    {group => 'can_delete_attachments', action => 'delete', object => 'attachment'}
+  );
 
   Bugzilla->params->{'allow_attachment_deletion'}
     || ThrowUserError('attachment_deletion_disabled');
@@ -910,7 +912,7 @@ sub delete_attachment {
     # The token is valid. Delete the content of the attachment.
     my $msg;
     $vars->{'attachment'} = $attachment;
-    $vars->{'reason'} = clean_text($cgi->param('reason') || '');
+    $vars->{'reason'}     = clean_text($cgi->param('reason') || '');
 
     $template->process("attachment/delete_reason.txt.tmpl", $vars, \$msg)
       || ThrowTemplateError($template->error());
@@ -932,17 +934,18 @@ sub delete_attachment {
 
     my $last_sent_attachment_change = {
       attachment => {
-        id => $attachment->id,
-        bug_id => $attachment->bug_id,
+        id          => $attachment->id,
+        bug_id      => $attachment->bug_id,
         contenttype => $attachment->contenttype,
         description => $attachment->description,
       },
-      type => 'deleted',
+      type            => 'deleted',
       recipient_count => scalar @{$sent_bugmail->{sent}},
     };
     $C->flash(last_sent_attachment_changes => [$last_sent_attachment_change]);
 
-    my $redirect_url = Bugzilla->localconfig->urlbase . 'show_bug.cgi?id=' . $bug->id;
+    my $redirect_url
+      = Bugzilla->localconfig->urlbase . 'show_bug.cgi?id=' . $bug->id;
     $C->redirect_to($redirect_url);
   }
   else {
