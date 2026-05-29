@@ -418,7 +418,7 @@ sub view {
 
   my $disposition
     = (Bugzilla->params->{'allow_attachment_display'}
-      && !Bugzilla::Attachment::is_executable_content_type($contenttype))
+      && Bugzilla::Attachment::is_safe_inline_content_type($contenttype))
     ? 'inline'
     : 'attachment';
   my $filename_star = qq{UTF-8''} . url_escape(encode('UTF-8', $filename));

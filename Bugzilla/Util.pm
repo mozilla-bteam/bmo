@@ -19,7 +19,7 @@ use base qw(Exporter);
   css_class_quote html_light_quote
   i_am_cgi i_am_webservice is_webserver_group
   correct_urlbase remote_ip
-  validate_ip do_ssl_redirect_if_required use_attachbase
+  validate_ip do_ssl_redirect_if_required use_attachbase attachment_base_is_isolated
   diff_arrays on_main_db css_url_rewrite
   trim wrap_hard wrap_comment find_wrap_point
   format_time validate_date validate_time datetime_from time_ago
@@ -49,6 +49,7 @@ use List::MoreUtils qw(any none);
 use Mojo::UserAgent ();
 use Mojo::JSON qw(decode_json);
 use POSIX qw(floor ceil);
+use URI;
 use Scalar::Util qw(tainted blessed);
 use Text::Wrap;
 use Try::Tiny;
@@ -438,6 +439,15 @@ sub use_attachbase {
   my $attachbase = Bugzilla->localconfig->attachment_base;
   my $urlbase    = Bugzilla->localconfig->urlbase;
   return ($attachbase ne '' && $attachbase ne $urlbase);
+}
+
+sub attachment_base_is_isolated {
+  return 0 unless use_attachbase();
+  my $attachbase = Bugzilla->localconfig->attachment_base;
+  $attachbase =~ s/\%bugid\%/0/;
+  my $ab_host = URI->new($attachbase)->host // '';
+  my $ub_host = URI->new(Bugzilla->localconfig->urlbase)->host // '';
+  return ($ab_host ne '' && lc($ab_host) ne lc($ub_host)) ? 1 : 0;
 }
 
 sub diff_arrays {
