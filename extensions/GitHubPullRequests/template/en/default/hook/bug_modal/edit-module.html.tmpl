@@ -1,0 +1,24 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[% RETURN UNLESS github_pull_requests %]
+
+[%
+  gh_subtitle = [];
+  IF github_open_pr_count;
+    gh_subtitle.push(github_open_pr_count _ " open pull request" _ (github_open_pr_count == 1 ? "" : "s"));
+  END;
+%]
+
+[% WRAPPER bug_modal/module.html.tmpl
+    title = "GitHub Pull Requests"
+    subtitle = gh_subtitle
+    collapsed = 0
+%]
+  [% INCLUDE github/table.html.tmpl %]
+[% END %]
