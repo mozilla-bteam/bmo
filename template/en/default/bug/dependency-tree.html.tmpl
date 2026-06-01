@@ -184,7 +184,7 @@
 [% BLOCK depth_control_toolbar %]
   <div role="toolbar" aria-label="Dependency tree controls">
     <button type="button" data-id="toggle-visibility" class="secondary"
-        aria-label="Toggle visibility of resolved bugs in the tree">
+        aria-label="Toggle visibility of resolved [% terms.bugs %] in the tree">
       [% IF hide_resolved %]Show[% ELSE %]Hide[% END %] Resolved
     </button>
     <div role="group" aria-label="Max depth control">
@@ -192,7 +192,7 @@
       <input type="number" data-id="custom-limit"
           size="4" maxlength="4" min="1" max="[% realdepth FILTER html %]"
           value="[% maxdepth > 0 && maxdepth <= realdepth ? maxdepth : realdepth %]"
-          aria-label="Set maximum depth of the dependency tree.">
+          aria-label="Set maximum depth of the dependency tree">
       <button type="button" data-id="set-limit" class="secondary"
           [% " disabled" IF realdepth < 2 || maxdepth == 1 %]
           aria-label="Set maximum depth to 1">1</button>
