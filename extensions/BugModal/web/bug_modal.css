@@ -551,6 +551,29 @@ input[type="number"] {
 }
 
 /**
+ * dependency tree
+ */
+
+#dependency-tree-container:not(:empty) {
+  padding: 10px;
+  width: 100%;
+}
+
+#module-references-content:has(.field:not([style="display:none"])) #dependency-tree-container:not(:empty) {
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--control-border-color);
+}
+
+#dependency-tree-container h3 {
+  color: var(--secondary-label-color);
+  font-size: inherit;
+}
+
+#hide-dependency-tree-btn {
+  margin-left: auto;
+}
+
+/**
  * attachments
  */
 

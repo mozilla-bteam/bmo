@@ -109,6 +109,48 @@ function initKeywordsAutocomplete(keywords) {
         .addClass('bz_autocomplete');
 };
 
+/**
+ * Initialize the Dependency Tree module if the container element is present on the page.
+ */
+const initDependencyTree = async () => {
+  const $treeContainer = document.querySelector('#dependency-tree-container');
+  const $listContainer = document.querySelector('#dependency-list-container');
+
+  if (!$treeContainer || !$listContainer) {
+    return;
+  }
+
+  const removeTree = () => {
+    $treeContainer.remove();
+    $listContainer.hidden = false;
+  };
+
+  const { config: { basepath }, bug_id: bugId } = BUGZILLA;
+  const url = `${basepath}showdependencytree.cgi?id=${bugId}&hide_resolved=1&embed=1`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    removeTree();
+
+    return;
+  }
+
+  // Safe to inject HTML as is: same-origin fetch, Template Toolkit escapes all user-supplied data
+  $treeContainer.innerHTML = await response.text();
+  new Bugzilla.DependencyTree();
+
+  // Add a button to hide the dependency tree and show the original flat list of dependencies again
+  const $button = Object.assign(document.createElement('button'), {
+    type: 'button',
+    id: 'hide-dependency-tree-btn',
+    className: 'ghost',
+    textContent: 'Hide Dependency Tree',
+  });
+
+  $button.addEventListener('click', (event) => removeTree(), { once: true });
+  $treeContainer.querySelector('[role="toolbar"]')?.insertAdjacentElement('beforeend', $button);
+};
+
 $(function() {
     'use strict';
 
@@ -1619,6 +1661,7 @@ $(function() {
 
     restoreEditMode();
     restoreSavedBugComment();
+    initDependencyTree();
 });
 
 function confirmUnsafeURL(url) {
