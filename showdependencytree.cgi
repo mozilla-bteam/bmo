@@ -72,6 +72,10 @@ $vars->{'realdepth'}     = $realdepth;
 $vars->{'maxdepth'}      = $maxdepth;
 $vars->{'hide_resolved'} = $hide_resolved;
 
+# Extra parameters for embedding the tree in the bug page.
+$vars->{'embed'}     = $cgi->param('embed') ? 1 : 0;
+$vars->{'tree_only'} = $cgi->param('tree_only') ? 1 : 0;
+
 print $cgi->header();
 $template->process("bug/dependency-tree.html.tmpl", $vars)
   || ThrowTemplateError($template->error());
@@ -103,13 +107,11 @@ sub GenerateTree {
 sub _generate_bug_ids {
   my ($bug_id, $relationship, $depth, $ids) = @_;
 
-  # Record this depth in the global $realdepth variable if it's farther
-  # than we've gone before.
-  $realdepth = max($realdepth, $depth);
-
   my $dependencies = _get_dependencies($bug_id, $relationship);
   foreach my $dep_id (@$dependencies) {
     if (!$maxdepth || $depth <= $maxdepth) {
+      # Record the depth of this dependency if it's the deepest seen so far.
+      $realdepth = max($realdepth, $depth);
       $ids->{$dep_id} = 1;
       _generate_bug_ids($dep_id, $relationship, $depth + 1, $ids);
     }
@@ -148,4 +150,3 @@ sub _get_dependencies {
     : Bugzilla::Bug::list_relationship('dependencies', 'dependson', 'blocked',
       $bug_id, $hide_resolved);
 }
-

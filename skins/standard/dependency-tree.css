@@ -5,70 +5,102 @@
  * This Source Code Form is "Incompatible With Secondary Licenses", as
  * defined by the Mozilla Public License, v. 2.0. */
 
-[role="button"] {
+#main-inner > #dependency-tree [role="toolbar"] {
+  position: sticky;
+  top: calc(var(--global-header-height) + 16px);
+  z-index: 100;
+  background-color: var(--application-background-color);
+}
+
+#dependency-tree [role="toolbar"] {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+#dependency-tree [role="toolbar"] [role="group"] {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 4px;
+}
+
+#dependency-tree .tree-container > [role="group"] {
+  margin-block: 16px 0;
+}
+
+#dependency-tree .tree-container h3 {
+  margin-block: 0 8px;
+}
+
+#dependency-tree .tree-container p {
+  margin-block: 0;
+}
+
+#dependency-tree [role="tree"] {
+  display: block;
+  margin: 8px 0 0 22px;
+  padding: 0;
+}
+
+#dependency-tree [role="tree"] [role="button"] {
   outline: 0;
   border: 0;
   padding: 0 !important;
+  width: 18px !important;
+  height: 18px !important;
   color: inherit;
   background: none transparent !important;
   box-shadow: none !important;
   font-size: inherit;
   font-weight: normal;
+  vertical-align: top;
   transition: none;
 }
 
-[role="button"] * {
+#dependency-tree [role="tree"] [role="button"] * {
   pointer-events: none;
 }
 
-[role="tree"] {
-  display: block;
-  margin: 16px 0 0 22px;
-  padding: 0;
-}
-
-[role="tree"] ul {
+#dependency-tree [role="tree"] ul {
   display: block;
   margin: 0;
   padding: 0 0 0 44px;
 }
 
-[role="tree"] li {
+#dependency-tree [role="tree"] li {
   display: block;
   margin: 8px 0;
   padding: 0;
   list-style-type: none;
 }
 
-[role="tree"] .icon::before {
+#dependency-tree [role="tree"] .icon::before {
   font-size: var(--icon-size-small);
   font-family: var(--icon-font-family);
   line-height: 100%;
   vertical-align: top;
 }
 
-[role="treeitem"][aria-expanded] {
+#dependency-tree [role="treeitem"][aria-expanded] {
   margin-left: -22px;
 }
 
-[role="treeitem"][aria-expanded="true"] > .expander .icon {
+#dependency-tree [role="treeitem"][aria-expanded="true"] > .expander .icon {
   transform: rotate(90deg);
 }
 
-[role="treeitem"][aria-expanded="false"] > .expander .icon {
+#dependency-tree [role="treeitem"][aria-expanded="false"] > .expander .icon {
   transform: rotate(0);
 }
 
-[role="treeitem"][aria-expanded="false"] [role="group"] {
+#dependency-tree [role="treeitem"][aria-expanded="false"] [role="group"] {
   display: none;
 }
 
-.expander {
-  width: 18px !important;
-  height: 18px;
-}
-
-.expander .icon {
+#dependency-tree .expander .icon {
   display: inline-block;
   width: 18px;
   height: 18px;
@@ -76,28 +108,28 @@
   transition: transform .2s;
 }
 
-.expander .icon::before {
+#dependency-tree .expander .icon::before {
   content: '\E037';
 }
 
-.tree-link .icon::before {
+#dependency-tree .tree-link .icon::before {
   content: '\E0B8';
 }
 
-.duplicate-highlighter[aria-pressed="true"] {
+#dependency-tree .duplicate-highlighter[aria-pressed="true"] {
   color: rgb(var(--accent-color-red-1));
 }
 
-.duplicate-highlighter .icon::before {
+#dependency-tree .duplicate-highlighter .icon::before {
   content: '\E417';
 }
 
-.summary.highlight .bug-link {
+#dependency-tree .summary.highlight .bug-link {
   background-color: var(--selected-control-background-color) !important;
   font-weight: 500 !important;
 }
 
-.summ_info {
+#dependency-tree .summ_info {
   display: none; /* change to inline if you would like to see the full bug details displayed in the list */
   font-size: 75%;
 }

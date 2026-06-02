@@ -73,6 +73,7 @@ our $VERSION = '0.1';
 BEGIN {
   *Bugzilla::Bug::last_closed_date               = \&_last_closed_date;
   *Bugzilla::Bug::reporters_hw_os                = \&_bug_reporters_hw_os;
+  *Bugzilla::Bug::is_meta                        = \&_bug_is_meta;
   *Bugzilla::Bug::is_unassigned                  = \&_bug_is_unassigned;
   *Bugzilla::Bug::is_untriaged                   = \&_bug_is_untriaged;
   *Bugzilla::Bug::uses_triaged_keyword           = \&_bug_uses_triaged_keyword;
@@ -870,6 +871,11 @@ sub _bug_reporters_hw_os {
     $memcached->set({key => 'bug.ua.' . $self->id, value => $hw_os});
   }
   return $self->{ua_hw_os} = $hw_os;
+}
+
+sub _bug_is_meta {
+  my ($self) = @_;
+  return $self->has_keyword('meta');
 }
 
 sub _bug_is_unassigned {

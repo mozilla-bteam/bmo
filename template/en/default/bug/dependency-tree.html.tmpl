@@ -24,25 +24,48 @@
 [% PROCESS 'global/field-descs.none.tmpl' %]
 
 [% filtered_desc = blocked_tree.$bugid.short_desc FILTER html %]
-[% PROCESS global/header.html.tmpl
-   title           = "Dependency tree for $terms.Bug $bugid"
-   header          = "Dependency tree for
-                      <a href=\"${basepath}show_bug.cgi?id=$bugid\">$terms.Bug $bugid</a>"
-   javascript_urls = ["js/dependency-tree.js"]
-   style_urls      = ["skins/standard/dependency-tree.css"]
-   subheader      = filtered_desc
-   doc_section = "hintsandtips.html#dependencytree"
-%]
 
-[% PROCESS depthControlToolbar %]
+[% IF !embed %]
+  [% PROCESS global/header.html.tmpl
+    title           = "Dependency tree for $terms.Bug $bugid"
+    header          = "Dependency tree for
+                        <a href=\"${basepath}show_bug.cgi?id=$bugid\">$terms.Bug $bugid</a>"
+    javascript_urls = ["js/dependency-tree.js"]
+    style_urls      = ["skins/standard/dependency-tree.css"]
+    subheader       = filtered_desc
+    doc_section     = "hintsandtips.html#dependencytree"
+  %]
+[% END %]
 
-[% INCLUDE tree_section ids=dependson_ids type=1 %]
+[% IF embed && tree_only %]
+  [% INCLUDE trees %]
+[% ELSE %]
+  <div id="dependency-tree"
+      role="group" aria-label="Dependency tree for [% terms.Bug %] [%= bugid %]"
+      data-action="[% basepath FILTER none %]showdependencytree.cgi"
+      data-bug-id="[% bugid %]"
+      data-max-depth="[% maxdepth %]"
+      data-real-depth="[% realdepth %]"
+      data-hide-resolved="[% hide_resolved %]">
+    [% INCLUDE depth_control_toolbar %]
+    <div class="tree-container">
+      [% INCLUDE trees %]
+    </div>
+  </div>
+[% END %]
 
-[% INCLUDE tree_section ids=blocked_ids type=2 %]
+[% IF !embed %]
+  [% PROCESS global/footer.html.tmpl %]
+[% END %]
 
-[% PROCESS depthControlToolbar %]
+[%###########################################################################%]
+[%# Trees                                                                   #%]
+[%###########################################################################%]
 
-[% PROCESS global/footer.html.tmpl %]
+[% BLOCK trees %]
+  [% INCLUDE tree_section ids=dependson_ids type=1 label="Depends on" %]
+  [% INCLUDE tree_section ids=blocked_ids type=2 label="Blocked by" %]
+[% END %]
 
 [%###########################################################################%]
 [%# Tree-drawing blocks                                                     #%]
@@ -57,55 +80,42 @@
     #%]
   [% global.seen = {} %]
   [%# Display the tree of bugs that this bug depends on. %]
-  <h3>
-    <a href="[% basepath FILTER none %]show_bug.cgi?id=[% bugid %]">[% terms.Bug %] [%+ bugid %]</a>
-    [% IF type == 1 %]
-        [% tree_name = "dependson_tree" %]
-        [% IF ids.size %]
-            depends on
-        [% ELSE %]
-            does not depend on any [% 'open ' IF hide_resolved %][% terms.bugs %].
-        [% END %]
-    [% ELSIF type == 2 %]
-        [% tree_name = "blocked_tree" %]
-        [% IF ids.size %]
-            blocks
-        [% ELSE %]
-            does not block any [% 'open ' IF hide_resolved %][% terms.bugs %].
-        [% END %]
-    [% END %]
+  <div role="group" aria-label="[% label FILTER html %]">
+    <h3>
+      [%- terms.Bug %] [%= bugid -%]
+      [%- IF type == 1 -%]
+        [%- tree_name = "dependson_tree" -%]
+        [%- IF ids.size %] depends on[%- ELSE %] does not depend on any [%= 'open ' IF hide_resolved -%][%- terms.bugs %].[%- END -%]
+      [%- ELSIF type == 2 -%]
+        [%- tree_name = "blocked_tree" -%]
+        [%- IF ids.size %] blocks[%- ELSE %] does not block any [%= 'open ' IF hide_resolved -%][%- terms.bugs %].[%- END -%]
+      [%- END -%]
+      [%- IF ids.size %]
+        [%= (ids.size == 1) ? "one" : ids.size -%]
+        [%- IF hide_resolved %] open[%- END -%]
+        [%- " " _ ((ids.size == 1) ? terms.bug : terms.bugs) %]:
+      [%- END -%]
+    </h3>
     [% IF ids.size %]
-        [%+ (ids.size == 1) ? "one" : ids.size %]
-        [%+ IF hide_resolved %]open[% END %]
-        [%+ (ids.size == 1) ? terms.bug : terms.bugs %]:
+      <p>
+        [% IF maxdepth -%]Up to [% maxdepth %] level[% "s" IF maxdepth > 1 %] deep[% END -%]
+        [% IF maxdepth && ids.size > 1 +%] | [%+ END %]
+        [% href = basepath _ 'buglist.cgi?bug_id=' _ ids.sort().join(",") %]
+        [% IF ids.size > 1 %]
+          <a href="[% href FILTER none %]" class="view-list-link"
+              [% IF embed %]target="_blank"[% END %]>View as [% terms.bug %] list</a>
+          [% IF user.in_group('editbugs') %]
+            |
+            <a href="[% href FILTER none %]&amp;tweak=1" class="view-list-link"
+                [% IF embed %]target="_blank"[% END %]>Change several</a>
+          [% END %]
+        [% END %]
+      </p>
+      <ul role="tree">
+        [% INCLUDE display_tree tree=$tree_name %]
+      </ul>
     [% END %]
-  </h3>
-  [% IF ids.size %]
-    [%# 27 chars is the length of buglist.cgi?tweak=&bug_id=" %]
-    [% use_post = (ids.join(",").length > constants.CGI_URI_LIMIT - 27 ) ? 1 : 0 %]
-    [% IF use_post %]
-      <form action="[% basepath FILTER none %]buglist.cgi" method="post">
-      <input type="hidden" name="bug_id" value="[% ids.join(",") %]">
-    [% END %]
-
-    [% IF maxdepth -%]Up to [% maxdepth %] level[% "s" IF maxdepth > 1 %] deep | [% END -%]
-    [% IF use_post %]
-      <button>view as [% terms.bug %] list</button>
-      [% IF user.in_group('editbugs') && ids.size > 1 %]
-        | <button type="submit" name="tweak" value="1">change several</button>
-      [% END %]
-      </form>
-    [% ELSE %]
-      <a href="[% basepath FILTER none %]buglist.cgi?bug_id=[% ids.join(",") %]">view as [% terms.bug %] list</a>
-      [% IF user.in_group('editbugs') && ids.size > 1 %]
-        | <a href="[% basepath FILTER none %]buglist.cgi?bug_id=[% ids.join(",") %]&amp;tweak=1">change several</a>
-      [% END %]
-    [% END %]
-
-    <ul role="tree">
-      [% INCLUDE display_tree tree=$tree_name %]
-    </ul>
-  [% END %]
+  </div>
 [% END %]
 
 
@@ -148,13 +158,15 @@
 
 [% BLOCK buglink %]
   <a class="bug-link[% ' bz_closed' UNLESS bug.isopened %]"
-     href="[% basepath FILTER none %]show_bug.cgi?id=[% bugid %]" title="[% INCLUDE buginfo bug=bug %]">
+      href="[% basepath FILTER none %]show_bug.cgi?id=[% bugid %]" title="[% INCLUDE buginfo bug=bug %]"
+      [% IF embed %]target="_blank"[% END %]>
     <strong>[%- bugid %]:</strong>
     <span class="summ_text">[%+ bug.short_desc FILTER html %]</span>
     <span class="summ_info">[[% INCLUDE buginfo %]]</span>
   </a>
   <a class="tree-link iconic" href="[% basepath FILTER none %]showdependencytree.cgi?id=[% bugid FILTER uri %]"
-      title="See dependency tree for [% terms.Bug %] [%+ bugid FILTER html %]">
+      title="See dependency tree for [% terms.Bug %] [%+ bugid FILTER html %]"
+      [% IF embed %]target="_blank"[% END %]>
     <span class="icon" aria-hidden="true"></span>
   </a>
 [% END %]
@@ -169,105 +181,24 @@
 [%# Block for depth control toolbar                                         #%]
 [%###########################################################################%]
 
-[% BLOCK depthControlToolbar %]
- <table cellpadding="3" border="0" cellspacing="0">
-   <tr>
-   [%# Hide/show resolved button
-       Swaps text depending on the state of hide_resolved %]
-   <td align="center">
-   <form method="get" action="[% basepath FILTER none %]showdependencytree.cgi"
-           style="display: inline; margin: 0px;">
-     <input name="id" type="hidden" value="[% bugid %]">
-     [% IF maxdepth %]
-       <input name="maxdepth" type="hidden" value="[% maxdepth %]">
-     [% END %]
-     <input type="hidden" name="hide_resolved" value="[% hide_resolved ? 0 : 1 %]">
-     <input type="submit" id="toggle_visibility"
-            value="[% IF hide_resolved %]Show[% ELSE %]Hide[% END %] Resolved">
-   </form>
-   </td>
-
-   <td>
-     Max Depth:
-   </td>
-
-   <td>
-     &nbsp;
-   </td>
-
-   <td>
-   <form method="get" action="[% basepath FILTER none %]showdependencytree.cgi"
-         style="display: inline; margin: 0px;">
-     [%# set to one form %]
-     <input type="submit" id="change_maxdepth"
-       value="&nbsp;1&nbsp;"
-       [% " disabled" IF realdepth < 2 || maxdepth == 1 %]>
-     <input name="id" type="hidden" value="[% bugid %]">
-     <input name="maxdepth" type="hidden" value="1">
-     <input name="hide_resolved" type="hidden" value="[% hide_resolved %]">
-   </form>
-   </td>
-
-   <td>
-   <form method="get" action="[% basepath FILTER none %]showdependencytree.cgi"
-         style="display: inline; margin: 0px;">
-     [%# Minus one form
-         Allow subtracting only when realdepth and maxdepth > 1 %]
-     <input name="id" type="hidden" value="[% bugid %]">
-     <input name="maxdepth" type="hidden" value="[%
-         maxdepth == 1 ? 1
-                       : ( maxdepth ? maxdepth - 1 : realdepth - 1 )
-     %]">
-     <input name="hide_resolved" type="hidden" value="[% hide_resolved %]">
-     <input type="submit" id="decrease_depth" value="&nbsp;&lt;&nbsp;"
-       [% " disabled" IF realdepth < 2 || ( maxdepth && maxdepth < 2 ) %]>
-   </form>
-   </td>
-
-   <td>
-   <form method="get" action="[% basepath FILTER none %]showdependencytree.cgi"
-         style="display: inline; margin: 0px;">
-     [%# Limit entry form: the button can not do anything when total depth
-         is less than two, so disable it %]
-     <input name="maxdepth" size="4" maxlength="4" value="[%
-         maxdepth > 0 && maxdepth <= realdepth ? maxdepth : ""
-     %]">
-     <input name="id" type="hidden" value="[% bugid %]">
-     <input name="hide_resolved" type="hidden" value="[% hide_resolved %]">
-     <noscript>
-       <input type="submit" id="change_depth" value="Change"
-              [% " disabled" IF realdepth < 2 %]>
-     </noscript>
-   </form>
-   </td>
-
-   <td>
-   <form method="get" action="[% basepath FILTER none %]showdependencytree.cgi"
-         style="display: inline; margin: 0px;">
-     [%# plus one form
-         Disable button if total depth < 2, or if depth set to unlimited %]
-     <input name="id" type="hidden" value="[% bugid %]">
-     [% IF maxdepth %]
-       <input name="maxdepth" type="hidden" value="[% maxdepth + 1 %]">
-     [% END %]
-     <input name="hide_resolved" type="hidden" value="[% hide_resolved %]">
-     <input type="submit" id="increase_depth" value="&nbsp;&gt;&nbsp;"
-        [% " disabled" IF realdepth < 2 || !maxdepth || maxdepth >= realdepth %]>
-   </form>
-   </td>
-
-   <td>
-   <form method="get" action="[% basepath FILTER none %]showdependencytree.cgi"
-         style="display: inline; margin: 0px;">
-     [%# Unlimited button %]
-     <input name="id" type="hidden" value="[% bugid %]">
-     <input name="hide_resolved" type="hidden" value="[% hide_resolved %]">
-     <input type="submit" id="remove_limit"
-       value="&nbsp;Unlimited&nbsp;"
-       [% " disabled" IF maxdepth == 0 || maxdepth == realdepth %]>
-   </form>
-   </td>
- </tr>
-</table>
-
+[% BLOCK depth_control_toolbar %]
+  <div role="toolbar" aria-label="Dependency tree controls">
+    <button type="button" data-id="toggle-visibility" class="secondary"
+        aria-label="Toggle visibility of resolved [% terms.bugs %] in the tree">
+      [% IF hide_resolved %]Show[% ELSE %]Hide[% END %] Resolved
+    </button>
+    <div role="group" aria-label="Max depth control">
+      <span aria-hidden="true">Max Depth:</span>
+      <input type="number" data-id="custom-limit"
+          size="4" maxlength="4" min="1" max="[% realdepth FILTER html %]"
+          value="[% maxdepth > 0 && maxdepth <= realdepth ? maxdepth : realdepth %]"
+          aria-label="Set maximum depth of the dependency tree">
+      <button type="button" data-id="set-limit" class="secondary"
+          [% " disabled" IF realdepth < 2 || maxdepth == 1 %]
+          aria-label="Set maximum depth to 1">1</button>
+      <button type="button" data-id="remove-limit" class="secondary"
+          [% " disabled" IF maxdepth == 0 || maxdepth == realdepth %]
+          aria-label="Remove maximum depth limit">Unlimited</button>
+    </div>
+  </div>
 [% END %]
