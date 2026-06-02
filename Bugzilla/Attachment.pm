@@ -308,10 +308,11 @@ sub is_viewable {
 Returns 1 if C<$type> is safe to serve with C<Content-Disposition: inline>
 given the current deployment configuration.
 
-Types on the strict allowlist (C<%_SAFE_INLINE_TYPES>, audio/*, video/*) are
-always safe. C<text/html> is additionally permitted when the attachment domain
-is an isolated origin (C<attachment_base_is_isolated> returns true), which
-ensures the HTML cannot access main-site session cookies.
+When the attachment domain is an isolated origin
+(C<attachment_base_is_isolated> returns true), any content type is permitted
+inline, since attachments cannot access main-site session cookies. Otherwise
+only types on the strict allowlist (C<%_SAFE_INLINE_TYPES>, audio/*, video/*)
+are considered safe.
 
 =back
 
@@ -319,10 +320,13 @@ ensures the HTML cannot access main-site session cookies.
 
 sub is_safe_inline_content_type {
   my ($type) = @_;
+
+  # On an isolated attachment domain, any content type is safe to serve inline
+  # because attachments cannot access the main site's session cookies.
+  return 1 if attachment_base_is_isolated();
+
+  # Otherwise fall back to the strict allowlist of non-executable types.
   return 1 unless is_executable_content_type($type);
-  my $t = lc($type // '');
-  $t =~ s/\s*;.*$//;
-  return 1 if $t eq 'text/html' && attachment_base_is_isolated();
   return 0;
 }
 

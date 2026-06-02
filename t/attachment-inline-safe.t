@@ -109,11 +109,13 @@ my $isolated_func = \&Bugzilla::Util::attachment_base_is_isolated;
   );
   ok($safe_func->('TEXT/HTML'), 'text/html uppercase safe on isolated domain');
 
-  # svg/xml still blocked even on isolated domain
+  # On an isolated domain all content types (including otherwise-executable
+  # ones) are safe to serve inline.
   for my $type (
-    qw(image/svg+xml application/xhtml+xml text/xml application/javascript))
+    qw(image/svg+xml application/xhtml+xml text/xml application/javascript text/javascript)
+    )
   {
-    ok(!$safe_func->($type), "$type still blocked on isolated domain");
+    ok($safe_func->($type), "$type safe on isolated domain");
   }
 }
 
