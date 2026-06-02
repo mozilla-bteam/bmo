@@ -122,7 +122,7 @@ $sel->is_element_present_ok($reactions_picker_path . $reactions_btn1_path
   . '[@aria-pressed="true"]');
 $sel->click_ok($reactions_picker_path . $reactions_btn2_path
   . '[@aria-pressed="false"]');
-$sel->js_click_ok($reactions_sums_path . $reactions_btn2_path
+$sel->click_ok($reactions_sums_path . $reactions_btn2_path
   . '[@data-reaction-count="1"][@aria-pressed="true"]');
 $sel->is_element_present_ok($reactions_sums_path . $reactions_btn2_path
   . '[@data-reaction-count="0"][@aria-pressed="false"]');
@@ -131,7 +131,7 @@ logout($sel);
 # Choose comment reactions by a different user. No privilege required to react
 log_in($sel, $config, 'unprivileged');
 go_to_bug($sel, $bug1_id);
-$sel->js_click_ok($reactions_sums_path . $reactions_btn1_path
+$sel->click_ok($reactions_sums_path . $reactions_btn1_path
   . '[@data-reaction-count="1"][@aria-pressed="false"]');
 $sel->is_element_present_ok($reactions_sums_path . $reactions_btn1_path
   . '[@data-reaction-count="2"][@aria-pressed="true"]');

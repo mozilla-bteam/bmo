@@ -66,30 +66,6 @@ sub scroll_to_center {
     'arguments[0].scrollIntoView({block: "center", inline: "nearest"})');
 }
 
-# Use instead of click_ok for elements that don't trigger navigation but are
-# unreliable with WebDriver's native click (e.g. small buttons in containers
-# where ChromeDriver's own scroll-to-click fails with "not interactable").
-sub js_click_ok {
-  my ($self, $locator, $desc) = @_;
-  $desc ||= "Click ok: $locator";
-  TRACE("js_click_ok: $locator, $desc");
-  $locator = $self->_fix_locator($locator);
-  my $element = $self->find_element($locator);
-  if (!$element) {
-    $locator =~ s/\@id/\@name/;
-    TRACE("js_click_ok new locator: $locator");
-    $element = $self->find_element($locator);
-  }
-  if ($element) {
-    $self->scroll_to_center($element);
-    $element->execute_script('arguments[0].click()');
-    ok(1, $desc);
-  }
-  else {
-    ok(0, $desc);
-  }
-}
-
 sub open_ok {
   my ($self, $arg1, $arg2, $name) = @_;
   $arg2 ||= 'undefined';
