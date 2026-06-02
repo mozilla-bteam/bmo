@@ -290,17 +290,44 @@ sub isprivate {
 
 =item C<is_viewable>
 
-Returns 1 if the attachment content-type is safe to display inline (i.e.
-not in the executable/unsafe category). Delegates to
-C<is_executable_content_type>.
+Returns 1 if the attachment content-type is safe to display inline in the
+current deployment context. Delegates to C<is_safe_inline_content_type>.
 
 =back
 
 =cut
 
 sub is_viewable {
-  my $contenttype = $_[0]->contenttype;
-  return is_executable_content_type($contenttype) ? 0 : 1;
+  return is_safe_inline_content_type($_[0]->contenttype);
+}
+
+=over
+
+=item C<is_safe_inline_content_type($type)>
+
+Returns 1 if C<$type> is safe to serve with C<Content-Disposition: inline>
+given the current deployment configuration.
+
+When the attachment domain is an isolated origin
+(C<attachment_base_is_isolated> returns true), any content type is permitted
+inline, since attachments cannot access main-site session cookies. Otherwise
+only types on the strict allowlist (C<%_SAFE_INLINE_TYPES>, audio/*, video/*)
+are considered safe.
+
+=back
+
+=cut
+
+sub is_safe_inline_content_type {
+  my ($type, $method_type) = @_;
+  $type = $method_type if defined $method_type;
+
+  # On an isolated attachment domain, any content type is safe to serve inline
+  # because attachments cannot access the main site's session cookies.
+  return 1 if attachment_base_is_isolated();
+
+  # Otherwise fall back to the strict allowlist of non-executable types.
+  return is_executable_content_type($type) ? 0 : 1;
 }
 
 =over
