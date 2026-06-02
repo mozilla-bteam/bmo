@@ -319,15 +319,15 @@ are considered safe.
 =cut
 
 sub is_safe_inline_content_type {
-  my ($type) = @_;
+  my ($type, $method_type) = @_;
+  $type = $method_type if defined $method_type;
 
   # On an isolated attachment domain, any content type is safe to serve inline
   # because attachments cannot access the main site's session cookies.
   return 1 if attachment_base_is_isolated();
 
   # Otherwise fall back to the strict allowlist of non-executable types.
-  return 1 unless is_executable_content_type($type);
-  return 0;
+  return is_executable_content_type($type) ? 0 : 1;
 }
 
 =over
