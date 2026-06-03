@@ -34,7 +34,7 @@
 #dependency-tree .tree-container[aria-busy="true"]::before {
   content: 'Updating…';
   position: absolute;
-  top: 50%;
+  top: 100px;
   left: 50%;
   transform: translate(-50%, -50%);
   border-radius: 4px;
