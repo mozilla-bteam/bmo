@@ -99,9 +99,8 @@ Bugzilla.DependencyTree = class DependencyTree {
         break;
     }
 
-    this.toggleControllers(true);
+    this.disableControllers();
     await this.updateTrees({ maxDepth, hideResolved });
-    this.toggleControllers(false);
     this.updateControllers({ maxDepth, hideResolved });
   }
 
@@ -239,6 +238,16 @@ Bugzilla.DependencyTree = class DependencyTree {
   }
 
   /**
+   * Temporarily disable all toolbar buttons and inputs to prevent multiple simultaneous updates.
+   */
+  disableControllers() {
+    this.$toggleBtn.disabled = true;
+    this.$setLimitBtn.disabled = true;
+    this.$removeLimitBtn.disabled = true;
+    this.$numberInput.disabled = true;
+  }
+
+  /**
    * Update the state of the toolbar buttons and inputs based on the current parameters.
    * @param {object} params Parameters.
    * @param {number} params.maxDepth The maximum depth to show in the tree.
@@ -251,20 +260,10 @@ Bugzilla.DependencyTree = class DependencyTree {
 
     // Update button states
     this.$toggleBtn.textContent = hideResolved ? 'Show Resolved' : 'Hide Resolved';
+    this.$toggleBtn.disabled = false;
     this.$setLimitBtn.disabled = this.realDepth < 2 || maxDepth === 1;
     this.$removeLimitBtn.disabled = maxDepth === 0 || maxDepth === this.realDepth;
-  }
-
-  /**
-   * Enable or disable the toolbar buttons and inputs. This is used to prevent multiple simultaneous
-   * updates while one is already in progress.
-   * @param {boolean} disabled Whether to disable the controllers.
-   */
-  toggleControllers(disabled) {
-    this.$toggleBtn.disabled = disabled;
-    this.$setLimitBtn.disabled = disabled || this.realDepth < 2 || this.data.maxDepth === 1;
-    this.$removeLimitBtn.disabled = disabled || this.data.maxDepth === 0 || this.data.maxDepth === this.realDepth;
-    this.$numberInput.disabled = disabled;
+    this.$numberInput.disabled = false;
   }
 
   /**
