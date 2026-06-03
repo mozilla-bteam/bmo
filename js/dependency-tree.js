@@ -99,14 +99,93 @@ Bugzilla.DependencyTree = class DependencyTree {
         break;
     }
 
+    this.toggleControllers(true);
     await this.updateTrees({ maxDepth, hideResolved });
+    this.toggleControllers(false);
     this.updateControllers({ maxDepth, hideResolved });
   }
 
   /**
-   * Error message to display when the dependency tree fails to load.
+   * Get the visible height of the tree container using an `IntersectionObserver` so that we can
+   * position the loading indicator and error message in the center of the container.
+   * @returns {number} The height of the tree container in pixels.
    */
-  #UPDATE_TREES_ERROR_MESSAGE = '<p class="error">Failed to load the dependency tree.</p>';
+  async getContainerHeight() {
+    let observer;
+
+    return Promise.race([
+      new Promise((resolve) => {
+        observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            resolve(entry.intersectionRect.height);
+            observer.disconnect();
+          });
+        });
+
+        observer.observe(this.$container);
+      }),
+      new Promise((resolve) => {
+        // Fallback: use offsetHeight if observer doesn’t fire within 100ms, e.g. when the container
+        // is not visible
+        setTimeout(() => {
+          resolve(this.$container.clientHeight);
+          observer?.disconnect();
+        }, 100);
+      }),
+    ]);
+  }
+
+  /**
+   * Show an error message in the tree container if fetching the dependency tree fails. Position the
+   * message in the center of the container.
+   */
+  async showErrorMessage() {
+    const containerHeight = await this.getContainerHeight();
+
+    this.$errorMessage ??= Object.assign(document.createElement('p'), {
+      className: 'error',
+      role: 'alert',
+      textContent: 'Failed to load the dependency tree.',
+    });
+
+    this.$errorMessage.style.top = `${containerHeight / 2}px`;
+    this.$container.innerHTML = '';
+    this.$container.insertAdjacentElement('afterbegin', this.$errorMessage);
+  }
+
+  /**
+   * Hide the error message if it is currently shown.
+   */
+  hideErrorMessage() {
+    this.$errorMessage?.remove();
+  }
+
+  /**
+   * Show a loading message in the tree container while the dependency tree is being updated.
+   * Position the message in the center of the container.
+   */
+  async showUpdatingMessage() {
+    const containerHeight = await this.getContainerHeight();
+
+    this.$updatingMessage ??= Object.assign(document.createElement('p'), {
+      className: 'updating',
+      role: 'status',
+      ariaLabel: 'Updating the dependency tree',
+      textContent: 'Updating…',
+    });
+
+    this.$updatingMessage.style.top = `${containerHeight / 2}px`;
+    this.$container.setAttribute('aria-busy', 'true');
+    this.$container.insertAdjacentElement('afterbegin', this.$updatingMessage);
+  }
+
+  /**
+   * Hide the loading message if it is currently shown and remove the busy state from the container.
+   */
+  hideUpdatingMessage() {
+    this.$updatingMessage?.remove();
+    this.$container.removeAttribute('aria-busy');
+  }
 
   /**
    * Fetch and update the dependency tree HTML based on the given parameters, then inject it into
@@ -125,24 +204,32 @@ Bugzilla.DependencyTree = class DependencyTree {
 
     const url = `${this.data.action}?${params}`;
 
+    // Hide any existing error message before starting a new fetch
+    this.hideErrorMessage();
+
     // Set up a delayed loading indicator — only show after 300ms to avoid flicker on fast loads
     const loadingTimeout = setTimeout(() => {
-      this.$container.setAttribute('aria-busy', 'true');
+      this.showUpdatingMessage();
     }, 300);
 
     try {
       const response = await fetch(`${url}&embed=1&tree_only=1`);
-      const html = response.ok ? await response.text() : undefined;
 
-      // Safe to inject HTML as is: same-origin fetch, Template Toolkit escapes all user-supplied data
-      this.$container.innerHTML = html ?? this.#UPDATE_TREES_ERROR_MESSAGE;
-    } catch {
-      this.$container.innerHTML = this.#UPDATE_TREES_ERROR_MESSAGE;
+      if (response.ok) {
+        // Safe to inject HTML as is: Template Toolkit escapes all user-supplied data
+        this.$container.innerHTML = await response.text();
+      } else {
+        console.error('Failed to fetch dependency tree:', response.status);
+        this.showErrorMessage();
+      }
+    } catch (ex) {
+      console.error('Error fetching dependency tree:', ex);
+      this.showErrorMessage();
     } finally {
       // Cancel the loading timeout if it hasn’t fired yet
       clearTimeout(loadingTimeout);
       // Remove the loading state if it was set
-      this.$container.removeAttribute('aria-busy');
+      this.hideUpdatingMessage();
     }
 
     // Update the URL query parameters if we’re on the dependency tree page
@@ -166,6 +253,18 @@ Bugzilla.DependencyTree = class DependencyTree {
     this.$toggleBtn.textContent = hideResolved ? 'Show Resolved' : 'Hide Resolved';
     this.$setLimitBtn.disabled = this.realDepth < 2 || maxDepth === 1;
     this.$removeLimitBtn.disabled = maxDepth === 0 || maxDepth === this.realDepth;
+  }
+
+  /**
+   * Enable or disable the toolbar buttons and inputs. This is used to prevent multiple simultaneous
+   * updates while one is already in progress.
+   * @param {boolean} disabled Whether to disable the controllers.
+   */
+  toggleControllers(disabled) {
+    this.$toggleBtn.disabled = disabled;
+    this.$setLimitBtn.disabled = disabled || this.realDepth < 2 || this.data.maxDepth === 1;
+    this.$removeLimitBtn.disabled = disabled || this.data.maxDepth === 0 || this.data.maxDepth === this.realDepth;
+    this.$numberInput.disabled = disabled;
   }
 
   /**

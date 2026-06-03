@@ -29,19 +29,27 @@
 
 #dependency-tree .tree-container {
   position: relative;
+  min-height: 100px; /* Ensure the container has some height for the loading indicator and error message to be positioned */
 }
 
-#dependency-tree .tree-container[aria-busy="true"]::before {
-  content: 'Updating…';
+#dependency-tree .tree-container .updating,
+#dependency-tree .tree-container .error {
   position: absolute;
-  top: 100px;
+  top: 0; /* To be updated dynamically in JS */
   left: 50%;
   transform: translate(-50%, -50%);
+}
+
+#dependency-tree .tree-container .updating {
   border-radius: 4px;
   padding: 8px 16px;
   color: var(--menu-foreground-color);
   background-color: var(--menu-background-color);
   box-shadow: var(--menu-box-shadow);
+}
+
+#dependency-tree .tree-container .error {
+  color: var(--error-message-foreground-color);
 }
 
 #dependency-tree .tree-container[aria-busy="true"] > [role="group"] {
