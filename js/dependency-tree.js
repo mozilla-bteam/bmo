@@ -104,6 +104,11 @@ Bugzilla.DependencyTree = class DependencyTree {
   }
 
   /**
+   * Error message to display when the dependency tree fails to load.
+   */
+  #UPDATE_TREES_ERROR_MESSAGE = '<p class="error">Failed to load the dependency tree.</p>';
+
+  /**
    * Fetch and update the dependency tree HTML based on the given parameters, then inject it into
    * the page.
    * @param {object} params Parameters.
@@ -119,11 +124,26 @@ Bugzilla.DependencyTree = class DependencyTree {
     });
 
     const url = `${this.data.action}?${params}`;
-    const response = await fetch(`${url}&embed=1&tree_only=1`);
-    const html = response.ok ? await response.text() : undefined;
 
-    // Safe to inject HTML as is: same-origin fetch, Template Toolkit escapes all user-supplied data
-    this.$container.innerHTML = html ?? '<p class="error">Failed to load the dependency tree.</p>';
+    // Set up a delayed loading indicator — only show after 300ms to avoid flicker on fast loads
+    const loadingTimeout = setTimeout(() => {
+      this.$container.setAttribute('aria-busy', 'true');
+    }, 300);
+
+    try {
+      const response = await fetch(`${url}&embed=1&tree_only=1`);
+      const html = response.ok ? await response.text() : undefined;
+
+      // Safe to inject HTML as is: same-origin fetch, Template Toolkit escapes all user-supplied data
+      this.$container.innerHTML = html ?? this.#UPDATE_TREES_ERROR_MESSAGE;
+    } catch {
+      this.$container.innerHTML = this.#UPDATE_TREES_ERROR_MESSAGE;
+    } finally {
+      // Cancel the loading timeout if it hasn’t fired yet
+      clearTimeout(loadingTimeout);
+      // Remove the loading state if it was set
+      this.$container.removeAttribute('aria-busy');
+    }
 
     // Update the URL query parameters if we’re on the dependency tree page
     if (location.pathname === this.data.action) {

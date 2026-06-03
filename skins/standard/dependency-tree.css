@@ -27,6 +27,28 @@
   gap: 4px;
 }
 
+#dependency-tree .tree-container {
+  position: relative;
+}
+
+#dependency-tree .tree-container[aria-busy="true"]::before {
+  content: 'Updating…';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 4px;
+  padding: 8px 16px;
+  color: var(--menu-foreground-color);
+  background-color: var(--menu-background-color);
+  box-shadow: var(--menu-box-shadow);
+}
+
+#dependency-tree .tree-container[aria-busy="true"] > [role="group"] {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
 #dependency-tree .tree-container > [role="group"] {
   margin-block: 16px 0;
 }
