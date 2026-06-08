@@ -102,6 +102,13 @@ Bugzilla.DependencyTree = class DependencyTree {
       case 'change-limit':
         maxDepth = Number(this.$numberInput?.value || this.realDepth);
 
+        // Validate that the value is within the acceptable range
+        if (maxDepth < 1 || maxDepth > this.realDepth) {
+          // Reset to the current valid value and bail out
+          this.$numberInput.value = this.data.maxDepth > 0 ? this.data.maxDepth : this.realDepth;
+          return;
+        }
+
         if (maxDepth === this.realDepth) {
           removeLimit();
         }
