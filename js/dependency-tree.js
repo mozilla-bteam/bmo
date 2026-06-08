@@ -27,7 +27,6 @@ Bugzilla.DependencyTree = class DependencyTree {
       return;
     }
 
-
     this.data = this.$trees.dataset;
     this.data.initialized = '1';
     this.realDepth = Number(this.data.realDepth);
@@ -38,6 +37,9 @@ Bugzilla.DependencyTree = class DependencyTree {
 
     this.activateToolbar();
     this.activateTrees();
+
+    // Track the current update request to prevent race conditions with `showUpdatingMessage()`
+    this.updateGeneration = 0;
   }
 
   /**
@@ -49,14 +51,22 @@ Bugzilla.DependencyTree = class DependencyTree {
     this.$removeLimitBtn = this.$toolbar.querySelector('[data-id="remove-limit"]');
     this.$numberInput = this.$toolbar.querySelector('[data-id="custom-limit"]');
 
-    this.$toolbar.addEventListener('click', async ({ target }) => {
+    this.$toolbar.addEventListener('click', ({ target }) => {
       if (target.matches('button[type="button"]')) {
-        await this.onAction(target.dataset.id);
+        this.onAction(target.dataset.id);
       }
     });
 
-    this.$numberInput?.addEventListener('change', async () => {
-      await this.onAction('change-limit');
+    this.$numberInput?.addEventListener('change', () => {
+      this.onAction('change-limit');
+    });
+
+    this.$numberInput?.addEventListener('keydown', (event) => {
+      // Prevent form submission on Enter and trigger the limit change action instead
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        this.onAction('change-limit');
+      }
     });
   }
 
@@ -92,6 +102,13 @@ Bugzilla.DependencyTree = class DependencyTree {
       case 'change-limit':
         maxDepth = Number(this.$numberInput?.value || this.realDepth);
 
+        // Validate that the value is within the acceptable range
+        if (maxDepth < 1 || maxDepth > this.realDepth) {
+          // Reset to the current valid value and bail out
+          this.$numberInput.value = this.data.maxDepth > 0 ? this.data.maxDepth : this.realDepth;
+          return;
+        }
+
         if (maxDepth === this.realDepth) {
           removeLimit();
         }
@@ -99,8 +116,136 @@ Bugzilla.DependencyTree = class DependencyTree {
         break;
     }
 
+    this.disableControllers();
     await this.updateTrees({ maxDepth, hideResolved });
     this.updateControllers({ maxDepth, hideResolved });
+  }
+
+  /**
+   * Get the visible height of the tree container using an `IntersectionObserver` so that we can
+   * position the loading indicator and error message in the center of the container.
+   * @returns {number} The height of the tree container in pixels.
+   */
+  async getContainerHeight() {
+    let observer;
+
+    return Promise.race([
+      new Promise((resolve) => {
+        observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            resolve(entry.intersectionRect.height);
+            observer.disconnect();
+          });
+        });
+
+        observer.observe(this.$container);
+      }),
+      new Promise((resolve) => {
+        // Fallback: use offsetHeight if observer doesn’t fire within 100ms, e.g. when the container
+        // is not visible
+        setTimeout(() => {
+          resolve(this.$container.clientHeight);
+          observer?.disconnect();
+        }, 100);
+      }),
+    ]);
+  }
+
+  /**
+   * Show or update a message in the tree container with generation-based lifecycle management.
+   * Positions the message in the center of the container.
+   * @param {object} config Configuration object.
+   * @param {number} config.generation The generation ID of the current update request.
+   * @param {string} config.messageType The type of message ('error' or 'updating').
+   * @param {object} config.element Element properties (`className`, `role`, `textContent`, etc.).
+   * @param {boolean} [config.clearContainer] Whether to clear container `innerHTML` before
+   * inserting.
+   * @param {() => void} [config.onShow] Optional callback to run after the message is shown.
+   */
+  async showMessage({
+    generation,
+    messageType,
+    element,
+    clearContainer = false,
+    onShow = undefined,
+  }) {
+    // Don’t proceed if a newer request has already started
+    if (generation !== this.updateGeneration) {
+      return;
+    }
+
+    const containerHeight = await this.getContainerHeight();
+
+    // Check again after async operation to ensure this request is still current
+    if (generation !== this.updateGeneration) {
+      return;
+    }
+
+    const fieldName = `$${messageType}Message`;
+
+    this[fieldName] ??= Object.assign(document.createElement('p'), element);
+    this[fieldName].style.top = `${containerHeight / 2}px`;
+
+    if (clearContainer) {
+      this.$container.innerHTML = '';
+    }
+
+    // Insert the message
+    this.$container.insertAdjacentElement('afterbegin', this[fieldName]);
+
+    onShow?.();
+  }
+
+  /**
+   * Show an error message in the tree container if fetching the dependency tree fails.
+   * @param {number} generation The generation ID of the current update request.
+   */
+  async showErrorMessage(generation) {
+    await this.showMessage({
+      generation,
+      messageType: 'error',
+      element: {
+        className: 'error',
+        role: 'alert',
+        textContent: 'Failed to load the dependency tree.',
+      },
+      clearContainer: true,
+    });
+  }
+
+  /**
+   * Hide the error message if it is currently shown.
+   */
+  hideErrorMessage() {
+    this.$errorMessage?.remove();
+  }
+
+  /**
+   * Show a loading message in the tree container while the dependency tree is being updated.
+   * @param {number} generation The generation ID of the current update request.
+   */
+  async showUpdatingMessage(generation) {
+    await this.showMessage({
+      generation,
+      messageType: 'updating',
+      element: {
+        className: 'updating',
+        role: 'status',
+        ariaLabel: 'Updating the dependency tree',
+        textContent: 'Updating…',
+      },
+      onShow: () => {
+        this.$container.setAttribute('aria-busy', 'true');
+      },
+    });
+  }
+
+  /**
+   * Hide the loading message if it is currently shown and remove the busy state from the container.
+   */
+  hideUpdatingMessage() {
+    this.$updatingMessage?.remove();
+    this.$container.removeAttribute('aria-busy');
   }
 
   /**
@@ -119,16 +264,54 @@ Bugzilla.DependencyTree = class DependencyTree {
     });
 
     const url = `${this.data.action}?${params}`;
-    const response = await fetch(`${url}&embed=1&tree_only=1`);
-    const html = response.ok ? await response.text() : undefined;
 
-    // Safe to inject HTML as is: same-origin fetch, Template Toolkit escapes all user-supplied data
-    this.$container.innerHTML = html ?? '<p class="error">Failed to load the dependency tree.</p>';
+    // Increment generation counter to invalidate any in-flight message operations
+    const generation = ++this.updateGeneration;
+
+    // Hide any existing error message before starting a new fetch
+    this.hideErrorMessage();
+
+    // Set up a delayed loading indicator — only show after 300ms to avoid flicker on fast loads
+    const loadingTimeout = setTimeout(() => {
+      this.showUpdatingMessage(generation);
+    }, 300);
+
+    try {
+      const response = await fetch(`${url}&embed=1&tree_only=1`);
+
+      if (response.ok) {
+        // Safe to inject HTML as is: Template Toolkit escapes all user-supplied data
+        this.$container.innerHTML = await response.text();
+      } else {
+        console.error('Failed to fetch dependency tree:', response.status);
+        await this.showErrorMessage(generation);
+      }
+    } catch (ex) {
+      console.error('Error fetching dependency tree:', ex);
+      await this.showErrorMessage(generation);
+    } finally {
+      // Increment generation to invalidate any in-flight message operations from this request
+      this.updateGeneration++;
+      // Cancel the loading timeout if it hasn’t fired yet
+      clearTimeout(loadingTimeout);
+      // Remove the loading state if it was set
+      this.hideUpdatingMessage();
+    }
 
     // Update the URL query parameters if we’re on the dependency tree page
     if (location.pathname === this.data.action) {
       history.replaceState(null, '', url);
     }
+  }
+
+  /**
+   * Temporarily disable all toolbar buttons and inputs to prevent multiple simultaneous updates.
+   */
+  disableControllers() {
+    this.$toggleBtn.disabled = true;
+    this.$setLimitBtn.disabled = true;
+    this.$removeLimitBtn.disabled = true;
+    this.$numberInput.disabled = true;
   }
 
   /**
@@ -144,8 +327,10 @@ Bugzilla.DependencyTree = class DependencyTree {
 
     // Update button states
     this.$toggleBtn.textContent = hideResolved ? 'Show Resolved' : 'Hide Resolved';
+    this.$toggleBtn.disabled = false;
     this.$setLimitBtn.disabled = this.realDepth < 2 || maxDepth === 1;
     this.$removeLimitBtn.disabled = maxDepth === 0 || maxDepth === this.realDepth;
+    this.$numberInput.disabled = false;
   }
 
   /**

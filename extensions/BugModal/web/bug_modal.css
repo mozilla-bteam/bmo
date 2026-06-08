@@ -569,6 +569,11 @@ input[type="number"] {
   font-size: inherit;
 }
 
+#dependency-tree-container .tree-container {
+  max-height: 80dvh; /* Limit the height of the tree container to 80% of the viewport height */
+  overflow: auto;
+}
+
 #hide-dependency-tree-btn {
   margin-left: auto;
 }
