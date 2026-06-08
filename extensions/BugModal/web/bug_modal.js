@@ -277,8 +277,16 @@ $(function() {
     let attachExternalShowing = false;
 
     function updateAttachmentRows() {
-        $('#attachments tr.attach-obsolete').toggle(attachObsoleteShowing);
-        $('#attachments tr.attach-external:not(.attach-obsolete)').toggle(attachExternalShowing);
+        // A row may be obsolete, external, or both. It is only visible when
+        // every category it belongs to has been toggled on, so external rows
+        // stay hidden while "Show External" is off even if they are obsolete.
+        $('#attachments tr.attach-obsolete, #attachments tr.attach-external').each(function() {
+            const $row = $(this);
+            const visible =
+                (!$row.hasClass('attach-obsolete') || attachObsoleteShowing) &&
+                (!$row.hasClass('attach-external') || attachExternalShowing);
+            $row.toggle(visible);
+        });
         $('#attachments-obsolete-btn').text(attachObsoleteShowing ? 'Hide Obsolete' : 'Show Obsolete');
         $('#attachments-external-btn').text(attachExternalShowing ? 'Hide External' : 'Show External');
     }
