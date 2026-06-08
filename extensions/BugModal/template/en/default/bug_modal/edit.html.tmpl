@@ -136,6 +136,9 @@
   ELSE;
     firefox_flags_subtitle = "Not tracked";
   END;
+
+  # only show the dependency tree for meta bugs
+  show_dependency_tree = user.id && bug.is_meta
 %]
 
 [% IF user.id %]
@@ -1005,38 +1008,43 @@
 [% WRAPPER bug_modal/module.html.tmpl
   title = "References"
   subtitle = sub
-  collapsed = 1
+  collapsed = !show_dependency_tree
   hide_on_view = !bug.dependson.size && !bug.blocked.size
     && !bug.regresses.size && !bug.regressed_by.size
     && !bug.duplicates.size && !bug.bug_file_loc && !bug.see_also.size;
 %]
-  [% WRAPPER fields_lhs %]
+  [% IF show_dependency_tree %]
+    <div id="dependency-tree-container" class="edit-hide"></div>
+  [% END %]
 
+  [% WRAPPER fields_lhs %]
     [%# dependencies %]
-    [% INCLUDE bug_modal/field.html.tmpl
-        field = bug_fields.dependson
-        field_type = constants.FIELD_TYPE_BUG_LIST
-        values = bug.depends_on_obj
-        hide_on_view = bug.dependson.size == 0
-        help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#dependson"
-    %]
-    [% INCLUDE bug_modal/field.html.tmpl
-        field = bug_fields.blocked
-        field_type = constants.FIELD_TYPE_BUG_LIST
-        values = bug.blocks_obj
-        hide_on_view = bug.blocked.size == 0
-        help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#blocks"
-    %]
-    [% IF bug.dependson.size + bug.blocked.size > 0 %]
-      [% WRAPPER bug_modal/field.html.tmpl
-          name = "dependencytree"
-          container = 1
-          label = ""
+    <div id="dependency-list-container" class="edit-show" [%= 'hidden' IF show_dependency_tree %]>
+      [% INCLUDE bug_modal/field.html.tmpl
+          field = bug_fields.dependson
+          field_type = constants.FIELD_TYPE_BUG_LIST
+          values = bug.depends_on_obj
+          hide_on_view = bug.dependson.size == 0
+          help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#dependson"
       %]
-        Dependency <a href="[% basepath FILTER none %]showdependencytree.cgi?id=[% bug.bug_id FILTER none %]&amp;hide_resolved=1">tree</a>
-        / <a href="[% basepath FILTER none %]showdependencygraph.cgi?id=[% bug.bug_id FILTER none %]">graph</a>
+      [% INCLUDE bug_modal/field.html.tmpl
+          field = bug_fields.blocked
+          field_type = constants.FIELD_TYPE_BUG_LIST
+          values = bug.blocks_obj
+          hide_on_view = bug.blocked.size == 0
+          help = "https://wiki.mozilla.org/BMO/UserGuide/BugFields#blocks"
+      %]
+      [% IF bug.dependson.size + bug.blocked.size > 0 %]
+        [% WRAPPER bug_modal/field.html.tmpl
+            name = "dependencytree"
+            container = 1
+            label = ""
+        %]
+          Dependency <a href="[% basepath FILTER none %]showdependencytree.cgi?id=[% bug.bug_id FILTER none %]&amp;hide_resolved=1">tree</a>
+          / <a href="[% basepath FILTER none %]showdependencygraph.cgi?id=[% bug.bug_id FILTER none %]">graph</a>
+        [% END %]
       [% END %]
-    [% END %]
+    </div>
 
     [%# regressions %]
     [% IF Param('use_regression_fields') %]
@@ -1530,10 +1538,17 @@
   END;
 %]
   <div class="link">
-    <a href="[% bug.bug_file_loc FILTER html %]" target="_blank" rel="nofollow noreferrer"
-      title="[% bug.bug_file_loc FILTER truncate(256) FILTER html %]"
-      class="bug-url" data-safe="[% is_safe_url(bug.bug_file_loc) ? 1 : 0 %]">
-      [%~ link_text FILTER html ~%]
-    </a>
+    [% IF is_safe_url(bug.bug_file_loc) %]
+      <a href="[% bug.bug_file_loc FILTER html %]" target="_blank" rel="nofollow noreferrer"
+        title="[% bug.bug_file_loc FILTER truncate(256) FILTER html %]"
+        class="bug-url">
+        [%~ link_text FILTER html ~%]
+      </a>
+    [% ELSE %]
+      <span class="bug-url"
+        title="[% bug.bug_file_loc FILTER truncate(256) FILTER html %]">
+        [%~ link_text FILTER html ~%]
+      </span>
+    [% END %]
   </div>
 [% END %]

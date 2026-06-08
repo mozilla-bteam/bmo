@@ -283,34 +283,43 @@ sub fix_credentials {
   my ($params, $cgi) = @_;
 
   # Allow user to pass in authentication details in X-Headers
-  # This allows callers to keep credentials out of GET request query-strings
+  # This allows callers to keep credentials out of GET request query-strings.
+  # Headers always take precedence over body-supplied credentials to prevent
+  # body-injected params from overriding gateway/middleware auth headers.
   if ($cgi) {
     foreach my $field (keys %{API_AUTH_HEADERS()}) {
-      next
-        if exists $params->{API_AUTH_HEADERS->{$field}}
-        || ($cgi->http($field) // '') eq '';
+      next if ($cgi->http($field) // '') eq '';
       $params->{API_AUTH_HEADERS->{$field}} = uri_unescape($cgi->http($field));
     }
   }
 
   # Allow user to pass in login=foo&password=bar as a convenience
-  # even if not calling GET /login. We also do not delete them as
-  # GET /login requires "login" and "password".
+  # even if not calling GET /login.
+  # Headers take precedence: always remove body params but only promote
+  # them to Bugzilla_* keys when headers haven't already set those keys.
   if (exists $params->{'login'} && exists $params->{'password'}) {
-    $params->{'Bugzilla_login'}    = delete $params->{'login'};
-    $params->{'Bugzilla_password'} = delete $params->{'password'};
+    my ($body_login, $body_password)
+      = (delete $params->{'login'}, delete $params->{'password'});
+    $params->{'Bugzilla_login'}    //= $body_login;
+    $params->{'Bugzilla_password'} //= $body_password;
   }
 
   # Allow user to pass api_key=12345678 as a convenience which becomes
   # "Bugzilla_api_key" which is what the auth code looks for.
+  # Headers take precedence: always remove body param but only promote
+  # it when headers haven't already set Bugzilla_api_key.
   if (exists $params->{api_key}) {
-    $params->{Bugzilla_api_key} = delete $params->{api_key};
+    my $body_api_key = delete $params->{api_key};
+    $params->{Bugzilla_api_key} //= $body_api_key;
   }
 
   # Allow user to pass token=12345678 as a convenience which becomes
   # "Bugzilla_token" which is what the auth code looks for.
+  # Headers take precedence: always remove body param but only promote
+  # it when headers haven't already set Bugzilla_token.
   if (exists $params->{'token'}) {
-    $params->{'Bugzilla_token'} = delete $params->{'token'};
+    my $body_token = delete $params->{'token'};
+    $params->{'Bugzilla_token'} //= $body_token;
   }
 
   # Allow extensions to modify the credential data before login

@@ -74,6 +74,11 @@
     "js/jquery/plugins/contextMenu/contextMenu.css"
   );
 
+  IF user.id && bug.is_meta;
+    javascript_urls.push("js/dependency-tree.js");
+    style_urls.push("skins/standard/dependency-tree.css");
+  END;
+
   # use responsive design for the Enter Bug and Show Bug pages
   responsive = 1
 %]

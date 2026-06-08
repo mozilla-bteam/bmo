@@ -1102,10 +1102,19 @@ sub notify {
     $recipients{$cc} = $ccuser;
   }
 
-  # Only notify if the addressee is allowed to receive the email.
-  if ($addressee && $addressee->email_enabled) {
+  # Only notify if the addressee is allowed to receive the email
+  # and can see the bug (prevents short_desc leaking via Subject/body).
+  if (
+       $addressee
+    && $addressee->email_enabled
+    && ( (!scalar(@bug_in_groups) || $addressee->can_see_bug($bug->bug_id))
+      && (!$attachment_is_private || $addressee->is_insider))
+    )
+  {
     $recipients{$addressee->email} = $addressee;
   }
+
+  return unless keys %recipients;
 
   # Process and send notification for each recipient.
   # If there are users in the CC list who don't have an account,

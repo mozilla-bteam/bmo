@@ -105,6 +105,19 @@ use constant VALIDATOR_DEPENDENCIES =>
 use constant UPDATE_VALIDATORS =>
   {isobsolete => \&Bugzilla::Object::check_boolean,};
 
+  my %_SAFE_INLINE_TYPES = map { $_ => 1 } qw(
+  image/png
+  image/jpeg
+  image/gif
+  image/webp
+  image/avif
+  image/bmp
+  image/x-icon
+  application/pdf
+  text/plain
+  text/csv
+);
+
 ###############################
 ####      Accessors      ######
 ###############################
@@ -277,31 +290,44 @@ sub isprivate {
 
 =item C<is_viewable>
 
-Returns 1 if the attachment has a content-type viewable in this browser.
-Note that we don't use $cgi->Accept()'s ability to check if a content-type
-matches, because this will return a value even if it's matched by the generic
-*/* which most browsers add to the end of their Accept: headers.
+Returns 1 if the attachment content-type is safe to display inline in the
+current deployment context. Delegates to C<is_safe_inline_content_type>.
 
 =back
 
 =cut
 
 sub is_viewable {
-  my $contenttype = $_[0]->contenttype;
-  my $cgi         = Bugzilla->cgi;
+  return is_safe_inline_content_type($_[0]->contenttype);
+}
 
-  # We assume we can view all text and image types.
-  return 1 if ($contenttype =~ /^(text|image)\//);
+=over
 
-  # Modern browsers support PDF as well.
-  return 1 if ($contenttype eq 'application/pdf');
+=item C<is_safe_inline_content_type($type)>
 
-  # If it's not one of the above types, we check the Accept: header for any
-  # types mentioned explicitly.
-  my $accept = join(",", $cgi->Accept());
-  return 1 if ($accept =~ /^(.*,)?\Q$contenttype\E(,.*)?$/);
+Returns 1 if C<$type> is safe to serve with C<Content-Disposition: inline>
+given the current deployment configuration.
 
-  return 0;
+When the attachment domain is an isolated origin
+(C<attachment_base_is_isolated> returns true), any content type is permitted
+inline, since attachments cannot access main-site session cookies. Otherwise
+only types on the strict allowlist (C<%_SAFE_INLINE_TYPES>, audio/*, video/*)
+are considered safe.
+
+=back
+
+=cut
+
+sub is_safe_inline_content_type {
+  my ($type, $method_type) = @_;
+  $type = $method_type if defined $method_type;
+
+  # On an isolated attachment domain, any content type is safe to serve inline
+  # because attachments cannot access the main site's session cookies.
+  return 1 if attachment_base_is_isolated();
+
+  # Otherwise fall back to the strict allowlist of non-executable types.
+  return is_executable_content_type($type) ? 0 : 1;
 }
 
 =over
@@ -524,6 +550,34 @@ sub _check_is_private {
 
 =over
 
+=item C<is_executable_content_type($type)>
+
+Returns 1 if the given MIME type can execute scripts when rendered inline by
+a browser (SVG, XML variants, HTML, JavaScript, etc.).
+
+This is a security-policy check used to determine whether inline display of an
+attachment type should be considered unsafe. Callers may use this result when
+deciding whether an attachment may be displayed inline or should instead be
+treated as a download.
+
+C<is_viewable> is related to this check and consults it; it does not only test
+browser rendering capability independently of this security policy.
+
+=back
+
+=cut
+
+sub is_executable_content_type {
+  my ($type, $method_type) = @_;
+  $type = $method_type if defined $method_type;
+  $type = lc($type // '');
+  $type =~ s/\s*;.*$//;
+  return 0 if $type =~ m{^(audio|video)/};
+  return $_SAFE_INLINE_TYPES{$type} ? 0 : 1;
+}
+
+=over
+
 =item C<get_attachments_by_bug($bug)>
 
 Description: retrieves and returns the attachments the currently logged in
@@ -725,6 +779,14 @@ Returns:    The new attachment object.
 sub create {
   my $class = shift;
   my $dbh   = Bugzilla->dbh;
+
+  # Normalize mimetype before the object_before_create hook fires so every
+  # extension sees the same cleaned value that _check_content_type would
+  # produce, closing the class of bypass where raw user input passes an eq
+  # check but is stored as a different type after clean_text normalization.
+  if (ref $_[0] && defined $_[0]->{mimetype}) {
+    $_[0]->{mimetype} = clean_text($_[0]->{mimetype});
+  }
 
   $class->check_required_create_fields(@_);
   my $params = $class->run_create_validators(@_);

@@ -52,11 +52,6 @@ use constant FORMAT_2_SIZE => [19, 55];
 our %SHARED_PROVIDERS;
 our $COLOR_QUOTES = 1;
 
-# Pseudo-constant.
-sub SAFE_URL_REGEXP {
-  my $safe_protocols = join('|', SAFE_PROTOCOLS);
-  return qr/($safe_protocols):[^:\s<>\"][^\s<>\"]+[\w\/]/i;
-}
 
 # Convert the constants in the Bugzilla::Constants module into a hash we can
 # pass to the template object for reflection into its "constants" namespace
@@ -984,19 +979,7 @@ sub create {
       },
 
       # Check whether the URL is safe.
-      'is_safe_url' => sub {
-        my $url = shift;
-        return 0 unless $url;
-
-        my $safe_url_regexp = SAFE_URL_REGEXP();
-        return 1 if $url =~ /^$safe_url_regexp$/;
-
-        # Pointing to a local file with no colon in its name is fine.
-        return 1 if $url =~ /^[^\s<>\":]+[\w\/]$/i;
-
-        # If we come here, then we cannot guarantee it's safe.
-        return 0;
-      },
+      'is_safe_url' => \&Bugzilla::Util::is_safe_url,
 
       # Allow templates to generate a token themselves.
       'issue_hash_token' => \&Bugzilla::Token::issue_hash_token,

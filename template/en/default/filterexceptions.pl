@@ -128,9 +128,8 @@
   'bug/dependency-graph.html.tmpl' => [ 'bug_id',],
 
   'bug/dependency-tree.html.tmpl' => [
-    'bugid', 'maxdepth', 'hide_resolved', 'ids.join(",")', 'maxdepth + 1',
-    'maxdepth > 0 && maxdepth <= realdepth ? maxdepth : ""', 'maxdepth == 1 ? 1
-                       : ( maxdepth ? maxdepth - 1 : realdepth - 1 )',
+    'bugid', 'maxdepth', 'hide_resolved', 'realdepth',
+    'maxdepth > 0 && maxdepth <= realdepth ? maxdepth : realdepth',
   ],
 
   'bug/edit.html.tmpl' => [

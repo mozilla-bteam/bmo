@@ -18,6 +18,7 @@ use Bugzilla::Util qw(html_quote remote_ip);
 use JSON::MaybeXS qw(decode_json);
 use LWP::UserAgent ();
 use Try::Tiny qw(catch try);
+use URI ();
 
 use Type::Library -base, -declare => qw(
   Self
@@ -142,8 +143,24 @@ sub _confirm_subscription {
     return;
   }
 
-  my $ua  = ua();
-  my $res = $ua->get($message->{SubscribeURL});
+  my $subscribe_uri = try { URI->new($subscribe_url) } catch { undef };
+  my $subscribe_host = $subscribe_uri ? lc($subscribe_uri->host // '') : '';
+  my $subscribe_port = $subscribe_uri ? $subscribe_uri->port : undef;
+  if (
+    !$subscribe_uri
+    || lc($subscribe_uri->scheme // '') ne 'https'
+    || $subscribe_host !~ m{\Asns\.(?=[a-z0-9-]*[a-z])[a-z0-9]+(?:-[a-z0-9]+)*\.amazonaws\.com\z}
+    || ($subscribe_port // 443) != 443
+    )
+  {
+    WARN('Bad SubscriptionConfirmation request: SubscribeURL not an AWS SNS endpoint');
+    $self->_respond(400 => 'Bad Request');
+    return;
+  }
+
+  my $ua = ua();
+  $ua->max_redirect(0);
+  my $res = $ua->get($subscribe_url);
   if (!$res->is_success) {
     WARN('Bad response from SubscribeURL: ' . $res->status_line);
     $self->_respond(400 => 'Bad Request');

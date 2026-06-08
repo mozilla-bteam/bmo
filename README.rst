@@ -299,7 +299,7 @@ Basic sanity tests
 
 .. code-block:: bash
 
-  docker compose -f docker-compose.test.yml down && docker compose -f docker-compose.test.yml run -e CI=1 --no-deps bmo.test test_sanity
+  docker compose -f docker-compose.test.yml down && docker compose -f docker-compose.test.yml run --no-deps bmo.test test_sanity
 
 Webservices API tests
 
