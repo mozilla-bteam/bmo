@@ -51,12 +51,24 @@
   # count attachments
   active_attachments = 0;
   obsolete_attachments = 0;
+  external_attachments = 0;
+
+  attachment_hide_types = {};
+  IF Param('attachment_hide_content_types');
+    FOREACH _type IN Param('attachment_hide_content_types').split('[,\s]+');
+      attachment_hide_types.$_type = 1 IF _type;
+    END;
+  END;
+
   FOREACH attachment IN bug.attachments;
     NEXT IF attachment.isprivate && !(user.is_insider || attachment.attacher.id == user.id || (attachment.is_bounty_attachment && bug.reporter.id == user.id)) ;
     IF attachment.isobsolete;
       obsolete_attachments = obsolete_attachments + 1;
     ELSE;
       active_attachments = active_attachments + 1;
+      IF attachment_hide_types.${attachment.contenttype};
+        external_attachments = external_attachments + 1;
+      END;
     END;
   END;
 
@@ -1399,11 +1411,15 @@
 [% IF active_attachments || obsolete_attachments || user.id %]
   [%
     sub = [];
+    visible_attachments = active_attachments - external_attachments;
     IF active_attachments + obsolete_attachments == 0;
       sub.push("No files");
     END;
-    IF active_attachments;
-      sub.push(active_attachments _ " file" _ (active_attachments == 1 ? "" : "s"));
+    IF visible_attachments;
+      sub.push(visible_attachments _ " file" _ (visible_attachments == 1 ? "" : "s"));
+    END;
+    IF external_attachments;
+      sub.push(external_attachments _ " external file" _ (external_attachments == 1 ? "" : "s"));
     END;
     IF obsolete_attachments;
       sub.push(obsolete_attachments _ " obsolete file" _ (obsolete_attachments == 1 ? "" : "s"));
@@ -1416,6 +1432,8 @@
     [% INCLUDE bug_modal/attachments.html.tmpl
         active_attachments = active_attachments
         obsolete_attachments = obsolete_attachments
+        external_attachments = external_attachments
+        attachment_hide_types = attachment_hide_types
     %]
   [% END %]
 [% END %]
