@@ -27,7 +27,6 @@ Bugzilla.DependencyTree = class DependencyTree {
       return;
     }
 
-
     this.data = this.$trees.dataset;
     this.data.initialized = '1';
     this.realDepth = Number(this.data.realDepth);
@@ -38,6 +37,9 @@ Bugzilla.DependencyTree = class DependencyTree {
 
     this.activateToolbar();
     this.activateTrees();
+
+    // Track the current update request to prevent race conditions with `showUpdatingMessage()`
+    this.updateGeneration = 0;
   }
 
   /**
@@ -135,21 +137,65 @@ Bugzilla.DependencyTree = class DependencyTree {
   }
 
   /**
-   * Show an error message in the tree container if fetching the dependency tree fails. Position the
-   * message in the center of the container.
+   * Show or update a message in the tree container with generation-based lifecycle management.
+   * Positions the message in the center of the container.
+   * @param {object} config Configuration object.
+   * @param {number} config.generation The generation ID of the current update request.
+   * @param {string} config.messageType The type of message ('error' or 'updating').
+   * @param {object} config.element Element properties (`className`, `role`, `textContent`, etc.).
+   * @param {boolean} [config.clearContainer] Whether to clear container `innerHTML` before
+   * inserting.
+   * @param {() => void} [config.onShow] Optional callback to run after the message is shown.
    */
-  async showErrorMessage() {
+  async showMessage({
+    generation,
+    messageType,
+    element,
+    clearContainer = false,
+    onShow = undefined,
+  }) {
+    // Don’t proceed if a newer request has already started
+    if (generation !== this.updateGeneration) {
+      return;
+    }
+
     const containerHeight = await this.getContainerHeight();
 
-    this.$errorMessage ??= Object.assign(document.createElement('p'), {
-      className: 'error',
-      role: 'alert',
-      textContent: 'Failed to load the dependency tree.',
-    });
+    // Check again after async operation to ensure this request is still current
+    if (generation !== this.updateGeneration) {
+      return;
+    }
 
-    this.$errorMessage.style.top = `${containerHeight / 2}px`;
-    this.$container.innerHTML = '';
-    this.$container.insertAdjacentElement('afterbegin', this.$errorMessage);
+    const fieldName = `$${messageType}Message`;
+
+    this[fieldName] ??= Object.assign(document.createElement('p'), element);
+    this[fieldName].style.top = `${containerHeight / 2}px`;
+
+    if (clearContainer) {
+      this.$container.innerHTML = '';
+    }
+
+    // Insert the message
+    this.$container.insertAdjacentElement('afterbegin', this[fieldName]);
+
+    onShow?.();
+  }
+
+  /**
+   * Show an error message in the tree container if fetching the dependency tree fails.
+   * @param {number} generation The generation ID of the current update request.
+   */
+  async showErrorMessage(generation) {
+    await this.showMessage({
+      generation,
+      messageType: 'error',
+      element: {
+        className: 'error',
+        role: 'alert',
+        textContent: 'Failed to load the dependency tree.',
+      },
+      clearContainer: true,
+    });
   }
 
   /**
@@ -161,21 +207,22 @@ Bugzilla.DependencyTree = class DependencyTree {
 
   /**
    * Show a loading message in the tree container while the dependency tree is being updated.
-   * Position the message in the center of the container.
+   * @param {number} generation The generation ID of the current update request.
    */
-  async showUpdatingMessage() {
-    const containerHeight = await this.getContainerHeight();
-
-    this.$updatingMessage ??= Object.assign(document.createElement('p'), {
-      className: 'updating',
-      role: 'status',
-      ariaLabel: 'Updating the dependency tree',
-      textContent: 'Updating…',
+  async showUpdatingMessage(generation) {
+    await this.showMessage({
+      generation,
+      messageType: 'updating',
+      element: {
+        className: 'updating',
+        role: 'status',
+        ariaLabel: 'Updating the dependency tree',
+        textContent: 'Updating…',
+      },
+      onShow: () => {
+        this.$container.setAttribute('aria-busy', 'true');
+      },
     });
-
-    this.$updatingMessage.style.top = `${containerHeight / 2}px`;
-    this.$container.setAttribute('aria-busy', 'true');
-    this.$container.insertAdjacentElement('afterbegin', this.$updatingMessage);
   }
 
   /**
@@ -203,12 +250,15 @@ Bugzilla.DependencyTree = class DependencyTree {
 
     const url = `${this.data.action}?${params}`;
 
+    // Increment generation counter to invalidate any in-flight message operations
+    const generation = ++this.updateGeneration;
+
     // Hide any existing error message before starting a new fetch
     this.hideErrorMessage();
 
     // Set up a delayed loading indicator — only show after 300ms to avoid flicker on fast loads
     const loadingTimeout = setTimeout(() => {
-      this.showUpdatingMessage();
+      this.showUpdatingMessage(generation);
     }, 300);
 
     try {
@@ -219,11 +269,11 @@ Bugzilla.DependencyTree = class DependencyTree {
         this.$container.innerHTML = await response.text();
       } else {
         console.error('Failed to fetch dependency tree:', response.status);
-        this.showErrorMessage();
+        await this.showErrorMessage(generation);
       }
     } catch (ex) {
       console.error('Error fetching dependency tree:', ex);
-      this.showErrorMessage();
+      await this.showErrorMessage(generation);
     } finally {
       // Cancel the loading timeout if it hasn’t fired yet
       clearTimeout(loadingTimeout);
