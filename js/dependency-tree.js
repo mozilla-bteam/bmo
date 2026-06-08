@@ -290,6 +290,8 @@ Bugzilla.DependencyTree = class DependencyTree {
       console.error('Error fetching dependency tree:', ex);
       await this.showErrorMessage(generation);
     } finally {
+      // Increment generation to invalidate any in-flight message operations from this request
+      this.updateGeneration++;
       // Cancel the loading timeout if it hasn’t fired yet
       clearTimeout(loadingTimeout);
       // Remove the loading state if it was set
