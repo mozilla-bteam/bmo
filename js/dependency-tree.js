@@ -60,6 +60,14 @@ Bugzilla.DependencyTree = class DependencyTree {
     this.$numberInput?.addEventListener('change', () => {
       this.onAction('change-limit');
     });
+
+    this.$numberInput?.addEventListener('keydown', (event) => {
+      // Prevent form submission on Enter and trigger the limit change action instead
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        this.onAction('change-limit');
+      }
+    });
   }
 
   /**
