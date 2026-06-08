@@ -102,6 +102,15 @@ sub set_attachment_approval_flags {
 
   my $approval_flag_name = "approval-mozilla-$repo_name";
 
+  # Skip if the flag type is explicitly disabled globally (bug 1990568),
+  # but still let `set_flags` fail later if it is enabled yet missing from
+  # the bug's product/component.
+  my $approval_flag = Bugzilla::FlagType->new({name => $approval_flag_name});
+  if ($approval_flag && !$approval_flag->is_active) {
+    INFO("Approval flag `$approval_flag_name` is disabled. Skipping.");
+    return;
+  }
+
   my @old_flags;
   my @new_flags;
 
@@ -145,7 +154,6 @@ sub set_attachment_approval_flags {
   # If we didn't find an existing approval flag to update, add it now.
   # Also check to make sure we have permission to create the flag.
   if (!@old_flags && $status ne 'X') {
-    my $approval_flag = Bugzilla::FlagType->new({name => $approval_flag_name});
     if ($approval_flag) {
 
   # If setting to + then at least one accepted reviewer needs to be a release manager.
