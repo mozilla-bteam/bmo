@@ -887,6 +887,35 @@ $vars->{'displaycolumns'} = \@displaycolumns;
 $vars->{'openstates'} = [BUG_STATE_OPEN];
 $vars->{'closedstates'} = [map { $_->name } closed_bug_statuses()];
 
+# Determine which status filter tab is active for the toggle UI.
+{
+  my @requested = $cgi->param('bug_status');
+  if (!@requested || grep { $_ eq '__all__' } @requested) {
+    $vars->{'status_filter'} = 'all';
+  }
+  elsif (grep { $_ eq '__open__' } @requested) {
+    $vars->{'status_filter'} = 'open';
+  }
+  elsif (grep { $_ eq '__closed__' } @requested) {
+    $vars->{'status_filter'} = 'closed';
+  }
+  else {
+    my %open_set   = map { $_ => 1 } BUG_STATE_OPEN;
+    my %closed_set = map { $_ => 1 } map { $_->name } closed_bug_statuses();
+    my $has_open   = grep { $open_set{$_}   } @requested;
+    my $has_closed = grep { $closed_set{$_} } @requested;
+    if ($has_open && !$has_closed) {
+      $vars->{'status_filter'} = 'open';
+    }
+    elsif ($has_closed && !$has_open) {
+      $vars->{'status_filter'} = 'closed';
+    }
+    else {
+      $vars->{'status_filter'} = 'all';
+    }
+  }
+}
+
 # The iCal file needs priorities ordered from 1 to 9 (highest to lowest)
 # If there are more than 9 values, just make all the lower ones 9
 if ($format->{'extension'} eq 'ics') {
@@ -1057,6 +1086,8 @@ else {
 # Set 'urlquerypart' once the buglist ID is known.
 $vars->{'urlquerypart'}
   = $params->canonicalize_query('order', 'cmdtype', 'query_based_on', 'token');
+$vars->{'urlquerypart_no_status'}
+  = $params->canonicalize_query('order', 'cmdtype', 'query_based_on', 'token', 'bug_status');
 
 if ($format->{'extension'} eq "csv") {
 
