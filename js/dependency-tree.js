@@ -51,14 +51,14 @@ Bugzilla.DependencyTree = class DependencyTree {
     this.$removeLimitBtn = this.$toolbar.querySelector('[data-id="remove-limit"]');
     this.$numberInput = this.$toolbar.querySelector('[data-id="custom-limit"]');
 
-    this.$toolbar.addEventListener('click', async ({ target }) => {
+    this.$toolbar.addEventListener('click', ({ target }) => {
       if (target.matches('button[type="button"]')) {
-        await this.onAction(target.dataset.id);
+        this.onAction(target.dataset.id);
       }
     });
 
-    this.$numberInput?.addEventListener('change', async () => {
-      await this.onAction('change-limit');
+    this.$numberInput?.addEventListener('change', () => {
+      this.onAction('change-limit');
     });
   }
 
