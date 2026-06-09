@@ -611,6 +611,18 @@ sub dequeue {
     || $_->{old} || $_->{new}
   } @{$vars->{diffs}}];
 
+  # Recompute changed-field headers after dequeue-time diff stripping.
+  $vars->{changedfields}     = [uniq map { $_->{field_desc} } @{$vars->{diffs}}];
+  $vars->{changedfieldnames} = [uniq map { $_->{field_name} } @{$vars->{diffs}}];
+  if (grep { $_->type != CMT_ATTACHMENT_CREATED } @{$vars->{new_comments}}) {
+    push @{$vars->{changedfields}},     'Comment Created';
+    push @{$vars->{changedfieldnames}}, 'comment';
+  }
+  if (grep { $_->type == CMT_ATTACHMENT_CREATED } @{$vars->{new_comments}}) {
+    push @{$vars->{changedfields}},     'Attachment Created';
+    push @{$vars->{changedfieldnames}}, 'attachment.created';
+  }
+
   # Re-validate referenced_bugs visibility.
   if ($vars->{referenced_bugs} && @{$vars->{referenced_bugs}}) {
     my @ref_ids = map { $_->{id} } @{$vars->{referenced_bugs}};
