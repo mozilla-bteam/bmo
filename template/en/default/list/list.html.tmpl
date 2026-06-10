@@ -134,17 +134,17 @@
     [% IF status_filter == 'open' %]
       <span class="bz_status_toggle_btn active">Open</span>
     [% ELSE %]
-      <a class="bz_status_toggle_btn" href="[% base_status_url FILTER html %]&amp;bug_status=__open__">Open</a>
+      <a class="bz_status_toggle_btn" href="[% base_status_url FILTER html %]&amp;bug_status=__open__[%- "&order=$qorder" FILTER html IF order %]">Open</a>
     [% END %]
     [% IF status_filter == 'closed' %]
       <span class="bz_status_toggle_btn active">Closed</span>
     [% ELSE %]
-      <a class="bz_status_toggle_btn" href="[% base_status_url FILTER html %]&amp;bug_status=__closed__">Closed</a>
+      <a class="bz_status_toggle_btn" href="[% base_status_url FILTER html %]&amp;bug_status=__closed__[%- "&order=$qorder" FILTER html IF order %]">Closed</a>
     [% END %]
     [% IF status_filter == 'all' %]
       <span class="bz_status_toggle_btn active">All</span>
     [% ELSE %]
-      <a class="bz_status_toggle_btn" href="[% base_status_url FILTER html %]&amp;bug_status=__all__">All</a>
+      <a class="bz_status_toggle_btn" href="[% base_status_url FILTER html %]&amp;bug_status=__all__[%- "&order=$qorder" FILTER html IF order %]">All</a>
     [% END %]
   </div>
 [% END %]
