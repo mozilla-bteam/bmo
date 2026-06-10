@@ -889,7 +889,7 @@ $vars->{'closedstates'} = [map { $_->name } closed_bug_statuses()];
 
 # Determine which status filter tab is active for the toggle UI.
 {
-  my @requested = $cgi->param('bug_status');
+  my @requested = $params->param('bug_status');
   if (!@requested || grep { $_ eq '__all__' } @requested) {
     $vars->{'status_filter'} = 'all';
   }
