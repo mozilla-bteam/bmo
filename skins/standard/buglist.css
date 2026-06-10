@@ -29,7 +29,7 @@
   border-radius: 3px;
   font-size: var(--font-size-small);
   text-decoration: none;
-  color: var(--link-color);
+  color: var(--link-text-color);
   background: transparent;
   cursor: pointer;
 }
@@ -39,7 +39,7 @@
 }
 
 .bz_status_toggle_btn.active {
-  background: var(--link-color, #0060df);
+  background: var(--link-text-color);
   color: #fff;
   border-color: transparent;
   cursor: default;
