@@ -29,7 +29,6 @@ Bugzilla.DependencyTree = class DependencyTree {
 
     this.data = this.$trees.dataset;
     this.data.initialized = '1';
-    this.realDepth = Number(this.data.realDepth);
     this.uriLimit = BUGZILLA.constant.CGI_URI_LIMIT;
 
     this.$toolbar = this.$trees.querySelector('[role="toolbar"]');
@@ -37,6 +36,10 @@ Bugzilla.DependencyTree = class DependencyTree {
 
     this.activateToolbar();
     this.activateTrees();
+    this.updateControls({
+      maxDepth: Number(this.data.maxDepth),
+      hideResolved: this.data.hideResolved === '1',
+    });
 
     // Track the current update request to prevent race conditions with `showUpdatingMessage()`
     this.updateGeneration = 0;
@@ -76,7 +79,7 @@ Bugzilla.DependencyTree = class DependencyTree {
    */
   async onAction(action) {
     // Get current values
-    let maxDepth = Number(this.data.maxDepth || this.realDepth);
+    let maxDepth = Number(this.data.maxDepth);
     let hideResolved = this.data.hideResolved === '1';
 
     const removeLimit = () => {
@@ -88,6 +91,7 @@ Bugzilla.DependencyTree = class DependencyTree {
     switch (action) {
       case 'toggle-visibility':
         hideResolved = !hideResolved;
+        removeLimit();
 
         break;
       case 'set-limit':
@@ -102,8 +106,11 @@ Bugzilla.DependencyTree = class DependencyTree {
       case 'change-limit':
         maxDepth = Number(this.$numberInput?.value || this.realDepth);
 
+        // We need +1 to make the control work (see `updateControls` below)
+        const limit = maxDepth === 0 ? this.realDepth : this.realDepth + 1;
+
         // Validate that the value is within the acceptable range
-        if (maxDepth < 1 || maxDepth > this.realDepth) {
+        if (maxDepth < 1 || maxDepth > limit) {
           // Reset to the current valid value and bail out
           this.$numberInput.value = this.data.maxDepth > 0 ? this.data.maxDepth : this.realDepth;
           return;
@@ -116,9 +123,9 @@ Bugzilla.DependencyTree = class DependencyTree {
         break;
     }
 
-    this.disableControllers();
+    this.disableControls();
     await this.updateTrees({ maxDepth, hideResolved });
-    this.updateControllers({ maxDepth, hideResolved });
+    this.updateControls({ maxDepth, hideResolved });
   }
 
   /**
@@ -307,7 +314,7 @@ Bugzilla.DependencyTree = class DependencyTree {
   /**
    * Temporarily disable all toolbar buttons and inputs to prevent multiple simultaneous updates.
    */
-  disableControllers() {
+  disableControls() {
     this.$toggleBtn.disabled = true;
     this.$setLimitBtn.disabled = true;
     this.$removeLimitBtn.disabled = true;
@@ -320,17 +327,32 @@ Bugzilla.DependencyTree = class DependencyTree {
    * @param {number} params.maxDepth The maximum depth to show in the tree.
    * @param {boolean} params.hideResolved Whether to hide resolved bugs in the tree.
    */
-  updateControllers({ maxDepth, hideResolved }) {
+  updateControls({ maxDepth, hideResolved }) {
+    // Get the current real depth of the dependency tree from the meta tag in the tree HTML. This is
+    // necessary because the real depth may change when hiding/showing resolved bugs or when new
+    // bugs are added/removed.
+    this.realDepth = Number(this.$trees.querySelector('meta[name="real-depth"]').content);
+
     // Update dataset properties used as state
     this.data.maxDepth = maxDepth;
     this.data.hideResolved = hideResolved ? '1' : '0';
 
+    const unlimited = maxDepth === 0;
+
     // Update button states
     this.$toggleBtn.textContent = hideResolved ? 'Show Resolved' : 'Hide Resolved';
     this.$toggleBtn.disabled = false;
-    this.$setLimitBtn.disabled = this.realDepth < 2 || maxDepth === 1;
-    this.$removeLimitBtn.disabled = maxDepth === 0 || maxDepth === this.realDepth;
-    this.$numberInput.disabled = false;
+    this.$setLimitBtn.disabled = this.realDepth === 1 || maxDepth === 1;
+    this.$removeLimitBtn.disabled = unlimited;
+    this.$numberInput.disabled = this.$setLimitBtn.disabled && this.$removeLimitBtn.disabled;
+    // We need `Math.min` to handle the case when the real depth is less than the current max depth
+    // — in that case we should set the input value to the real depth, not the max depth
+    this.$numberInput.value = unlimited ? this.realDepth : Math.min(this.realDepth, maxDepth);
+    // We need +1 to make the control work because the real depth is not the deepest level that can
+    // be shown — it equals to the max depth when it’s lower than the real depth — so we need to
+    // allow setting the max depth to the real depth + 1 to be able to show all levels when the real
+    // depth is currently shown as the max depth
+    this.$numberInput.setAttribute('max', unlimited ? this.realDepth : this.realDepth + 1);
   }
 
   /**
