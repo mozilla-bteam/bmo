@@ -30,17 +30,20 @@ sub template_before_process {
   my $bug = exists $vars->{'bugs'} ? $vars->{'bugs'}[0] : $vars->{'bug'};
   return unless $bug;
 
+  # Note: this only counts linked (non-obsolete) PR attachments. The actual
+  # open/closed/merged state isn't known until the WebService queries GitHub,
+  # so we can't report an "open" count at template-processing time.
   my $has_prs = 0;
-  my $open_pr_count = 0;
+  my $linked_pr_count = 0;
   foreach my $attachment (@{$bug->attachments}) {
     next if $attachment->contenttype ne GITHUB_CONTENT_TYPE;
     next if $attachment->isobsolete;
     $has_prs = 1;
-    $open_pr_count++;
+    $linked_pr_count++;
   }
 
   $vars->{github_pull_requests}      = $has_prs;
-  $vars->{github_open_pr_count}      = $open_pr_count;
+  $vars->{github_linked_pr_count}    = $linked_pr_count;
 }
 
 sub webservice {

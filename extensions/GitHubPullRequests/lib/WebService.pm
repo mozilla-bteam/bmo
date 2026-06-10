@@ -23,12 +23,16 @@ use Type::Params qw(compile);
 
 use JSON qw(decode_json);
 use LWP::UserAgent;
-use List::Util qw(uniq);
 
 use constant GITHUB_CONTENT_TYPE  => 'text/x-github-pull-request';
 use constant GITHUB_PR_REGEX      => qr{^https://github\.com/([^/]+)/([^/]+)/pull/(\d+)/?$};
 use constant GITHUB_API_BASE      => 'https://api.github.com';
 use constant GITHUB_API_TIMEOUT   => 10;
+
+# How long (in seconds) to cache a PR's summary in memcached. GitHub's
+# unauthenticated rate limit is low (60 req/hr per IP) and authenticated is
+# 5000/hr, so caching avoids re-fetching the same PR on every bug view.
+use constant GITHUB_CACHE_SECONDS => 300;
 
 use constant READ_ONLY => qw(
   bug_pull_requests
@@ -55,10 +59,21 @@ sub bug_pull_requests {
     $ua->proxy('https', Bugzilla->params->{proxy_url});
   }
 
+  # Authenticate when a token is configured. This raises GitHub's API rate
+  # limit from 60 to 5000 requests/hour, avoiding HTTP 403 failures under load.
+  my $token = Bugzilla->params->{github_api_token};
+  if ($token) {
+    $ua->default_header('Authorization' => "Bearer $token");
+  }
+
   my @pull_requests;
   foreach my $attachment (@{$bug->attachments}) {
     next if $attachment->contenttype ne GITHUB_CONTENT_TYPE;
     next if $attachment->isobsolete;
+
+    # Don't expose private attachments (and their PR details) to users who
+    # aren't permitted to see them.
+    next if $attachment->isprivate && !$user->is_insider;
 
     my $url = $attachment->data;
     $url =~ s/\s+$//;
@@ -89,6 +104,11 @@ sub _fetch_pull_request {
     sortkey   => int($pr_number),
   };
 
+  # Return a cached summary if we have a fresh one.
+  my $cache_key = "github_pr." . $url;
+  my $cached = Bugzilla->memcached->get_data({key => $cache_key});
+  return $cached if defined $cached;
+
   my $pr_response = _github_get($ua, $api_url);
   unless ($pr_response->{ok}) {
     WARN("GitHub: failed to fetch PR $url: " . $pr_response->{errmsg});
@@ -96,6 +116,13 @@ sub _fetch_pull_request {
   }
 
   my $pr = $pr_response->{data};
+
+  # GitHub should return a JSON object; anything else (an error object, a
+  # list, etc.) means we can't trust the structure, so fall back gracefully.
+  unless (ref($pr) eq 'HASH') {
+    WARN("GitHub: unexpected response shape for PR $url");
+    return {%$base, inaccessible => 1};
+  }
 
   my $state;
   if ($pr->{draft}) {
@@ -119,15 +146,20 @@ sub _fetch_pull_request {
     @reviews = _summarize_reviews($reviews_response->{data});
   }
 
-  return {
+  my $pr_data = {
     %$base,
     title        => $pr->{title},
     state        => $state,
-    author       => $pr->{user}{login},
+    author       => ref($pr->{user}) eq 'HASH' ? $pr->{user}{login} : undef,
     reviews      => \@reviews,
     labels       => \@labels,
     inaccessible => 0,
   };
+
+  Bugzilla->memcached->set_data(
+    {key => $cache_key, value => $pr_data, expires_in => GITHUB_CACHE_SECONDS});
+
+  return $pr_data;
 }
 
 sub _github_get {
@@ -153,6 +185,8 @@ sub _github_get {
 
 sub _summarize_reviews {
   my ($reviews) = @_;
+
+  return () unless ref($reviews) eq 'ARRAY';
 
   # Keep only the latest review state per reviewer.
   # Reviews are returned in chronological order so we can just overwrite.

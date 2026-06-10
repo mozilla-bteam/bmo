@@ -10,8 +10,8 @@
 
 [%
   gh_subtitle = [];
-  IF github_open_pr_count;
-    gh_subtitle.push(github_open_pr_count _ " open pull request" _ (github_open_pr_count == 1 ? "" : "s"));
+  IF github_linked_pr_count;
+    gh_subtitle.push(github_linked_pr_count _ " pull request" _ (github_linked_pr_count == 1 ? "" : "s"));
   END;
 %]
 

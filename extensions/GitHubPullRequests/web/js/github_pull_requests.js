@@ -186,9 +186,12 @@ const GitHubPullRequests = {
     const tbody = document.querySelector("tbody.github-prs-body");
     if (!tbody) return;
 
+    const loadingRow = tbody.querySelector(".github-loading-row");
+
     const displayLoadError = (errStr) => {
       const errRow = tbody.querySelector(".github-loading-error-row");
-      errRow.querySelector(".github-load-error-string").replaceChildren(errStr);
+      if (!errRow) return;
+      errRow.querySelector(".github-load-error-string")?.replaceChildren(errStr);
       errRow.classList.remove("bz_default_hidden");
     };
 
@@ -197,19 +200,20 @@ const GitHubPullRequests = {
         `githubpr/bug_pull_requests/${BUGZILLA.bug_id}`
       );
 
-      const loadingRow = tbody.querySelector(".github-loading-row");
+      this.pullRequests = pull_requests || [];
 
-      if (pull_requests.length === 0) {
-        displayLoadError("no pull requests returned");
+      if (this.pullRequests.length === 0) {
+        // Zero results is a normal outcome (e.g. all attachments were obsolete
+        // or unparseable), not an error - show a neutral message in place.
+        loadingRow.querySelector("td").textContent = "No pull requests found.";
       } else {
-        this.pullRequests = pull_requests;
-
-        for (const pr of pull_requests) {
+        for (const pr of this.pullRequests) {
           tbody.insertBefore(this.buildRow(pr), loadingRow);
         }
+        loadingRow.classList.add("bz_default_hidden");
 
         // Show the closed toggle if any PRs are closed/merged
-        const hasClosed = pull_requests.some(pr => this.isClosedState(pr.state || ""));
+        const hasClosed = this.pullRequests.some(pr => this.isClosedState(pr.state || ""));
         if (hasClosed) {
           const showClosedTbody = document.querySelector("tbody.github-show-closed");
           if (showClosedTbody) {
@@ -217,12 +221,10 @@ const GitHubPullRequests = {
           }
         }
       }
-
-      loadingRow.classList.add("bz_default_hidden");
     } catch (e) {
       console.error(e);
       displayLoadError(e.message);
-      tbody.querySelector(".github-loading-row").classList.add("bz_default_hidden");
+      loadingRow.classList.add("bz_default_hidden");
     }
 
     showClosedCheckbox.addEventListener("click", () => {
