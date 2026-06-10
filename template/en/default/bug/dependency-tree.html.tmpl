@@ -164,7 +164,8 @@
     <span class="summ_text">[%+ bug.short_desc FILTER html %]</span>
     <span class="summ_info">[[% INCLUDE buginfo %]]</span>
   </a>
-  <a class="tree-link iconic" href="[% basepath FILTER none %]showdependencytree.cgi?id=[% bugid FILTER uri %]"
+  <a class="tree-link iconic"
+      href="[% basepath FILTER none %]showdependencytree.cgi?id=[% bugid FILTER uri %]&amp;hide_resolved=1"
       title="See dependency tree for [% terms.Bug %] [%+ bugid FILTER html %]"
       [% IF embed %]target="_blank"[% END %]>
     <span class="icon" aria-hidden="true"></span>
