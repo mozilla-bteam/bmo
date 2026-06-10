@@ -17,6 +17,7 @@ use Bugzilla::Constants;
 use Bugzilla::Util;
 use Bugzilla::Bug;
 use Bugzilla::Comment;
+use Bugzilla::Logging;
 use Bugzilla::Mailer;
 use Bugzilla::Hook;
 
@@ -390,8 +391,7 @@ sub sendMail {
       $add_diff = 1 if $diff->{old} || $diff->{new};
     }
     elsif ($diff->{field_name} eq 'see_also') {
-      my $urlbase = Bugzilla->localconfig->urlbase;
-      my $bug_link_re = qr/^\Q$urlbase\Eshow_bug\.cgi\?id=(\d+)$/;
+      my $bug_link_re = _bug_link_re();
       foreach my $field ('new', 'old') {
         my @filtered;
         foreach my $value (split /[\s,]+/, $diff->{$field}) {
@@ -408,7 +408,15 @@ sub sendMail {
     elsif (!$diff->{isprivate} || $user->is_insider) {
       $add_diff = 1;
     }
-    push(@display_diffs, $diff) if $add_diff;
+    if ($add_diff) {
+      # Diffs with a blocker object are shared across per-recipient sendMail
+      # calls. Clone the diff+blocker so hooks (e.g. SecureMail) can mutate
+      # short_desc for one recipient without contaminating others.
+      push @display_diffs,
+        exists $diff->{blocker}
+        ? {%$diff, blocker => bless({%{$diff->{blocker}}}, ref($diff->{blocker}))}
+        : $diff;
+    }
     $attach_id = $diff->{attach_id} if $diff->{attach_id};
   }
 
@@ -492,6 +500,12 @@ sub enqueue {
   # BMO: allow modification of the email at the time it was generated
   Bugzilla::Hook::process('bugmail_enqueue', {vars => $vars});
 
+  # Privilege snapshot for dequeue-time TOCTOU re-check. Filtering at enqueue
+  # (sendMail) gated private comments and timetracking diffs on these flags;
+  # we drop the queued mail in dequeue if either flag regresses.
+  $vars->{_to_user_was_insider}     = $vars->{to_user}->is_insider     ? 1 : 0;
+  $vars->{_to_user_was_timetracker} = $vars->{to_user}->is_timetracker ? 1 : 0;
+
   # we need to flatten all objects to a hash before pushing to the job queue.
   # the hashes need to be inflated in the dequeue method.
   $vars->{bug}          = _flatten_object($vars->{bug});
@@ -520,6 +534,32 @@ sub dequeue {
   # inflate objects
   $vars->{bug}     = Bugzilla::Bug->new_from_hash($vars->{bug});
   $vars->{to_user} = Bugzilla::User->new_from_hash($vars->{to_user});
+
+  # Re-check main bug visibility at send time. The enqueue-time check may be
+  # stale if the bug was restricted or user access revoked between enqueue
+  # and dequeue (TOCTOU).
+  unless ($vars->{to_user}->can_see_bug($vars->{bug}->id)) {
+    WARN('dequeue: suppressing bugmail for user '
+      . $vars->{to_user}->login . ' on bug ' . $vars->{bug}->id
+      . ' — bug no longer visible at send time');
+    return;
+  }
+
+  # Drop if user lost insider/timetracker privileges between enqueue and dequeue.
+  # Filtering at sendMail-time may have included content these privileges gated.
+  if ($vars->{_to_user_was_insider} && !$vars->{to_user}->is_insider) {
+    WARN('dequeue: suppressing bugmail for user '
+      . $vars->{to_user}->login . ' on bug ' . $vars->{bug}->id
+      . ' — insider access revoked between enqueue and dequeue');
+    return;
+  }
+  if ($vars->{_to_user_was_timetracker} && !$vars->{to_user}->is_timetracker) {
+    WARN('dequeue: suppressing bugmail for user '
+      . $vars->{to_user}->login . ' on bug ' . $vars->{bug}->id
+      . ' — timetracker access revoked between enqueue and dequeue');
+    return;
+  }
+
   $vars->{changer} = Bugzilla::User->new_from_hash($vars->{changer});
   $vars->{new_comments}
     = [map { Bugzilla::Comment->new_from_hash($_) } @{$vars->{new_comments}}];
@@ -527,7 +567,76 @@ sub dequeue {
     $diff->{who} = Bugzilla::User->new_from_hash($diff->{who});
     if (exists $diff->{blocker}) {
       $diff->{blocker} = Bugzilla::Bug->new_from_hash($diff->{blocker});
+
+      # Re-check blocker visibility at send time. The enqueue-time dep_ok
+      # check may be stale if the blocker was restricted between enqueue
+      # and dequeue (TOCTOU). Suppress the email to match enqueue behavior.
+      unless ($vars->{to_user}->can_see_bug($diff->{blocker}->id)) {
+        WARN('dequeue: suppressing bugmail for user '
+          . $vars->{to_user}->login . ' on bug ' . $vars->{bug}->id
+          . ' — blocker bug ' . $diff->{blocker}->id
+          . ' no longer visible at send time (TOCTOU)');
+        return;
+      }
     }
+  }
+
+  # Re-validate per-bug-ID visibility (TOCTOU). Dep-field bug IDs and see_also
+  # links may now point to bugs the user can no longer see.
+  my $bug_link_re = _bug_link_re();
+  foreach my $diff (@{$vars->{diffs}}) {
+    if ($diff->{field_name} =~ /^(?:dependson|blocked|regress(?:ed_by|es))$/) {
+      foreach my $field ('new', 'old') {
+        next if !defined $diff->{$field} || $diff->{$field} eq '';
+        my @bug_ids = grep {/^\d+$/} split(/[\s,]+/, $diff->{$field});
+        $diff->{$field} = join ', ', @{$vars->{to_user}->visible_bugs(\@bug_ids)};
+      }
+    }
+    elsif ($diff->{field_name} eq 'see_also') {
+      foreach my $field ('new', 'old') {
+        next if !defined $diff->{$field};
+        my @filtered;
+        foreach my $value (split /[\s,]+/, $diff->{$field}) {
+          next if $value =~ /$bug_link_re/ && !$vars->{to_user}->can_see_bug($1);
+          push @filtered, $value;
+        }
+        $diff->{$field} = join ', ', @filtered;
+      }
+    }
+  }
+
+  # Drop dep/see_also diffs that re-stripping emptied (matches sendMail behaviour).
+  $vars->{diffs} = [grep {
+    !($_->{field_name} =~ /^(?:dependson|blocked|regress(?:ed_by|es)|see_also)$/)
+    || $_->{old} || $_->{new}
+  } @{$vars->{diffs}}];
+
+  # Recompute changed-field headers after dequeue-time diff stripping.
+  $vars->{changedfields}     = [uniq map { $_->{field_desc} } @{$vars->{diffs}}];
+  $vars->{changedfieldnames} = [uniq map { $_->{field_name} } @{$vars->{diffs}}];
+  if (grep { $_->type != CMT_ATTACHMENT_CREATED } @{$vars->{new_comments}}) {
+    push @{$vars->{changedfields}},     'Comment Created';
+    push @{$vars->{changedfieldnames}}, 'comment';
+  }
+  if (grep { $_->type == CMT_ATTACHMENT_CREATED } @{$vars->{new_comments}}) {
+    push @{$vars->{changedfields}},     'Attachment Created';
+    push @{$vars->{changedfieldnames}}, 'attachment.created';
+  }
+
+  # Re-validate referenced_bugs visibility.
+  if ($vars->{referenced_bugs} && @{$vars->{referenced_bugs}}) {
+    my @ref_ids = map { $_->{id} } @{$vars->{referenced_bugs}};
+    my %visible = map { $_ => 1 } @{$vars->{to_user}->visible_bugs(\@ref_ids)};
+    $vars->{referenced_bugs}
+      = [grep { $visible{$_->{id}} } @{$vars->{referenced_bugs}}];
+  }
+
+  # If nothing remains to send, bail.
+  unless (@{$vars->{diffs}} || @{$vars->{new_comments}}) {
+    WARN('dequeue: suppressing bugmail for user '
+      . $vars->{to_user}->login . ' on bug ' . $vars->{bug}->id
+      . ' — all diffs and comments stripped by dequeue-time visibility re-check');
+    return;
   }
 
   # generate bugmail and send
@@ -711,11 +820,14 @@ sub _get_new_bugmail_fields {
   return @diffs;
 }
 
+sub _bug_link_re {
+  my $urlbase = Bugzilla->localconfig->urlbase;
+  return qr/^\Q$urlbase\Eshow_bug\.cgi\?id=(\d+)$/;
+}
+
 sub _parse_see_also {
   my (@links) = @_;
-  my $urlbase = Bugzilla->localconfig->urlbase;
-  my $bug_link_re = qr/^\Q$urlbase\Eshow_bug\.cgi\?id=(\d+)$/;
-
+  my $bug_link_re = _bug_link_re();
   return grep { /^\d+$/ } map { /$bug_link_re/ ? int($1) : () } @links;
 }
 
