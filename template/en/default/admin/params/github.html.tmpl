@@ -40,5 +40,11 @@
 
   github_push_comment_enabled =>
     "Enable the ability for Github pushes to add a comment to a related bug report."
+
+  github_api_token =>
+    "Optional GitHub personal access token used when fetching live pull request " _
+    "status for attached pull requests. Providing a token raises GitHub's API " _
+    "rate limit from 60 to 5000 requests per hour. A token with read-only " _
+    "'public_repo' scope is sufficient for public repositories."
   }
 %]
