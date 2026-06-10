@@ -34,6 +34,11 @@ use constant GITHUB_API_TIMEOUT   => 10;
 # 5000/hr, so caching avoids re-fetching the same PR on every bug view.
 use constant GITHUB_CACHE_SECONDS => 300;
 
+# Cache inaccessible/failed lookups for a shorter period so that persistent
+# failures (rate limiting, outages, private repos) don't re-hit GitHub on every
+# bug view, while still recovering quickly once the PR becomes reachable again.
+use constant GITHUB_ERROR_CACHE_SECONDS => 60;
+
 use constant READ_ONLY => qw(
   bug_pull_requests
 );
@@ -112,7 +117,7 @@ sub _fetch_pull_request {
   my $pr_response = _github_get($ua, $api_url);
   unless ($pr_response->{ok}) {
     WARN("GitHub: failed to fetch PR $url: " . $pr_response->{errmsg});
-    return {%$base, inaccessible => 1};
+    return _cache_inaccessible($cache_key, $base);
   }
 
   my $pr = $pr_response->{data};
@@ -121,7 +126,7 @@ sub _fetch_pull_request {
   # list, etc.) means we can't trust the structure, so fall back gracefully.
   unless (ref($pr) eq 'HASH') {
     WARN("GitHub: unexpected response shape for PR $url");
-    return {%$base, inaccessible => 1};
+    return _cache_inaccessible($cache_key, $base);
   }
 
   my $state;
@@ -160,6 +165,19 @@ sub _fetch_pull_request {
     {key => $cache_key, value => $pr_data, expires_in => GITHUB_CACHE_SECONDS});
 
   return $pr_data;
+}
+
+sub _cache_inaccessible {
+  my ($cache_key, $base) = @_;
+
+  my $error_data = {%$base, inaccessible => 1};
+  Bugzilla->memcached->set_data({
+    key        => $cache_key,
+    value      => $error_data,
+    expires_in => GITHUB_ERROR_CACHE_SECONDS,
+  });
+
+  return $error_data;
 }
 
 sub _github_get {
