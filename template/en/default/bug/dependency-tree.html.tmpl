@@ -193,9 +193,10 @@
         # input always satisfies its own min/max constraints; otherwise an invalid
         # control here would silently fail the embedding bug change form's checkValidity(). %]
       [% input_max = realdepth > 0 ? realdepth : 1 %]
+      [% depth_value = maxdepth > 0 && maxdepth <= realdepth ? maxdepth : input_max %]
       <input type="number" data-id="custom-limit"
           size="4" maxlength="4" min="1" max="[% input_max FILTER html %]"
-          value="[% maxdepth > 0 && maxdepth <= realdepth ? maxdepth : input_max %]"
+          value="[% depth_value FILTER html %]"
           aria-label="Set maximum depth of the dependency tree">
       <button type="button" data-id="set-limit" class="secondary"
           [% " disabled" IF realdepth < 2 || maxdepth == 1 %]
