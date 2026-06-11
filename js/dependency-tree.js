@@ -124,8 +124,17 @@ Bugzilla.DependencyTree = class DependencyTree {
     }
 
     this.disableControls();
-    await this.updateTrees({ maxDepth, hideResolved });
+
+    if (!(await this.updateTrees({ maxDepth, hideResolved }))) {
+      return;
+    }
+
     this.updateControls({ maxDepth, hideResolved });
+
+    // Update the URL query parameters if we’re on the dependency tree page
+    if (location.pathname === this.data.action) {
+      history.replaceState(null, '', url);
+    }
   }
 
   /**
@@ -261,6 +270,7 @@ Bugzilla.DependencyTree = class DependencyTree {
    * @param {object} params Parameters.
    * @param {number} params.maxDepth The maximum depth to show in the tree.
    * @param {boolean} params.hideResolved Whether to hide resolved bugs in the tree.
+   * @returns {boolean} Whether the update succeeded.
    */
   async updateTrees({ maxDepth, hideResolved }) {
     // Build params for fetch
@@ -283,12 +293,15 @@ Bugzilla.DependencyTree = class DependencyTree {
       this.showUpdatingMessage(generation);
     }, 300);
 
+    let success = false;
+
     try {
       const response = await fetch(`${url}&embed=1&tree_only=1`);
 
       if (response.ok) {
         // Safe to inject HTML as is: Template Toolkit escapes all user-supplied data
         this.$container.innerHTML = await response.text();
+        success = true;
       } else {
         console.error('Failed to fetch dependency tree:', response.status);
         await this.showErrorMessage(generation);
@@ -305,10 +318,7 @@ Bugzilla.DependencyTree = class DependencyTree {
       this.hideUpdatingMessage();
     }
 
-    // Update the URL query parameters if we’re on the dependency tree page
-    if (location.pathname === this.data.action) {
-      history.replaceState(null, '', url);
-    }
+    return success;
   }
 
   /**
@@ -331,7 +341,7 @@ Bugzilla.DependencyTree = class DependencyTree {
     // Get the current real depth of the dependency tree from the meta tag in the tree HTML. This is
     // necessary because the real depth may change when hiding/showing resolved bugs or when new
     // bugs are added/removed.
-    const realDepth = Number(this.$trees.querySelector('meta[name="real-depth"]').content);
+    const realDepth = Number(this.$trees.querySelector('meta[name="real-depth"]')?.content || 0);
     const hasOpenBugs = realDepth > 0;
     const unlimited = maxDepth === 0;
 
