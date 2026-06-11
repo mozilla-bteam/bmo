@@ -353,8 +353,8 @@ Bugzilla.DependencyTree = class DependencyTree {
     // Update button states
     this.$toggleBtn.textContent = hideResolved ? 'Show Resolved' : 'Hide Resolved';
     this.$toggleBtn.disabled = false;
-    this.$setLimitBtn.disabled = realDepth === 1 || maxDepth === 1;
-    this.$removeLimitBtn.disabled = unlimited;
+    this.$setLimitBtn.disabled = !hasOpenBugs || realDepth === 1 || maxDepth === 1;
+    this.$removeLimitBtn.disabled = !hasOpenBugs || unlimited;
     this.$numberInput.disabled = this.$setLimitBtn.disabled && this.$removeLimitBtn.disabled;
     this.$numberInput.value =
       hasOpenBugs && !unlimited
