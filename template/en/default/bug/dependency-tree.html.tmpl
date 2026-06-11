@@ -189,9 +189,13 @@
     </button>
     <div role="group" aria-label="Max depth control">
       <span aria-hidden="true">Max Depth:</span>
+      [%# When the tree has no open bugs, realdepth is 0. Floor max/value at 1 so the
+        # input always satisfies its own min/max constraints; otherwise an invalid
+        # control here would silently fail the embedding bug change form's checkValidity(). %]
+      [% input_max = realdepth > 0 ? realdepth : 1 %]
       <input type="number" data-id="custom-limit"
-          size="4" maxlength="4" min="1" max="[% realdepth FILTER html %]"
-          value="[% maxdepth > 0 && maxdepth <= realdepth ? maxdepth : realdepth %]"
+          size="4" maxlength="4" min="1" max="[% input_max FILTER html %]"
+          value="[% maxdepth > 0 && maxdepth <= realdepth ? maxdepth : input_max %]"
           aria-label="Set maximum depth of the dependency tree">
       <button type="button" data-id="set-limit" class="secondary"
           [% " disabled" IF realdepth < 2 || maxdepth == 1 %]
