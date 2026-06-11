@@ -19,8 +19,7 @@ use lib qw(lib ../../lib ../../local/lib/perl5);
 
 use Bugzilla;
 use QA::Util qw(get_config);
-use QA::REST::Util qw(api_headers rest_get_url);
-
+use QA::REST::Util qw(rest_get_url);
 use Test::Mojo;
 use Test::More;
 
