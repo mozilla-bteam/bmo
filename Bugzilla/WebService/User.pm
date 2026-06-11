@@ -852,6 +852,12 @@ and real name.
 
 This is the recommended way to create a Bugzilla account.
 
+=item B<REST>
+
+POST /user/offer_account_by_email
+
+The params to include in the POST body are the same as below.
+
 =item B<Param>
 
 =over
