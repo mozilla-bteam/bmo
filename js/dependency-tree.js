@@ -125,7 +125,9 @@ Bugzilla.DependencyTree = class DependencyTree {
 
     this.disableControls();
 
-    if (!(await this.updateTrees({ maxDepth, hideResolved }))) {
+    const url = await this.updateTrees({ maxDepth, hideResolved });
+
+    if (!url) {
       return;
     }
 
@@ -270,7 +272,7 @@ Bugzilla.DependencyTree = class DependencyTree {
    * @param {object} params Parameters.
    * @param {number} params.maxDepth The maximum depth to show in the tree.
    * @param {boolean} params.hideResolved Whether to hide resolved bugs in the tree.
-   * @returns {boolean} Whether the update succeeded.
+   * @returns {string | null} The URL of the updated tree if successful, or null if the update failed.
    */
   async updateTrees({ maxDepth, hideResolved }) {
     // Build params for fetch
@@ -318,7 +320,7 @@ Bugzilla.DependencyTree = class DependencyTree {
       this.hideUpdatingMessage();
     }
 
-    return success;
+    return success ? url : null;
   }
 
   /**
