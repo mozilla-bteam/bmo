@@ -70,7 +70,7 @@ my @tests = (
 
   # Test ID parameter
   {user => 'unprivileged', args => attach(INVALID_BUG_ID), error => "It does not seem like bug number", test => 'Passing invalid bug id returns error "Invalid Bug ID"'},
-  {user => 'unprivileged', args => attach(INVALID_BUG_ALIAS), error => "nor an alias to a bug", test => 'Passing invalid bug alias returns error "Invalid Bug Alias"'}
+  {user => 'unprivileged', args => attach(INVALID_BUG_ALIAS), error => "nor an alias to a bug", test => 'Passing invalid bug alias returns error "Invalid Bug Alias"'},
 
   # Test data parameter
   {user => 'unprivileged', args => attach($public_id, {data => undef}), error => 'a data argument', test => 'Failing to pass the "data" parameter fails'},
