@@ -29,7 +29,6 @@ Bugzilla.DependencyTree = class DependencyTree {
 
     this.data = this.$trees.dataset;
     this.data.initialized = '1';
-    this.realDepth = Number(this.data.realDepth);
     this.uriLimit = BUGZILLA.constant.CGI_URI_LIMIT;
 
     this.$toolbar = this.$trees.querySelector('[role="toolbar"]');
@@ -37,6 +36,10 @@ Bugzilla.DependencyTree = class DependencyTree {
 
     this.activateToolbar();
     this.activateTrees();
+    this.updateControls({
+      maxDepth: Number(this.data.maxDepth),
+      hideResolved: this.data.hideResolved === '1',
+    });
 
     // Track the current update request to prevent race conditions with `showUpdatingMessage()`
     this.updateGeneration = 0;
@@ -76,7 +79,7 @@ Bugzilla.DependencyTree = class DependencyTree {
    */
   async onAction(action) {
     // Get current values
-    let maxDepth = Number(this.data.maxDepth || this.realDepth);
+    let maxDepth = Number(this.data.maxDepth);
     let hideResolved = this.data.hideResolved === '1';
 
     const removeLimit = () => {
@@ -88,6 +91,7 @@ Bugzilla.DependencyTree = class DependencyTree {
     switch (action) {
       case 'toggle-visibility':
         hideResolved = !hideResolved;
+        removeLimit();
 
         break;
       case 'set-limit':
@@ -102,8 +106,11 @@ Bugzilla.DependencyTree = class DependencyTree {
       case 'change-limit':
         maxDepth = Number(this.$numberInput?.value || this.realDepth);
 
+        // We need +1 to make the control work (see `updateControls` below)
+        const limit = maxDepth === 0 ? this.realDepth : this.realDepth + 1;
+
         // Validate that the value is within the acceptable range
-        if (maxDepth < 1 || maxDepth > this.realDepth) {
+        if (maxDepth < 1 || maxDepth > limit) {
           // Reset to the current valid value and bail out
           this.$numberInput.value = this.data.maxDepth > 0 ? this.data.maxDepth : this.realDepth;
           return;
@@ -116,9 +123,20 @@ Bugzilla.DependencyTree = class DependencyTree {
         break;
     }
 
-    this.disableControllers();
-    await this.updateTrees({ maxDepth, hideResolved });
-    this.updateControllers({ maxDepth, hideResolved });
+    this.disableControls();
+
+    const url = await this.updateTrees({ maxDepth, hideResolved });
+
+    if (!url) {
+      return;
+    }
+
+    this.updateControls({ maxDepth, hideResolved });
+
+    // Update the URL query parameters if we’re on the dependency tree page
+    if (location.pathname === this.data.action) {
+      history.replaceState(null, '', url);
+    }
   }
 
   /**
@@ -254,6 +272,7 @@ Bugzilla.DependencyTree = class DependencyTree {
    * @param {object} params Parameters.
    * @param {number} params.maxDepth The maximum depth to show in the tree.
    * @param {boolean} params.hideResolved Whether to hide resolved bugs in the tree.
+   * @returns {string | null} The URL of the updated tree if successful, or null if the update failed.
    */
   async updateTrees({ maxDepth, hideResolved }) {
     // Build params for fetch
@@ -276,12 +295,15 @@ Bugzilla.DependencyTree = class DependencyTree {
       this.showUpdatingMessage(generation);
     }, 300);
 
+    let success = false;
+
     try {
       const response = await fetch(`${url}&embed=1&tree_only=1`);
 
       if (response.ok) {
         // Safe to inject HTML as is: Template Toolkit escapes all user-supplied data
         this.$container.innerHTML = await response.text();
+        success = true;
       } else {
         console.error('Failed to fetch dependency tree:', response.status);
         await this.showErrorMessage(generation);
@@ -298,16 +320,13 @@ Bugzilla.DependencyTree = class DependencyTree {
       this.hideUpdatingMessage();
     }
 
-    // Update the URL query parameters if we’re on the dependency tree page
-    if (location.pathname === this.data.action) {
-      history.replaceState(null, '', url);
-    }
+    return success ? url : null;
   }
 
   /**
    * Temporarily disable all toolbar buttons and inputs to prevent multiple simultaneous updates.
    */
-  disableControllers() {
+  disableControls() {
     this.$toggleBtn.disabled = true;
     this.$setLimitBtn.disabled = true;
     this.$removeLimitBtn.disabled = true;
@@ -320,7 +339,15 @@ Bugzilla.DependencyTree = class DependencyTree {
    * @param {number} params.maxDepth The maximum depth to show in the tree.
    * @param {boolean} params.hideResolved Whether to hide resolved bugs in the tree.
    */
-  updateControllers({ maxDepth, hideResolved }) {
+  updateControls({ maxDepth, hideResolved }) {
+    // Get the current real depth of the dependency tree from the meta tag in the tree HTML. This is
+    // necessary because the real depth may change when hiding/showing resolved bugs or when new
+    // bugs are added/removed.
+    const realDepth = Number(this.$trees.querySelector('meta[name="real-depth"]')?.content || 0);
+    const hasOpenBugs = realDepth > 0;
+    const unlimited = maxDepth === 0;
+
+    this.realDepth = realDepth;
     // Update dataset properties used as state
     this.data.maxDepth = maxDepth;
     this.data.hideResolved = hideResolved ? '1' : '0';
@@ -328,9 +355,27 @@ Bugzilla.DependencyTree = class DependencyTree {
     // Update button states
     this.$toggleBtn.textContent = hideResolved ? 'Show Resolved' : 'Hide Resolved';
     this.$toggleBtn.disabled = false;
-    this.$setLimitBtn.disabled = this.realDepth < 2 || maxDepth === 1;
-    this.$removeLimitBtn.disabled = maxDepth === 0 || maxDepth === this.realDepth;
-    this.$numberInput.disabled = false;
+    this.$setLimitBtn.disabled = !hasOpenBugs || realDepth === 1 || maxDepth === 1;
+    this.$removeLimitBtn.disabled = !hasOpenBugs || unlimited;
+    this.$numberInput.disabled = this.$setLimitBtn.disabled && this.$removeLimitBtn.disabled;
+    this.$numberInput.value =
+      hasOpenBugs && !unlimited
+        ? // Handle the case when the real depth is less than the current max depth — in that case
+          // we should set the input value to the real depth, not the max depth
+          Math.min(realDepth, maxDepth)
+        : // When the tree has no open bugs, `realDepth` is 0. Floor `value` at 1 so the input
+          // always satisfies its own min/max constraints; otherwise an invalid control here would
+          // silently fail the embedding bug change form’s `checkValidity()`. The same applies to
+          // the `max` attribute below.
+          Math.max(1, realDepth);
+    this.$numberInput.max =
+      hasOpenBugs && !unlimited
+        ? // We need +1 to make the control work because the real depth is not the deepest level
+          // that can be shown — it equals to the max depth when it’s lower than the real depth —
+          // so we need to allow setting the max depth to the real depth + 1 to be able to show
+          // all levels when the real depth is currently shown as the max depth.
+          realDepth + 1
+        : Math.max(1, realDepth);
   }
 
   /**

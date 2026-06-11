@@ -129,7 +129,6 @@
 
   'bug/dependency-tree.html.tmpl' => [
     'bugid', 'maxdepth', 'hide_resolved', 'realdepth',
-    'maxdepth > 0 && maxdepth <= realdepth ? maxdepth : realdepth',
   ],
 
   'bug/edit.html.tmpl' => [
