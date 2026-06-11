@@ -190,9 +190,7 @@
     </button>
     <div role="group" aria-label="Max depth control">
       <span aria-hidden="true">Max Depth:</span>
-      <input type="number" data-id="custom-limit"
-          size="4" maxlength="4" min="1" max="[% realdepth FILTER html %]"
-          value="[% maxdepth > 0 && maxdepth <= realdepth ? maxdepth : realdepth %]"
+      <input type="number" data-id="custom-limit" size="4" maxlength="4" min="1"
           aria-label="Set maximum depth of the dependency tree">
       <button type="button" data-id="set-limit" class="secondary"
           [% " disabled" IF realdepth < 2 || maxdepth == 1 %]

@@ -331,28 +331,39 @@ Bugzilla.DependencyTree = class DependencyTree {
     // Get the current real depth of the dependency tree from the meta tag in the tree HTML. This is
     // necessary because the real depth may change when hiding/showing resolved bugs or when new
     // bugs are added/removed.
-    this.realDepth = Number(this.$trees.querySelector('meta[name="real-depth"]').content);
+    const realDepth = Number(this.$trees.querySelector('meta[name="real-depth"]').content);
+    const hasOpenBugs = realDepth > 0;
+    const unlimited = maxDepth === 0;
 
+    this.realDepth = realDepth;
     // Update dataset properties used as state
     this.data.maxDepth = maxDepth;
     this.data.hideResolved = hideResolved ? '1' : '0';
 
-    const unlimited = maxDepth === 0;
-
     // Update button states
     this.$toggleBtn.textContent = hideResolved ? 'Show Resolved' : 'Hide Resolved';
     this.$toggleBtn.disabled = false;
-    this.$setLimitBtn.disabled = this.realDepth === 1 || maxDepth === 1;
+    this.$setLimitBtn.disabled = realDepth === 1 || maxDepth === 1;
     this.$removeLimitBtn.disabled = unlimited;
     this.$numberInput.disabled = this.$setLimitBtn.disabled && this.$removeLimitBtn.disabled;
-    // We need `Math.min` to handle the case when the real depth is less than the current max depth
-    // — in that case we should set the input value to the real depth, not the max depth
-    this.$numberInput.value = unlimited ? this.realDepth : Math.min(this.realDepth, maxDepth);
-    // We need +1 to make the control work because the real depth is not the deepest level that can
-    // be shown — it equals to the max depth when it’s lower than the real depth — so we need to
-    // allow setting the max depth to the real depth + 1 to be able to show all levels when the real
-    // depth is currently shown as the max depth
-    this.$numberInput.setAttribute('max', unlimited ? this.realDepth : this.realDepth + 1);
+    this.$numberInput.value =
+      hasOpenBugs && !unlimited
+        ? // Handle the case when the real depth is less than the current max depth — in that case
+          // we should set the input value to the real depth, not the max depth
+          Math.min(realDepth, maxDepth)
+        : // When the tree has no open bugs, `realDepth` is 0. Floor `value` at 1 so the input
+          // always satisfies its own min/max constraints; otherwise an invalid control here would
+          // silently fail the embedding bug change form’s `checkValidity()`. The same applies to
+          // the `max` attribute below.
+          Math.max(1, realDepth);
+    this.$numberInput.max =
+      hasOpenBugs && !unlimited
+        ? // We need +1 to make the control work because the real depth is not the deepest level
+          // that can be shown — it equals to the max depth when it’s lower than the real depth —
+          // so we need to allow setting the max depth to the real depth + 1 to be able to show
+          // all levels when the real depth is currently shown as the max depth.
+          realDepth + 1
+        : Math.max(1, realDepth);
   }
 
   /**
