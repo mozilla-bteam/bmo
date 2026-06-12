@@ -19,6 +19,7 @@ use lib qw(lib ../../lib ../../local/lib/perl5);
 use Bugzilla;
 use QA::Util qw(get_config random_string);
 
+use Mojo::JSON ();
 use Test::Mojo;
 use Test::More;
 
