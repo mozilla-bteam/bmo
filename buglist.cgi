@@ -29,6 +29,7 @@ use Bugzilla::Status;
 use Bugzilla::Token;
 
 use Date::Parse;
+use List::Util qw(any);
 use List::MoreUtils qw(uniq);
 
 
@@ -890,13 +891,13 @@ $vars->{'closedstates'} = [map { $_->name } closed_bug_statuses()];
 # Determine which status filter tab is active for the toggle UI.
 {
   my @requested = $params->param('bug_status');
-  if (!@requested || grep { $_ eq '__all__' } @requested) {
+  if (!@requested || any { $_ eq '__all__' } @requested) {
     $vars->{'status_filter'} = 'all';
   }
-  elsif (grep { $_ eq '__open__' } @requested) {
+  elsif (any { $_ eq '__open__' } @requested) {
     $vars->{'status_filter'} = 'open';
   }
-  elsif (grep { $_ eq '__closed__' } @requested) {
+  elsif (any { $_ eq '__closed__' } @requested) {
     $vars->{'status_filter'} = 'closed';
   }
   else {
