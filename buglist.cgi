@@ -1087,8 +1087,11 @@ else {
 # Set 'urlquerypart' once the buglist ID is known.
 $vars->{'urlquerypart'}
   = $params->canonicalize_query('order', 'cmdtype', 'query_based_on', 'token');
+# Excludes resolution alongside bug_status from the query used by status toggle buttons.
+# resolution is coupled to bug_status, so both must be dropped together
 $vars->{'urlquerypart_no_status'}
-  = $params->canonicalize_query('order', 'cmdtype', 'query_based_on', 'token', 'bug_status');
+  = $params->canonicalize_query('order', 'cmdtype', 'query_based_on', 'token',
+    'bug_status', 'resolution');
 
 if ($format->{'extension'} eq "csv") {
 
