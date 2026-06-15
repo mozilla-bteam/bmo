@@ -124,6 +124,32 @@
 <hr>
 
 [%############################################################################%]
+[%# Status Filter Toggle                                                     #%]
+[%############################################################################%]
+
+[% IF !dotweak %]
+  [% SET base_status_url = basepath _ "buglist.cgi?" _ urlquerypart_no_status %]
+  <div class="bz_status_toggle">
+    <span class="bz_status_toggle_label">Show:</span>
+    [% IF status_filter == 'open' %]
+      <span class="bz_status_toggle_btn active">Open</span>
+    [% ELSE %]
+      <a class="bz_status_toggle_btn" href="[% base_status_url FILTER html %]&amp;bug_status=__open__[%- "&order=$qorder" FILTER html IF order %]">Open</a>
+    [% END %]
+    [% IF status_filter == 'closed' %]
+      <span class="bz_status_toggle_btn active">Closed</span>
+    [% ELSE %]
+      <a class="bz_status_toggle_btn" href="[% base_status_url FILTER html %]&amp;bug_status=__closed__[%- "&order=$qorder" FILTER html IF order %]">Closed</a>
+    [% END %]
+    [% IF status_filter == 'all' %]
+      <span class="bz_status_toggle_btn active">All</span>
+    [% ELSE %]
+      <a class="bz_status_toggle_btn" href="[% base_status_url FILTER html %]&amp;bug_status=__all__[%- "&order=$qorder" FILTER html IF order %]">All</a>
+    [% END %]
+  </div>
+[% END %]
+
+[%############################################################################%]
 [%# Preceding Status Line                                                    #%]
 [%############################################################################%]
 
