@@ -49,7 +49,12 @@ sub rest_get_url {
   foreach my $key (sort keys %{$params || {}}) {
     my $value = $params->{$key};
     next if !defined $value;
-    push @query, ($key => $value);
+    if (ref $value eq 'ARRAY') {
+      push @query, map { ($key => $_) } grep { defined $_ } @$value;
+    }
+    else {
+      push @query, ($key => $value);
+    }
   }
   $url->query(@query) if @query;
   return $url;

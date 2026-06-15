@@ -858,7 +858,7 @@ POST /user/offer_account_by_email
 
 The params to include in the POST body are the same as below.
 
-=item B<Param>
+=item B<Params>
 
 =over
 
