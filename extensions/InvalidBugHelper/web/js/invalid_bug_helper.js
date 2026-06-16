@@ -7,7 +7,7 @@
 
 'use strict';
 
-(() => {
+document.addEventListener('DOMContentLoaded', () => {
   const btn = document.getElementById('close-as-invalid-btn');
   if (!btn) return;
 
@@ -43,4 +43,4 @@
       btn.textContent = 'Close as Invalid';
     }
   });
-})();
+}, { once: true });
