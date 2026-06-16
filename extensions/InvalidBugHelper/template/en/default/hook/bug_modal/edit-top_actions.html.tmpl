@@ -1,0 +1,16 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[%# Only show for editbugs users on open bugs that are not already in Invalid Bugs %]
+[% IF user.in_group("editbugs")
+     AND bug.bug_status != "RESOLVED"
+     AND bug.bug_status != "VERIFIED"
+     AND bug.product != "Invalid Bugs"
+%]
+| <button type="button" id="close-as-invalid-btn" class="minor">Close as Invalid</button>
+[% END %]
