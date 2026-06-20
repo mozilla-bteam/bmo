@@ -90,8 +90,8 @@ sub should_send {
   if ($event =~ /change/ && $message->routing_key =~ /\Qbug.modify\E/) {
     my $removed_product = "";
     my $removed_component = "";
-    if (exists $bug_data->{'changes'}) {
-      foreach my $change ($bug_data->{'changes'}) {
+    if (exists $payload->{event}->{changes}) {
+      foreach my $change (@{$payload->{event}->{changes}}) {
         if ($change->{'field'} eq 'product') {
           $removed_product = $change->{'removed'};
         }
@@ -105,7 +105,7 @@ sub should_send {
         $removed_product = $bug_data->{'product'};
       }
       if ($product eq $removed_product
-          && ($component eq $removed_component || $component eq 'any'))
+          && ($component eq $removed_component || $component eq 'Any'))
       {
         return 1;
       }
