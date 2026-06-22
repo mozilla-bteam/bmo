@@ -60,6 +60,11 @@ sub close_as_invalid {
     comment           => {body => $warning_text},
   });
 
+  # Strip security groups so the bug becomes public after the product move.
+  foreach my $group (@{$bug->groups_in}) {
+    $bug->remove_group($group);
+  }
+
   $bug->update();
 
   # Tag every reporter comment as spam (triggers AntiSpam user-disable logic).
