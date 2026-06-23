@@ -314,13 +314,36 @@ $(function() {
             }
         });
 
-    // toggle obsolete attachments
-    $('#attachments-obsolete-btn')
-        .click(function(event) {
-            event.preventDefault();
-            $(event.target).text(($('#attachments tr:hidden').length ? 'Hide Obsolete' : 'Show Obsolete'));
-            $('#attachments tr.attach-obsolete').toggle();
+    // toggle obsolete/external attachments
+    let attachObsoleteShowing = false;
+    let attachExternalShowing = false;
+
+    function updateAttachmentRows() {
+        // A row may be obsolete, external, or both. It is only visible when
+        // every category it belongs to has been toggled on, so external rows
+        // stay hidden while "Show External" is off even if they are obsolete.
+        $('#attachments tr.attach-obsolete, #attachments tr.attach-external').each(function() {
+            const $row = $(this);
+            const visible =
+                (!$row.hasClass('attach-obsolete') || attachObsoleteShowing) &&
+                (!$row.hasClass('attach-external') || attachExternalShowing);
+            $row.toggle(visible);
         });
+        $('#attachments-obsolete-btn').text(attachObsoleteShowing ? 'Hide Obsolete' : 'Show Obsolete');
+        $('#attachments-external-btn').text(attachExternalShowing ? 'Hide External' : 'Show External');
+    }
+
+    $('#attachments-obsolete-btn').click(function(event) {
+        event.preventDefault();
+        attachObsoleteShowing = !attachObsoleteShowing;
+        updateAttachmentRows();
+    });
+
+    $('#attachments-external-btn').click(function(event) {
+        event.preventDefault();
+        attachExternalShowing = !attachExternalShowing;
+        updateAttachmentRows();
+    });
 
     // top btn
     $('#top-btn')
