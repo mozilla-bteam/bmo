@@ -7,7 +7,8 @@
 # defined by the Mozilla Public License, v. 2.0.
 
 # Test that cloning a security bug across products preserves security
-# group defaults (Bug 2028240).
+# group defaults, including when the bug is in a non-default security
+# group (Bug 2028240, Bug 2049554).
 
 use 5.10.1;
 use strict;
@@ -138,6 +139,85 @@ push(@pub_groups, $public_bug->extra_security_groups_for_clone($prod_b));
 
 ok(!(grep { $_ eq $sec_group_b } @pub_groups),
   "Public bug clone does NOT get target security group");
+
+# ---- Bug in a NON-default security group should still clone securely ----
+#
+# This is the Bug 2049554 case: the source bug isn't in its product's own
+# default security group, but it IS in another security group (the default
+# security group of some other product, e.g. dom-core-security). Cloning it
+# across products should still pre-check the target's default security group.
+
+SKIP: {
+  skip 'Need a third product to host a non-default security group', 3
+    if @products < 3;
+
+  my $dbh    = Bugzilla->dbh;
+  my $prod_c = $products[2];
+
+  # Create a group that is the default security group of prod_c but not of
+  # prod_a, so for a prod_a bug it is a "non-default" security group.
+  my $nondefault_group = Bugzilla::Group->create({
+    name        => 'test-nondefault-sec-' . $$,
+    description => 'Temporary non-default security group for clone test',
+    isbuggroup  => 1,
+  });
+
+  my $orig_prod_c_sec = $prod_c->{security_group_id};
+  $dbh->do('UPDATE products SET security_group_id = ? WHERE id = ?',
+    undef, $nondefault_group->id, $prod_c->id);
+
+  # The set of security groups is cached per-request; drop it so the new
+  # group is recognised.
+  delete Bugzilla->request_cache->{security_group_ids};
+
+  # File a public bug in prod_a, then place it directly into the non-default
+  # security group. We bypass the group-control permission checks of the
+  # normal create path because we only care about the resulting group
+  # membership, which mirrors a bug that was secured into another product's
+  # security group.
+  my $nondefault_bug = Bugzilla::Bug->create({
+    short_desc   => 'Test non-default security clone - Bug 2049554',
+    product      => $prod_a->name,
+    component    => $prod_a->components->[0]->name,
+    bug_type     => 'defect',
+    bug_severity => 'normal',
+    op_sys       => 'Unspecified',
+    rep_platform => 'Unspecified',
+    version      => $prod_a->versions->[0]->name,
+  });
+  $dbh->do('INSERT INTO bug_group_map (bug_id, group_id) VALUES (?, ?)',
+    undef, $nondefault_bug->id, $nondefault_group->id);
+
+  # Re-fetch so groups_in reflects the direct membership change.
+  $nondefault_bug = Bugzilla::Bug->new($nondefault_bug->id);
+
+  my @nd_bug_groups = map { $_->name } @{$nondefault_bug->groups_in};
+  ok(
+    (grep { $_ eq $nondefault_group->name } @nd_bug_groups),
+    "Bug is in the non-default security group (" . $nondefault_group->name . ")"
+  );
+  ok(
+    !(grep { $_ eq $sec_group_a } @nd_bug_groups),
+    "Bug is NOT in prod_a's default security group ($sec_group_a)"
+  );
+
+  my @nd_clone_groups = map { $_->name } @{$nondefault_bug->groups_in};
+  push(@nd_clone_groups,
+    $nondefault_bug->extra_security_groups_for_clone($prod_b));
+
+  ok(
+    (grep { $_ eq $sec_group_b } @nd_clone_groups),
+    "Clone of non-default security bug adds target security group ($sec_group_b)"
+  );
+
+  # Cleanup for this subtest.
+  $dbh->do('UPDATE products SET security_group_id = ? WHERE id = ?',
+    undef, $orig_prod_c_sec, $prod_c->id);
+  $dbh->do('DELETE FROM bug_group_map WHERE group_id = ?',
+    undef, $nondefault_group->id);
+  $nondefault_group->remove_from_db();
+  delete Bugzilla->request_cache->{security_group_ids};
+}
 
 # ---- Cleanup ----
 

@@ -4368,22 +4368,49 @@ sub in_group {
 }
 
 # Returns extra group names to add when cloning $self into $target_product.
-# If the bug is in its source product's default security group and the target
-# product has a different one, the target group name is returned so the clone
-# stays secure (Bug 2028240).
+# If the bug is in any security group and the target product has a different
+# default security group, the target group name is returned so the clone stays
+# secure. A group counts as a security group if it is the default security
+# group of some product, which covers non-default groups such as
+# dom-core-security and not just the source product's own default
+# (Bug 2028240, Bug 2049554).
 sub extra_security_groups_for_clone {
   my ($self, $target_product) = @_;
   return () if $self->product_id == $target_product->id;
   return () unless $target_product->can('default_security_group');
 
   my @clone_groups = map { $_->name } @{$self->groups_in};
-  my $source_sec = eval { $self->product_obj->default_security_group };
-  return () unless $source_sec && grep { $_ eq $source_sec } @clone_groups;
+  return () unless grep { $self->_is_security_group($_) } @{$self->groups_in};
 
   my $target_sec = eval { $target_product->default_security_group };
   return () unless $target_sec && !grep { $_ eq $target_sec } @clone_groups;
 
   return ($target_sec);
+}
+
+# Returns true if $group is the default security group of some product, and is
+# therefore acting as a security group somewhere in the installation.
+sub _is_security_group {
+  my ($self, $group) = @_;
+
+  my $cache = Bugzilla->request_cache->{security_group_ids} ||= do {
+    my $dbh = Bugzilla->dbh;
+    my %ids = map { $_ => 1 } @{
+      $dbh->selectcol_arrayref(
+        'SELECT DISTINCT security_group_id FROM products
+          WHERE security_group_id IS NOT NULL')
+    };
+
+    # Products without an explicit security group fall back to the insider
+    # group, so treat that as a security group too.
+    my $insider
+      = Bugzilla::Group->new({name => Bugzilla->params->{insidergroup}, cache => 1});
+    $ids{$insider->id} = 1 if $insider;
+
+    \%ids;
+  };
+
+  return $cache->{$group->id} ? 1 : 0;
 }
 
 sub user {
