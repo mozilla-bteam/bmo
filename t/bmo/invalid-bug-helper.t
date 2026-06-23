@@ -38,6 +38,17 @@ ok(exists $handlers->{POST}, 'handler defines a POST method');
 ok($handlers->{POST}{method} eq 'close_as_invalid',
   'POST handler maps to close_as_invalid');
 
+# Verify the route regex matches valid bug IDs and rejects invalid ones.
+ok('/invalid_bug_helper/close/123' =~ $pattern, 'route matches numeric bug id');
+ok('/invalid_bug_helper/close/0' =~ $pattern,   'route matches bug id 0');
+ok('/invalid_bug_helper/close/abc' !~ $pattern,  'route rejects non-numeric id');
+ok('/invalid_bug_helper/close/' !~ $pattern,     'route rejects missing id');
+
+# Verify the params sub extracts bug_id from the capture group.
+my $params_sub = $handlers->{POST}{params};
+is(ref $params_sub, 'CODE', 'params is a code ref');
+is_deeply($params_sub->(42), {bug_id => 42}, 'params sub extracts bug_id');
+
 # Verify PUBLIC_METHODS includes close_as_invalid.
 my @public = Bugzilla::Extension::InvalidBugHelper::WebService->PUBLIC_METHODS;
 ok(grep({ $_ eq 'close_as_invalid' } @public),

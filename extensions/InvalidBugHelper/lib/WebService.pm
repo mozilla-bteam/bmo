@@ -30,10 +30,20 @@ sub close_as_invalid {
     {group => 'editbugs', action => 'update', object => 'bug'});
 
   my $bug_id = $params->{bug_id}
-    || ThrowCodeError('param_required',
+    // ThrowCodeError('param_required',
     {function => 'InvalidBugHelper.close_as_invalid', param => 'bug_id'});
 
   my $bug = Bugzilla::Bug->check({id => $bug_id});
+
+  ThrowUserError('auth_failure',
+    {action => 'modify', object => 'bug'})
+    unless $user->can_tag_comments;
+
+  if ($bug->bug_status eq 'RESOLVED' || $bug->bug_status eq 'VERIFIED'
+      || $bug->product eq 'Invalid Bugs')
+  {
+    ThrowUserError('bug_status_unresolvable', {bug => $bug});
+  }
 
   # Snapshot reporter comments and flags before any mutations.
   my @reporter_comments
@@ -61,18 +71,22 @@ sub close_as_invalid {
   });
 
   # Strip security groups so the bug becomes public after the product move.
-  foreach my $group (@{$bug->groups_in}) {
+  # Copy the array — remove_group mutates groups_in in-place (see Bug.pm:3050).
+  my @groups = @{$bug->groups_in};
+  foreach my $group (@groups) {
+    next if $bug->product_obj->group_is_valid($group)
+      && $bug->product_obj->group_controls->{$group->id}->{membercontrol}
+         == CONTROLMAPMANDATORY
+      && $group->is_active;
     $bug->remove_group($group);
   }
 
   $bug->update();
 
   # Tag every reporter comment as spam (triggers AntiSpam user-disable logic).
-  if (Bugzilla->params->{comment_taggers_group} && $user->can_tag_comments()) {
-    foreach my $comment (@reporter_comments) {
-      $comment->add_tag('spam');
-      $comment->update();
-    }
+  foreach my $comment (@reporter_comments) {
+    $comment->add_tag('spam');
+    $comment->update();
   }
 
   $dbh->bz_commit_transaction();
