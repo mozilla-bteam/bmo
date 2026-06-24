@@ -50,6 +50,7 @@ use constant LEGACY_APPROVAL_MAPPING => {
   'firefox-esr115'  => 'esr115',
   'firefox-esr128'  => 'esr128',
   'firefox-esr140'  => 'esr140',
+  'firefox-esr153'  => 'esr153',
 };
 
 # Set approval flags on Phabricator revision bug attachments.
