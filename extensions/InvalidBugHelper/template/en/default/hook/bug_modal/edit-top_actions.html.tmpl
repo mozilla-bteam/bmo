@@ -8,7 +8,6 @@
 
 [%# Only show for users who can perform the full close-as-invalid operation %]
 [% can_close_invalid = user.in_group("editbugs")
-     AND user.can_tag_comments
      AND user.can_enter_product("Invalid Bugs")
      AND bug.bug_status != "RESOLVED"
      AND bug.bug_status != "VERIFIED"
