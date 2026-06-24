@@ -53,11 +53,12 @@ sub close_as_invalid {
     ThrowUserError('bug_status_unresolvable', {bug => $bug});
   }
 
-  # Snapshot reporter comments and flags before any mutations.
+  # Snapshot reporter comments, flags, and groups before any mutations.
   my @reporter_comments
     = grep { $_->author->id == $bug->reporter->id } @{$bug->comments};
   my @clear_flags = map { {id => $_->id, status => 'X'} }
     grep { $_->type->name eq 'needinfo' } @{$bug->flags};
+  my @groups = @{$bug->groups_in};
 
   my $warning_text = Bugzilla->params->{invalidbughelper_warning_text}
     || 'This bug has been marked as invalid.';
@@ -78,9 +79,7 @@ sub close_as_invalid {
     comment           => {body => $warning_text},
   });
 
-  # Strip security groups so the bug becomes public after the product move.
-  # Copy the array — remove_group mutates groups_in in-place (see Bug.pm:3050).
-  my @groups = @{$bug->groups_in};
+  # Strip non-mandatory security groups so the bug becomes public.
   foreach my $group (@groups) {
     next if $bug->product_obj->group_is_valid($group)
       && $bug->product_obj->group_controls->{$group->id}->{membercontrol}
