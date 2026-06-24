@@ -6,9 +6,12 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-# Test that cloning a security bug across products preserves security
-# group defaults, including when the bug is in a non-default security
-# group (Bug 2028240, Bug 2049554).
+# Test that cloning a bug across products keeps it secure to the best of
+# BMO's ability: when any of the bug's groups would be dropped in the target
+# product, the target's default security group is pre-checked. This must work
+# even when the bug is only in a non-default security group such as
+# dom-core-security, and must NOT add the default when every group carries
+# over (Bug 2028240, Bug 2049554).
 
 use 5.10.1;
 use strict;
@@ -35,148 +38,27 @@ plan skip_all => 'BMO extension with default_security_group required'
 my $user = Bugzilla::User->check({id => 1});
 Bugzilla->set_user($user);
 
-# Find two products. We need them to have different default security groups
-# to test cross-product cloning. If they share the same group, create a
-# second one.
 my @products = Bugzilla::Product->get_all;
 plan skip_all => 'Need at least 2 products' if @products < 2;
 
 my $prod_a = $products[0];
 my $prod_b = $products[1];
 
-my $sec_group_a = eval { $prod_a->default_security_group };
 my $sec_group_b = eval { $prod_b->default_security_group };
+plan skip_all => 'Target product needs a default security group'
+  unless $sec_group_b;
 
-plan skip_all => 'Products need default security groups'
-  unless $sec_group_a && $sec_group_b;
+my $dbh = Bugzilla->dbh;
 
-# If both products share the same security group, create a test group
-# and assign it to product B so we can test the cross-product mapping.
-my $created_group;
-if ($sec_group_a eq $sec_group_b) {
-  my $dbh = Bugzilla->dbh;
-  $created_group = Bugzilla::Group->create({
-    name        => 'test-security-clone-' . $$,
-    description => 'Temporary group for clone security test',
-    isbuggroup  => 1,
-  });
-  # Assign to product B
-  $dbh->do(
-    'UPDATE products SET security_group_id = ? WHERE id = ?',
-    undef, $created_group->id, $prod_b->id);
-  # Re-fetch product to pick up the new security_group_id
-  $prod_b = Bugzilla::Product->new({id => $prod_b->id});
-
-  $sec_group_b = $prod_b->default_security_group;
-
-  # Make sure the user is in the new group
-  $dbh->do(
-    'INSERT INTO user_group_map (user_id, group_id, isbless, grant_type) VALUES (?, ?, 0, 0)',
-    undef, $user->id, $created_group->id);
-
-  # Also add group to product's group controls so bugs can use it
-  $dbh->do(
-    'INSERT IGNORE INTO group_control_map (group_id, product_id, entry, membercontrol, othercontrol, canedit)
-     VALUES (?, ?, 0, 1, 0, 0)',
-    undef, $created_group->id, $prod_b->id);
-}
-
-isnt($sec_group_a, $sec_group_b,
-  "Test products have different security groups ($sec_group_a vs $sec_group_b)");
-
-# Create a security bug in product A
-my $bug = Bugzilla::Bug->create({
-  short_desc   => 'Test security clone - Bug 2028240',
-  product      => $prod_a->name,
-  component    => $prod_a->components->[0]->name,
-  bug_type     => 'defect',
-  bug_severity => 'normal',
-  op_sys       => 'Unspecified',
-  rep_platform => 'Unspecified',
-  version      => $prod_a->versions->[0]->name,
-  groups       => [$sec_group_a],
-});
-ok($bug->id, "Created security bug " . $bug->id);
-
-my @bug_groups = map { $_->name } @{$bug->groups_in};
-ok((grep { $_ eq $sec_group_a } @bug_groups),
-  "Bug is in source security group ($sec_group_a)");
-
-# ---- Test the clone logic via Bugzilla::Bug method ----
-
-# Cross-product clone: bug from prod_a, target is prod_b
-my @clone_groups = map { $_->name } @{$bug->groups_in};
-push(@clone_groups, $bug->extra_security_groups_for_clone($prod_b));
-
-ok((grep { $_ eq $sec_group_b } @clone_groups),
-  "Cross-product clone adds target security group ($sec_group_b)");
-ok((grep { $_ eq $sec_group_a } @clone_groups),
-  "Cross-product clone preserves source security group ($sec_group_a)");
-
-# ---- Same-product clone should not duplicate ----
-
-my @same_groups = map { $_->name } @{$bug->groups_in};
-push(@same_groups, $bug->extra_security_groups_for_clone($prod_a));
-
-is(scalar(grep { $_ eq $sec_group_a } @same_groups), 1,
-  "Same-product clone doesn't duplicate security group");
-
-# ---- Non-security bug should NOT get security group ----
-
-my $public_bug = Bugzilla::Bug->create({
-  short_desc   => 'Test public clone - Bug 2028240',
-  product      => $prod_a->name,
-  component    => $prod_a->components->[0]->name,
-  bug_type     => 'defect',
-  bug_severity => 'normal',
-  op_sys       => 'Unspecified',
-  rep_platform => 'Unspecified',
-  version      => $prod_a->versions->[0]->name,
-});
-
-my @pub_groups = map { $_->name } @{$public_bug->groups_in};
-push(@pub_groups, $public_bug->extra_security_groups_for_clone($prod_b));
-
-ok(!(grep { $_ eq $sec_group_b } @pub_groups),
-  "Public bug clone does NOT get target security group");
-
-# ---- Bug in a NON-default security group should still clone securely ----
-#
-# This is the Bug 2049554 case: the source bug isn't in its product's own
-# default security group, but it IS in another security group (the default
-# security group of some other product, e.g. dom-core-security). Cloning it
-# across products should still pre-check the target's default security group.
-
-SKIP: {
-  skip 'Need a third product to host a non-default security group', 3
-    if @products < 3;
-
-  my $dbh    = Bugzilla->dbh;
-  my $prod_c = $products[2];
-
-  # Create a group that is the default security group of prod_c but not of
-  # prod_a, so for a prod_a bug it is a "non-default" security group.
-  my $nondefault_group = Bugzilla::Group->create({
-    name        => 'test-nondefault-sec-' . $$,
-    description => 'Temporary non-default security group for clone test',
-    isbuggroup  => 1,
-  });
-
-  my $orig_prod_c_sec = $prod_c->{security_group_id};
-  $dbh->do('UPDATE products SET security_group_id = ? WHERE id = ?',
-    undef, $nondefault_group->id, $prod_c->id);
-
-  # The set of security groups is cached per-request; drop it so the new
-  # group is recognised.
-  delete Bugzilla->request_cache->{security_group_ids};
-
-  # File a public bug in prod_a, then place it directly into the non-default
-  # security group. We bypass the group-control permission checks of the
-  # normal create path because we only care about the resulting group
-  # membership, which mirrors a bug that was secured into another product's
-  # security group.
-  my $nondefault_bug = Bugzilla::Bug->create({
-    short_desc   => 'Test non-default security clone - Bug 2049554',
+# Helper: create a bug in $prod_a and place it directly into the given groups.
+# We insert into bug_group_map directly to bypass the group-control permission
+# checks of the normal create path -- we only care about the resulting group
+# membership, which mirrors a bug that was secured into arbitrary groups.
+my $bug_counter = 0;
+sub make_bug_in_groups {
+  my (@group_ids) = @_;
+  my $bug = Bugzilla::Bug->create({
+    short_desc   => 'Clone security test bug ' . ($bug_counter++) . " - $$",
     product      => $prod_a->name,
     component    => $prod_a->components->[0]->name,
     bug_type     => 'defect',
@@ -186,52 +68,118 @@ SKIP: {
     version      => $prod_a->versions->[0]->name,
   });
   $dbh->do('INSERT INTO bug_group_map (bug_id, group_id) VALUES (?, ?)',
-    undef, $nondefault_bug->id, $nondefault_group->id);
+    undef, $bug->id, $_)
+    for @group_ids;
 
-  # Re-fetch so groups_in reflects the direct membership change.
-  $nondefault_bug = Bugzilla::Bug->new($nondefault_bug->id);
+  # Re-fetch so groups_in reflects the direct membership changes.
+  return Bugzilla::Bug->new($bug->id);
+}
 
-  my @nd_bug_groups = map { $_->name } @{$nondefault_bug->groups_in};
+sub clone_groups_for {
+  my ($bug, $target) = @_;
+  my @groups = map { $_->name } @{$bug->groups_in};
+  push(@groups, $bug->extra_security_groups_for_clone($target));
+  return @groups;
+}
+
+# A non-default security group with no group_control_map entry for prod_b, so
+# it is not valid there and would be silently dropped when cloning. This is
+# the Bug 2049554 case (e.g. dom-core-security cloned out of Core).
+my $dropped_group = Bugzilla::Group->create({
+  name        => 'test-dropped-sec-' . $$,
+  description => 'Temporary security group not valid in the target product',
+  isbuggroup  => 1,
+});
+
+# A group that is valid in prod_b (othercontrol Shown), so it carries over
+# when cloning there and nothing is dropped.
+my $portable_group = Bugzilla::Group->create({
+  name        => 'test-portable-sec-' . $$,
+  description => 'Temporary group valid in the target product',
+  isbuggroup  => 1,
+});
+$dbh->do(
+  'INSERT INTO group_control_map (group_id, product_id, entry, membercontrol, othercontrol, canedit)
+   VALUES (?, ?, 0, ?, ?, 0)',
+  undef, $portable_group->id, $prod_b->id, CONTROLMAPSHOWN, CONTROLMAPSHOWN);
+
+# ---- Cross-product clone of a bug whose group is dropped ----
+
+{
+  my $bug = make_bug_in_groups($dropped_group->id);
+
+  my @bug_groups = map { $_->name } @{$bug->groups_in};
   ok(
-    (grep { $_ eq $nondefault_group->name } @nd_bug_groups),
-    "Bug is in the non-default security group (" . $nondefault_group->name . ")"
+    (grep { $_ eq $dropped_group->name } @bug_groups),
+    "Bug is in the non-default security group (" . $dropped_group->name . ")"
+  );
+
+  my @clone_groups = clone_groups_for($bug, $prod_b);
+  ok(
+    (grep { $_ eq $sec_group_b } @clone_groups),
+    "Clone adds the target default security group when a group is dropped ($sec_group_b)"
+  );
+}
+
+# ---- Cross-product clone where every group carries over ----
+
+{
+  my $bug = make_bug_in_groups($portable_group->id);
+
+  my @clone_groups = clone_groups_for($bug, $prod_b);
+  ok(
+    (grep { $_ eq $portable_group->name } @clone_groups),
+    "Clone preserves a group that is valid in the target product"
   );
   ok(
-    !(grep { $_ eq $sec_group_a } @nd_bug_groups),
-    "Bug is NOT in prod_a's default security group ($sec_group_a)"
+    !(grep { $_ eq $sec_group_b } @clone_groups),
+    "Clone does NOT add the target default security group when nothing is dropped"
   );
+}
 
-  my @nd_clone_groups = map { $_->name } @{$nondefault_bug->groups_in};
-  push(@nd_clone_groups,
-    $nondefault_bug->extra_security_groups_for_clone($prod_b));
+# ---- Mixed: one group dropped, one carried over ----
+#
+# Models a Core bug in both dom-core-security and mozilla-employee-confidential
+# cloned into Firefox: the Core-specific group is dropped, the portable group
+# carries over, and the target default is added as a fallback.
 
+{
+  my $bug = make_bug_in_groups($dropped_group->id, $portable_group->id);
+
+  my @clone_groups = clone_groups_for($bug, $prod_b);
   ok(
-    (grep { $_ eq $sec_group_b } @nd_clone_groups),
-    "Clone of non-default security bug adds target security group ($sec_group_b)"
+    (grep { $_ eq $portable_group->name } @clone_groups),
+    "Mixed clone preserves the portable group"
   );
+  ok(
+    (grep { $_ eq $sec_group_b } @clone_groups),
+    "Mixed clone adds the target default security group ($sec_group_b)"
+  );
+}
 
-  # Cleanup for this subtest.
-  $dbh->do('UPDATE products SET security_group_id = ? WHERE id = ?',
-    undef, $orig_prod_c_sec, $prod_c->id);
-  $dbh->do('DELETE FROM bug_group_map WHERE group_id = ?',
-    undef, $nondefault_group->id);
-  $nondefault_group->remove_from_db();
-  delete Bugzilla->request_cache->{security_group_ids};
+# ---- Same-product clone adds nothing ----
+
+{
+  my $bug = make_bug_in_groups($dropped_group->id);
+  my @extra = $bug->extra_security_groups_for_clone($prod_a);
+  is(scalar(@extra), 0, "Same-product clone adds no extra security group");
+}
+
+# ---- Public bug clone adds nothing ----
+
+{
+  my $bug   = make_bug_in_groups();
+  my @extra = $bug->extra_security_groups_for_clone($prod_b);
+  is(scalar(@extra), 0, "Public bug clone does NOT get a security group");
 }
 
 # ---- Cleanup ----
 
-if ($created_group) {
-  my $dbh = Bugzilla->dbh;
-  # Restore product B's original security group
-  my $orig_group = Bugzilla::Group->new({name => $sec_group_a});
-  $dbh->do('UPDATE products SET security_group_id = ? WHERE id = ?',
-    undef, $orig_group->id, $prod_b->id);
-  $dbh->do('DELETE FROM user_group_map WHERE group_id = ?',
-    undef, $created_group->id);
-  $dbh->do('DELETE FROM group_control_map WHERE group_id = ?',
-    undef, $created_group->id);
-  $created_group->remove_from_db();
-}
+$dbh->do('DELETE FROM bug_group_map WHERE group_id IN (?, ?)',
+  undef, $dropped_group->id, $portable_group->id);
+$dbh->do('DELETE FROM group_control_map WHERE group_id IN (?, ?)',
+  undef, $dropped_group->id, $portable_group->id);
+$dropped_group->remove_from_db();
+$portable_group->remove_from_db();
 
 done_testing();
