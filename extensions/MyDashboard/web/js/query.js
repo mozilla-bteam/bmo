@@ -202,8 +202,17 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // Initial load
-  updateQueryTable(default_query);
+  // Initial load — fall back to reportedbugs if assignedbugs is empty
+  // and no saved preference exists (helps new users with no assigned bugs).
+  updateQueryTable(default_query).then(() => {
+    if (default_query === 'assignedbugs' && !query && bugQueryTable.data.length === 0) {
+      const $option = document.querySelector('#query option[value="reportedbugs"]');
+      if ($option) {
+        $option.selected = true;
+        updateQueryTable('reportedbugs');
+      }
+    }
+  });
   auto_updateQueryTable();
 
   document.querySelector('#query').addEventListener('change', (e) => {

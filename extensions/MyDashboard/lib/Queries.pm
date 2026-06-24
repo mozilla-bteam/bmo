@@ -91,6 +91,16 @@ sub QUERY_DEFS {
       }
     },
     {
+      name        => 'reportedbugs',
+      heading     => 'All Reported by You',
+      description => 'All bugs you reported, including resolved and closed ones.',
+      params      => {
+        'emailreporter1' => 1,
+        'emailtype1'     => 'exact',
+        'email1'         => $user->login
+      }
+    },
+    {
       name        => 'openccbugs',
       heading     => "You Are CC'd On",
       description => 'You are in the CC list of the bug, so you are watching it.',
