@@ -35,9 +35,17 @@ sub close_as_invalid {
 
   my $bug = Bugzilla::Bug->check({id => $bug_id});
 
-  ThrowUserError('auth_failure',
-    {action => 'modify', object => 'bug'})
-    unless $user->can_tag_comments;
+  # Block non-members from closing bugs with mandatory security groups.
+  foreach my $group (@{$bug->groups_in}) {
+    my $gc = $bug->product_obj->group_controls->{$group->id};
+    if ($gc
+      && $gc->{membercontrol} == CONTROLMAPMANDATORY
+      && !$user->in_group($group->name))
+    {
+      ThrowUserError('auth_failure',
+        {group => $group->name, action => 'modify', object => 'bug'});
+    }
+  }
 
   if ($bug->bug_status eq 'RESOLVED' || $bug->bug_status eq 'VERIFIED'
       || $bug->product eq 'Invalid Bugs')
