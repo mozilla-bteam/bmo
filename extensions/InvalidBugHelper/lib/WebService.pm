@@ -90,10 +90,12 @@ sub close_as_invalid {
 
   $bug->update();
 
-  # Tag every reporter comment as spam (triggers AntiSpam user-disable logic).
-  foreach my $comment (@reporter_comments) {
-    $comment->add_tag('spam');
-    $comment->update();
+  # Only tag reporter comments as spam when explicitly requested.
+  if ($params->{mark_as_spam} && $user->can_tag_comments) {
+    foreach my $comment (@reporter_comments) {
+      $comment->add_tag('spam');
+      $comment->update();
+    }
   }
 
   $dbh->bz_commit_transaction();

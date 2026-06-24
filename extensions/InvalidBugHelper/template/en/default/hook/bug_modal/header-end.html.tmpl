@@ -7,5 +7,6 @@
   #%]
 
 [% IF user.in_group("editbugs") %]
+  [% style_urls.push("extensions/InvalidBugHelper/web/styles/invalid_bug_helper.css") %]
   [% javascript_urls.push("extensions/InvalidBugHelper/web/js/invalid_bug_helper.js") %]
 [% END %]

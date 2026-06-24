@@ -1,0 +1,46 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * This Source Code Form is "Incompatible With Secondary Licenses", as
+ * defined by the Mozilla Public License, v. 2.0. */
+
+#close-invalid-dialog {
+  max-width: 28em;
+  padding: 16px;
+  border: 1px solid var(--primary-region-border-color);
+  border-radius: var(--primary-region-border-radius);
+  background: var(--primary-region-background-color);
+}
+
+#close-invalid-dialog h3 {
+  margin-top: 0;
+  font-size: var(--font-size-h3);
+}
+
+#close-invalid-dialog label {
+  cursor: pointer;
+}
+
+#close-invalid-dialog .warning-icon {
+  font-size: 1.4em;
+  line-height: 1;
+}
+
+#close-invalid-dialog .warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0.5em 0 1em;
+  padding: 8px;
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: var(--primary-region-border-radius);
+  color: #664d03;
+}
+
+#close-invalid-dialog .actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}

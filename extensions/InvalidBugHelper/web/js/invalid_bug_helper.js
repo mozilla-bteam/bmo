@@ -7,22 +7,52 @@
 
 'use strict';
 
+function showCloseDialog(bugId) {
+  return new Promise((resolve) => {
+    const dialog = document.createElement('dialog');
+    dialog.id = 'close-invalid-dialog';
+    dialog.innerHTML = `
+      <form method="dialog">
+        <h3>Close Bug ${bugId} as Invalid</h3>
+        <p>This will:</p>
+        <ul>
+          <li>Move the bug to Invalid Bugs :: General</li>
+          <li>Resolve it as INVALID</li>
+          <li>Clear needinfo flags</li>
+          <li>Post a warning comment</li>
+        </ul>
+        <p><strong>This cannot be undone easily.</strong></p>
+        <hr>
+        <label>
+          <input type="checkbox" id="close-invalid-mark-spam">
+          Also mark the reporter's comments as spam
+        </label>
+        <p class="warning">
+          <span class="warning-icon">&#x26A0;&#xFE0F;</span> May trigger automatic account disabling via AntiSpam.
+          Only check if the reporter is actually a spammer.
+        </p>
+        <div class="actions">
+          <button type="submit" value="cancel">Cancel</button>
+          <button type="submit" value="confirm">Close as Invalid</button>
+        </div>
+      </form>`;
+    dialog.addEventListener('close', () => {
+      const spam = dialog.querySelector('#close-invalid-mark-spam').checked;
+      dialog.remove();
+      resolve(dialog.returnValue === 'confirm' ? { confirmed: true, markAsSpam: spam } : { confirmed: false });
+    });
+    document.body.appendChild(dialog);
+    dialog.showModal();
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const btn = document.getElementById('close-as-invalid-btn');
   if (!btn) return;
 
   btn.addEventListener('click', async () => {
     const bugId = BUGZILLA.bug_id;
-    const confirmed = window.confirm(
-      `Close Bug ${bugId} as an invalid test/spam submission?\n\n` +
-      'This will:\n' +
-      '  • Move the bug to Invalid Bugs :: General\n' +
-      '  • Resolve it as INVALID\n' +
-      '  • Clear needinfo flags\n' +
-      '  • Mark the reporter\'s comments as spam\n' +
-      '  • Post a warning comment\n\n' +
-      'This cannot be undone easily. Continue?'
-    );
+    const { confirmed, markAsSpam } = await showCloseDialog(bugId);
     if (!confirmed) return;
 
     btn.disabled = true;
@@ -31,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       await Bugzilla.API.post(
         `invalid_bug_helper/close/${bugId}`,
-        {}
+        { mark_as_spam: markAsSpam ? 1 : 0 }
       );
       window.location.replace(
         `${BUGZILLA.config.basepath}show_bug.cgi?id=${bugId}`
