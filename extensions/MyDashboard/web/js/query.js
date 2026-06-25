@@ -209,6 +209,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const $option = document.querySelector('#query option[value="reportedbugs"]');
       if ($option) {
         $option.selected = true;
+        default_query = 'reportedbugs';
         updateQueryTable('reportedbugs');
       }
     }
