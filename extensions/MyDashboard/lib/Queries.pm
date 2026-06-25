@@ -93,7 +93,7 @@ sub QUERY_DEFS {
     {
       name        => 'reportedbugs',
       heading     => 'All Reported by You',
-      description => 'All bugs you reported, including resolved and closed ones.',
+      description => 'All bugs you reported, both open and closed ones.',
       params      => {
         'emailreporter1' => 1,
         'emailtype1'     => 'exact',
