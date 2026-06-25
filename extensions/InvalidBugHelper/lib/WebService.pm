@@ -79,15 +79,7 @@ sub close_as_invalid {
     comment           => {body => $warning_text},
   });
 
-  # Strip non-mandatory security groups so the bug becomes public.
-  foreach my $group (@groups) {
-    next if $bug->product_obj->group_is_valid($group)
-      && $bug->product_obj->group_controls->{$group->id}->{membercontrol}
-         == CONTROLMAPMANDATORY
-      && $group->is_active;
-    $bug->remove_group($group);
-  }
-
+  # Non-mandatory security group stripping is handled by _set_product (called via set_all above)
   $bug->update();
 
   # Only tag reporter comments as spam when explicitly requested.
