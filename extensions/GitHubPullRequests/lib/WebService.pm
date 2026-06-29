@@ -18,26 +18,12 @@ use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Logging;
 use Bugzilla::WebService::Constants;
+use Bugzilla::Extension::GitHubPullRequests::Constants;
 use Types::Standard qw(-types);
 use Type::Params qw(compile);
 
 use JSON qw(decode_json);
 use LWP::UserAgent;
-
-use constant GITHUB_CONTENT_TYPE  => 'text/x-github-pull-request';
-use constant GITHUB_PR_REGEX      => qr{^https://github\.com/([^/]+)/([^/]+)/pull/(\d+)/?$};
-use constant GITHUB_API_BASE      => 'https://api.github.com';
-use constant GITHUB_API_TIMEOUT   => 10;
-
-# How long (in seconds) to cache a PR's summary in memcached. GitHub's
-# unauthenticated rate limit is low (60 req/hr per IP) and authenticated is
-# 5000/hr, so caching avoids re-fetching the same PR on every bug view.
-use constant GITHUB_CACHE_SECONDS => 300;
-
-# Cache inaccessible/failed lookups for a shorter period so that persistent
-# failures (rate limiting, outages, private repos) don't re-hit GitHub on every
-# bug view, while still recovering quickly once the PR becomes reachable again.
-use constant GITHUB_ERROR_CACHE_SECONDS => 60;
 
 use constant READ_ONLY => qw(
   bug_pull_requests
@@ -52,6 +38,10 @@ sub bug_pull_requests {
   my ($self, $params) = $check->(@_);
 
   my $user = Bugzilla->login(LOGIN_REQUIRED);
+
+  # Kill switch: when disabled, return nothing rather than querying GitHub.
+  return {pull_requests => []}
+    unless Bugzilla->params->{github_pr_status_enabled};
 
   ThrowUserError('invalid_parameter', {name => 'bug_id', err => 'required'})
     unless $params->{bug_id};
@@ -211,8 +201,16 @@ sub _summarize_reviews {
   my %latest;
   my @order;
   for my $review (@{$reviews}) {
+    next unless ref($review) eq 'HASH';
+
+    # A review left by a since-deleted GitHub account comes back with a null
+    # user, so guard before dereferencing rather than auto-vivifying/dying.
+    next unless ref($review->{user}) eq 'HASH';
+
     my $login = $review->{user}{login};
-    my $state = $review->{state};
+    next unless defined $login;
+
+    my $state = $review->{state} // '';
 
     # COMMENTED is not a conclusive review state; skip it
     next if $state eq 'COMMENTED';

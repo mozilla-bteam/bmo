@@ -187,6 +187,7 @@ const GitHubPullRequests = {
     if (!tbody) return;
 
     const loadingRow = tbody.querySelector(".github-loading-row");
+    if (!loadingRow) return;
 
     const displayLoadError = (errStr) => {
       const errRow = tbody.querySelector(".github-loading-error-row");
