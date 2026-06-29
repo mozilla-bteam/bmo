@@ -97,7 +97,7 @@ function validateAndSubmit() {
     A short description of the issue being reported including the host name
     for the website on which it exists (example XSS in blarg.foo.mozilla.org)
   </div>
-  <input type="text" name="short_desc" id="short_desc" size="80">
+  <input type="text" name="short_desc" id="short_desc" size="80" autocomplete="off">
 </div>
 
 <div class="form_section">
@@ -115,7 +115,7 @@ function validateAndSubmit() {
     The full URL (hostname/subpage) where the issue exists (if the URL is especially long
     please just include it in the comments)
   </div>
-  <input type="text" name="bug_file_loc" id="bug_file_loc" size="80" placeholder="https://">
+  <input type="text" name="bug_file_loc" id="bug_file_loc" size="80" placeholder="https://" autocomplete="off">
 </div>
 
 <div class="form_section">
@@ -129,7 +129,7 @@ function validateAndSubmit() {
   <div class="field_desc">
     <label for="description">Description</label>
   </div>
-  <input type="text" id="description" name="description" size="80">
+  <input type="text" id="description" name="description" size="80" autocomplete="off">
 </div>
 
 <input type="submit" id="commit" value="Submit">
