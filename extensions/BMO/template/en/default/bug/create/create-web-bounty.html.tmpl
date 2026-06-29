@@ -22,6 +22,7 @@
 #web_bounty_form .field_desc {
   padding-bottom: 3px;
 }
+#message,
 #web_bounty_form .field_desc,
 #web_bounty_form .head_desc {
   width: 600px;
@@ -64,12 +65,13 @@ function validateAndSubmit() {
 [% USE Bugzilla %]
 [% cgi = Bugzilla.cgi %]
 
-<h1>Web Bounty Form</h1>
+<h1>Web Bounty Form (obsolete)</h1>
 
 <div id="message">
-  We have migrated our web [% terms.bug %] bounty program to HackerOne. Please submit your report to our 
-  program on <a href="https://hackerone.com/mozilla">HackerOne</a>. If you do not prefer to use HackerOne, 
-  you can still submit the [% terms.bug %] using this form.
+  <p>We have migrated our web [% terms.bug %] bounty program to HackerOne. Please submit
+  your report to <a href="https://hackerone.com/mozilla">our program on HackerOne</a>.
+  <p>You can still submit website security [% terms.bugs %] using this form, but they
+  will not be part of our [% terms.bug %] bounty program.
 </div>
 
 <form id="web_bounty_form" method="post" action="[% basepath FILTER none %]post_bug.cgi" enctype="multipart/form-data"
@@ -83,7 +85,6 @@ function validateAndSubmit() {
   <input type="hidden" name="bug_type" value="task">
   <input type="hidden" name="status_whiteboard" id="status_whiteboard" value="[reporter-external] [web-bounty-form] [verif?]">
   <input type="hidden" name="groups" id="group_52" value="websites-security">
-  <input type="hidden" name="flag_type-803" id="flag_type-803" value="?">
   <input type="hidden" name="token" value="[% token FILTER html %]">
 
 <div class="head_desc">
