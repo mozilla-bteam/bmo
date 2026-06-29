@@ -88,4 +88,11 @@ $t->get_ok(
   $url . "rest/group/$group_id" => {'X-Bugzilla-API-Key' => $unprivileged_api_key})
   ->status_is(200)->json_is('/groups/0/name', 'secret-group');
 
+# Clean up: remove the unprivileged user from can_see_groups again so that
+# later tests (e.g. rest_user_get.t) still see it as belonging to no groups.
+$t->put_ok($url
+    . "rest/user/$unprivileged_login" => {'X-Bugzilla-API-Key' => $admin_api_key}
+    => json => {groups => {remove => ['can_see_groups']}})->status_is(200)
+  ->json_has('/users');
+
 done_testing();

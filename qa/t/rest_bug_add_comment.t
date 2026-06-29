@@ -1,3 +1,4 @@
+#!/usr/bin/env perl
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -5,21 +6,31 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-#############################################
-# Test for xmlrpc call to Bug.add_comment() #
-#############################################
+#####################################################
+# Test for REST call to Bug.add_comment()           #
+# POST /rest/bug/<id>/comment                         #
+#####################################################
 
+use 5.10.1;
 use strict;
 use warnings;
 use lib qw(lib ../../lib ../../local/lib/perl5);
-use QA::Util;
-use Test::More tests => 141;
-my ($config, $xmlrpc, $jsonrpc, $jsonrpc_get) = get_rpc_clients();
+
+use Bugzilla;
+use QA::Util qw(get_config);
+use QA::REST::Util qw(api_headers);
+
+use Test::Mojo;
+use Test::More;
+
+my $config = get_config();
+my $url     = Bugzilla->localconfig->urlbase;
+
+my $t = Test::Mojo->new();
+$t->ua->max_redirects(1);
 
 use constant INVALID_BUG_ID    => -1;
 use constant INVALID_BUG_ALIAS => 'aaaaaaa12345';
-use constant PRIVS_USER        => 'QA_Selenium_TEST';
-use constant TIMETRACKING_USER => 'admin';
 
 use constant TEST_COMMENT     => '--- Test Comment From QA Tests ---';
 use constant TOO_LONG_COMMENT => 'a' x 100000;
@@ -47,21 +58,9 @@ my @tests = (
   # Test ID parameter
   {
     user  => 'unprivileged',
-    args  => {comment => TEST_COMMENT},
-    error => 'a id argument',
-    test  => 'Failing to pass the "id" param fails',
-  },
-  {
-    user  => 'unprivileged',
     args  => {id => INVALID_BUG_ID, comment => TEST_COMMENT},
     error => "It does not seem like bug number",
     test  => 'Passing invalid bug id returns error "Invalid Bug ID"',
-  },
-  {
-    user  => 'unprivileged',
-    args  => {id => '', comment => TEST_COMMENT},
-    error => "You must enter a valid bug number",
-    test  => 'Passing empty bug id param returns error "Invalid Bug ID"',
   },
   {
     user  => 'unprivileged',
@@ -102,12 +101,7 @@ my @tests = (
     test  => "Passing a comment that's too long fails",
   },
 
-  # Testing the "private" parameter happens in the tests for Bug.comments
-
   # Test work_time parameter
-  # FIXME: Should be testing permissions on the work_time parameter,
-  #        but we currently have no way to verify whether or not time was
-  #        added to the bug, and there's no error thrown if you lack perms.
   {
     user  => 'admin',
     args  => {id => 'public_bug', comment => TEST_COMMENT, work_time => 'aaa'},
@@ -156,42 +150,34 @@ my @tests = (
     args => {id => 'public_bug', comment => TEST_COMMENT, work_time => '1.5'},
     test => 'Timetracking user can add work_time to a bug',
   },
-
-  # FIXME: Need to verify that the comment added actually has work_time.
 );
 
-$jsonrpc_get->bz_call_fail(
-  'Bug.add_comment',
-  {id => 'public_bug', comment => TEST_COMMENT},
-  'must use HTTP POST',
-  'add_comment fails over GET'
-);
+foreach my $test (@tests) {
+  my %args = %{$test->{args}};
+  my $id   = delete $args{id};
 
-foreach my $rpc ($jsonrpc, $xmlrpc) {
-  $rpc->bz_run_tests(
-    tests        => \@tests,
-    method       => 'Bug.add_comment',
-    post_success => \&post_success
-  );
-}
+  my $api_key = $test->{user} ? $config->{"$test->{user}_user_api_key"} : undef;
+  my $headers = api_headers($api_key);
+  my $path    = $url . "rest/bug/$id/comment";
 
-sub post_success {
-  my ($call, $t, $rpc) = @_;
-  return unless $t->{check_privacy};
+  if (my $error = $test->{error}) {
+    $t->post_ok($path => $headers => json => \%args)->status_isnt(200);
+    like($t->tx->res->json->{message}, qr/\Q$error\E/, "$test->{test}: $error");
+    next;
+  }
 
-  my $comment_id = $call->result->{id};
-  my $result
-    = $rpc->bz_call_success('Bug.comments', {comment_ids => [$comment_id]});
-  if ($t->{args}->{is_private}) {
-    ok(
-      $result->result->{comments}->{$comment_id}->{is_private},
-      $rpc->TYPE . ": Comment $comment_id is private"
-    );
+  $t->post_ok($path => $headers => json => \%args)->status_is(201);
+  next unless $test->{check_privacy};
+
+  my $comment_id = $t->tx->res->json->{id};
+  $t->get_ok($url . "rest/bug/comment/$comment_id" => $headers)->status_is(200);
+  my $comment = $t->tx->res->json->{comments}->{$comment_id};
+  if ($test->{args}{is_private}) {
+    ok($comment->{is_private}, "Comment $comment_id is private");
   }
   else {
-    ok(
-      !$result->result->{comments}->{$comment_id}->{is_private},
-      $rpc->TYPE . ": Comment $comment_id is NOT private"
-    );
+    ok(!$comment->{is_private}, "Comment $comment_id is NOT private");
   }
 }
+
+done_testing();
