@@ -40,5 +40,18 @@
 
   github_push_comment_enabled =>
     "Enable the ability for Github pushes to add a comment to a related bug report."
+
+  github_pr_status_enabled =>
+    "Enable the live GitHub pull request status panel on bug reports. When " _
+    "disabled, no requests are made to GitHub and the panel is not shown. " _
+    "Disable this to quickly turn the feature off (for example during a GitHub " _
+    "outage or while debugging)."
+
+  github_api_token =>
+    "Optional GitHub personal access token used when fetching live pull request " _
+    "status for attached pull requests. Providing a token raises GitHub's API " _
+    "rate limit from 60 to 5000 requests per hour. A fine-grained token with " _
+    "read-only 'Pull requests' access (or a classic token with 'public_repo' " _
+    "scope) is sufficient for public repositories."
   }
 %]

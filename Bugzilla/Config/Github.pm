@@ -17,6 +17,8 @@ sub get_param_list {
     {name => 'github_pr_linking_enabled',  type => 'b', default => 0},
     {name => 'github_pr_signature_secret', type => 't', default => ''},
     {name => 'github_push_comment_enabled', type => 'b', default => 0},
+    {name => 'github_pr_status_enabled',   type => 'b', default => 0},
+    {name => 'github_api_token',           type => 'p', default => ''},
   );
   return @param_list;
 }
