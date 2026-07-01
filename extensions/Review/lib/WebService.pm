@@ -172,21 +172,21 @@ sub flag_activity {
   }
 
   my $matches
-    = Bugzilla::Extension::Review::FlagStateActivity->match(\%match_criteria);
+    = Bugzilla::FlagActivity->match(\%match_criteria);
   my $user = Bugzilla->user;
   $user->visible_bugs([map { $_->bug_id } @$matches]);
   my @results
-    = map { $self->_flag_state_activity_to_hash($_, $params) }
+    = map { $self->_flag_activity_to_hash($_, $params) }
     grep { $user->can_see_bug($_->bug_id) && _can_see_attachment($user, $_) }
     @$matches;
   return \@results;
 }
 
 sub _can_see_attachment {
-  my ($user, $flag_state_activity) = @_;
+  my ($user, $flag_activity) = @_;
 
-  return 1 if !$flag_state_activity->attachment_id;
-  return 0 if $flag_state_activity->attachment->isprivate && !$user->is_insider;
+  return 1 if !$flag_activity->attachment_id;
+  return 0 if $flag_activity->attachment->isprivate && !$user->is_insider;
   return 1;
 }
 
@@ -266,7 +266,7 @@ sub rest_resources {
   ];
 }
 
-sub _flag_state_activity_to_hash {
+sub _flag_activity_to_hash {
   my ($self, $fsa, $params) = @_;
 
   my %flag = (

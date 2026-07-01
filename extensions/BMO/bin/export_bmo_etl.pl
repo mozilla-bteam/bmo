@@ -19,7 +19,7 @@ use Bugzilla::Flag;
 use Bugzilla::Group;
 use Bugzilla::Logging;
 use Bugzilla::User;
-use Bugzilla::Extension::Review::FlagStateActivity;
+use Bugzilla::FlagActivity;
 
 use HTTP::Headers;
 use HTTP::Request;
@@ -102,7 +102,7 @@ check_for_duplicates();
 process_bugs();
 process_attachments();
 process_flags();
-process_flag_state_activity();
+process_flag_activity();
 process_tracking_flags();
 process_keywords();
 process_see_also();
@@ -407,10 +407,10 @@ sub process_flags {
   }
 }
 
-# Process flags that were removed today using the flag_state_activity table
+# Process flags that were removed today using the flag_activity table
 # These entries will also go into the flags table in BigQuery.
-sub process_flag_state_activity {
-  my $table_name  = 'flag_state_activity';
+sub process_flag_activity {
+  my $table_name  = 'flag_activity';
   my $total_count = 0;
   my $last_offset = 0;
 
@@ -418,7 +418,7 @@ sub process_flag_state_activity {
 
   my $sth
     = $dbh->prepare(
-    'SELECT id, flag_when FROM flag_state_activity WHERE status = \'X\' AND flag_when LIKE \''
+    'SELECT id, flag_when FROM flag_activity WHERE status = \'X\' AND flag_when LIKE \''
       . $snapshot_date
       . ' %\' ORDER BY id LIMIT ? OFFSET ?');
 
@@ -439,7 +439,7 @@ sub process_flag_state_activity {
         logger("$table_name id $id with time $mod_time not found in cache.",
           DEBUG_OUTPUT);
 
-        my $obj = Bugzilla::Extension::Review::FlagStateActivity->new($id);
+        my $obj = Bugzilla::FlagActivity->new($id);
 
         if (!$obj) {
           logger("Object $id not loaded from database or no longer exists");

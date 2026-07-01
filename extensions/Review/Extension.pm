@@ -18,7 +18,7 @@ use Bugzilla;
 use Bugzilla::Config::Common qw(check_numeric);
 use Bugzilla::Constants;
 use Bugzilla::Error;
-use Bugzilla::Extension::Review::FlagStateActivity;
+use Bugzilla::FlagActivity;
 use Bugzilla::Extension::Review::Util;
 use Bugzilla::Install::Filesystem;
 use Bugzilla::Search;
@@ -369,11 +369,8 @@ sub object_end_of_create {
     _check_requestee($object);
     _adjust_request_count($object, +1);
   }
-  if (_is_countable_flag($object)) {
-    $self->_log_flag_state_activity($object, $object->status,
-      $object->modification_date);
-  }
 }
+
 
 sub object_end_of_update {
   my ($self, $args) = @_;
@@ -461,9 +458,6 @@ sub flag_updated {
   my $changes   = $args->{changes};
 
   return unless scalar(keys %$changes);
-  if (_is_countable_flag($flag)) {
-    $self->_log_flag_state_activity($flag, $flag->status, $timestamp);
-  }
 }
 
 sub flag_deleted {
@@ -475,9 +469,6 @@ sub flag_deleted {
     _adjust_request_count($flag, -1);
   }
 
-  if (_is_countable_flag($flag)) {
-    $self->_log_flag_state_activity($flag, 'X', $timestamp, Bugzilla->user->id);
-  }
 }
 
 sub _is_countable_flag {
@@ -503,22 +494,6 @@ sub _check_requestee {
   }
 }
 
-sub _log_flag_state_activity {
-  my ($self, $flag, $status, $timestamp, $setter_id) = @_;
-
-  $setter_id //= $flag->setter_id;
-
-  Bugzilla::Extension::Review::FlagStateActivity->create({
-    flag_when     => $timestamp,
-    setter_id     => $setter_id,
-    status        => $status,
-    type_id       => $flag->type_id,
-    flag_id       => $flag->id,
-    requestee_id  => $flag->requestee_id,
-    bug_id        => $flag->bug_id,
-    attachment_id => $flag->attach_id,
-  });
-}
 
 sub _adjust_request_count {
   my ($flag, $add) = @_;
@@ -850,45 +825,6 @@ sub db_schema_abstract_schema {
     ],
   };
 
-  $args->{'schema'}->{'flag_state_activity'} = {
-    FIELDS => [
-      id => {TYPE => 'MEDIUMSERIAL', NOTNULL => 1, PRIMARYKEY => 1,},
-
-      flag_when => {TYPE => 'DATETIME', NOTNULL => 1,},
-
-      type_id => {
-        TYPE       => 'INT2',
-        NOTNULL    => 1,
-        REFERENCES => {TABLE => 'flagtypes', COLUMN => 'id', DELETE => 'CASCADE'}
-      },
-
-      flag_id => {TYPE => 'INT3', NOTNULL => 1,},
-
-      setter_id => {
-        TYPE       => 'INT3',
-        NOTNULL    => 1,
-        REFERENCES => {TABLE => 'profiles', COLUMN => 'userid',},
-      },
-
-      requestee_id =>
-        {TYPE => 'INT3', REFERENCES => {TABLE => 'profiles', COLUMN => 'userid',},},
-
-      bug_id => {
-        TYPE       => 'INT3',
-        NOTNULL    => 1,
-        REFERENCES => {TABLE => 'bugs', COLUMN => 'bug_id', DELETE => 'CASCADE'}
-      },
-
-      attachment_id => {
-        TYPE => 'INT5',
-        REFERENCES =>
-          {TABLE => 'attachments', COLUMN => 'attach_id', DELETE => 'CASCADE'}
-      },
-
-      status => {TYPE => 'CHAR(1)', NOTNULL => 1,},
-    ],
-  };
-
   $args->{'schema'}->{'bug_mentors'} = {
     FIELDS => [
       bug_id => {
@@ -930,6 +866,14 @@ sub db_schema_abstract_schema {
 
 sub install_update_db {
   my $dbh = Bugzilla->dbh;
+
+  # Bug 1806896 - rename flag_state_activity to flag_activity (now in core schema)
+  if ($dbh->bz_table_info('flag_state_activity')
+    && !$dbh->bz_table_info('flag_activity'))
+  {
+    $dbh->do('RENAME TABLE flag_state_activity TO flag_activity');
+  }
+
   $dbh->bz_add_column('products', 'reviewer_required',
     {TYPE => 'BOOLEAN', NOTNULL => 1, DEFAULT => 'FALSE'});
   $dbh->bz_add_column('profiles', 'review_request_count',
@@ -954,7 +898,8 @@ sub install_update_db {
   }
 
   # Bug 1588221 - dkl@mozilla.com
-  $dbh->bz_alter_column('flag_state_activity', 'attachment_id', {TYPE => 'INT5'});
+  # Bug 1806896 - table renamed from flag_state_activity to flag_activity
+  $dbh->bz_alter_column('flag_activity', 'attachment_id', {TYPE => 'INT5'});
 }
 
 sub install_filesystem {
