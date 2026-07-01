@@ -1,0 +1,28 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[%# Only show for users who can perform the full close-as-invalid operation %]
+[% can_close_invalid = user.in_group("editbugs")
+     AND user.can_enter_product("Invalid Bugs")
+     AND bug.bug_status != "RESOLVED"
+     AND bug.bug_status != "VERIFIED"
+     AND bug.product != "Invalid Bugs";
+   IF can_close_invalid;
+     FOREACH group IN bug.groups_in;
+       gc = bug.product_obj.group_controls.${group.id};
+       IF gc AND gc.membercontrol == constants.CONTROLMAPMANDATORY
+          AND NOT user.in_group(group.name);
+         can_close_invalid = 0;
+         LAST;
+       END;
+     END;
+   END;
+%]
+[% IF can_close_invalid %]
+<button type="button" id="close-as-invalid-btn" class="minor">Close as Invalid</button>
+[% END %]

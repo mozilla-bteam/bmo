@@ -45,7 +45,6 @@
       data-action="[% basepath FILTER none %]showdependencytree.cgi"
       data-bug-id="[% bugid %]"
       data-max-depth="[% maxdepth %]"
-      data-real-depth="[% realdepth %]"
       data-hide-resolved="[% hide_resolved %]">
     [% INCLUDE depth_control_toolbar %]
     <div class="tree-container">
@@ -63,6 +62,7 @@
 [%###########################################################################%]
 
 [% BLOCK trees %]
+  <meta name="real-depth" content="[% realdepth %]">
   [% INCLUDE tree_section ids=dependson_ids type=1 label="Depends on" %]
   [% INCLUDE tree_section ids=blocked_ids type=2 label="Blocked by" %]
 [% END %]
@@ -164,7 +164,8 @@
     <span class="summ_text">[%+ bug.short_desc FILTER html %]</span>
     <span class="summ_info">[[% INCLUDE buginfo %]]</span>
   </a>
-  <a class="tree-link iconic" href="[% basepath FILTER none %]showdependencytree.cgi?id=[% bugid FILTER uri %]"
+  <a class="tree-link iconic"
+      href="[% basepath FILTER none %]showdependencytree.cgi?id=[% bugid FILTER uri %]&amp;hide_resolved=1"
       title="See dependency tree for [% terms.Bug %] [%+ bugid FILTER html %]"
       [% IF embed %]target="_blank"[% END %]>
     <span class="icon" aria-hidden="true"></span>
@@ -189,9 +190,7 @@
     </button>
     <div role="group" aria-label="Max depth control">
       <span aria-hidden="true">Max Depth:</span>
-      <input type="number" data-id="custom-limit"
-          size="4" maxlength="4" min="1" max="[% realdepth FILTER html %]"
-          value="[% maxdepth > 0 && maxdepth <= realdepth ? maxdepth : realdepth %]"
+      <input type="number" data-id="custom-limit" size="4" maxlength="4" min="1"
           aria-label="Set maximum depth of the dependency tree">
       <button type="button" data-id="set-limit" class="secondary"
           [% " disabled" IF realdepth < 2 || maxdepth == 1 %]
