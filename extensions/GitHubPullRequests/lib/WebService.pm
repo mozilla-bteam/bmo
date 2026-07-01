@@ -18,21 +18,12 @@ use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Logging;
 use Bugzilla::WebService::Constants;
+use Bugzilla::Extension::GitHubPullRequests::Constants;
 use Types::Standard qw(-types);
 use Type::Params qw(compile);
 
 use JSON qw(decode_json);
 use LWP::UserAgent;
-
-use constant GITHUB_CONTENT_TYPE  => 'text/x-github-pull-request';
-use constant GITHUB_PR_REGEX      => qr{^https://github\.com/([^/]+)/([^/]+)/pull/(\d+)/?$};
-use constant GITHUB_API_BASE      => 'https://api.github.com';
-use constant GITHUB_API_TIMEOUT   => 10;
-
-# How long (in seconds) to cache a PR's summary in memcached. GitHub's
-# unauthenticated rate limit is low (60 req/hr per IP) and authenticated is
-# 5000/hr, so caching avoids re-fetching the same PR on every bug view.
-use constant GITHUB_CACHE_SECONDS => 300;
 
 use constant READ_ONLY => qw(
   bug_pull_requests
@@ -47,6 +38,10 @@ sub bug_pull_requests {
   my ($self, $params) = $check->(@_);
 
   my $user = Bugzilla->login(LOGIN_REQUIRED);
+
+  # Kill switch: when disabled, return nothing rather than querying GitHub.
+  return {pull_requests => []}
+    unless Bugzilla->params->{github_pr_status_enabled};
 
   ThrowUserError('invalid_parameter', {name => 'bug_id', err => 'required'})
     unless $params->{bug_id};
@@ -66,6 +61,11 @@ sub bug_pull_requests {
     $ua->default_header('Authorization' => "Bearer $token");
   }
 
+  # Bound how long we'll spend talking to GitHub in a single request so a slow
+  # or unavailable GitHub can't tie up this web worker for minutes. PRs we
+  # don't get to are returned as "pending" and fill in on a later load.
+  my $deadline = time() + GITHUB_REQUEST_BUDGET;
+
   my @pull_requests;
   foreach my $attachment (@{$bug->attachments}) {
     next if $attachment->contenttype ne GITHUB_CONTENT_TYPE;
@@ -84,7 +84,7 @@ sub bug_pull_requests {
       next;
     }
 
-    my $pr_data = _fetch_pull_request($ua, $owner, $repo, $pr_number);
+    my $pr_data = _fetch_pull_request($ua, $owner, $repo, $pr_number, $deadline);
     push @pull_requests, $pr_data;
   }
 
@@ -92,7 +92,7 @@ sub bug_pull_requests {
 }
 
 sub _fetch_pull_request {
-  my ($ua, $owner, $repo, $pr_number) = @_;
+  my ($ua, $owner, $repo, $pr_number, $deadline) = @_;
 
   my $url     = "https://github.com/$owner/$repo/pull/$pr_number";
   my $api_url = GITHUB_API_BASE . "/repos/$owner/$repo/pulls/$pr_number";
@@ -109,10 +109,23 @@ sub _fetch_pull_request {
   my $cached = Bugzilla->memcached->get_data({key => $cache_key});
   return $cached if defined $cached;
 
+  # Out of request budget - don't block on GitHub. The client re-polls and the
+  # PR fills in once the cache is warm or budget is available on a later load.
+  return {%$base, pending => 1} if time() >= $deadline;
+
+  # Best-effort in-flight lock: if another request is already fetching this PR,
+  # return "pending" rather than piling another (possibly slow) call onto
+  # GitHub. Losing the race just means two concurrent fetches - no worse than
+  # before - and the lock expires on its own.
+  my $lock_key = "github_pr_lock." . $url;
+  return {%$base, pending => 1} if Bugzilla->memcached->get_data({key => $lock_key});
+  Bugzilla->memcached->set_data(
+    {key => $lock_key, value => 1, expires_in => GITHUB_LOCK_SECONDS});
+
   my $pr_response = _github_get($ua, $api_url);
   unless ($pr_response->{ok}) {
     WARN("GitHub: failed to fetch PR $url: " . $pr_response->{errmsg});
-    return {%$base, inaccessible => 1};
+    return _cache_inaccessible($cache_key, $base);
   }
 
   my $pr = $pr_response->{data};
@@ -121,7 +134,7 @@ sub _fetch_pull_request {
   # list, etc.) means we can't trust the structure, so fall back gracefully.
   unless (ref($pr) eq 'HASH') {
     WARN("GitHub: unexpected response shape for PR $url");
-    return {%$base, inaccessible => 1};
+    return _cache_inaccessible($cache_key, $base);
   }
 
   my $state;
@@ -162,6 +175,19 @@ sub _fetch_pull_request {
   return $pr_data;
 }
 
+sub _cache_inaccessible {
+  my ($cache_key, $base) = @_;
+
+  my $error_data = {%$base, inaccessible => 1};
+  Bugzilla->memcached->set_data({
+    key        => $cache_key,
+    value      => $error_data,
+    expires_in => GITHUB_ERROR_CACHE_SECONDS,
+  });
+
+  return $error_data;
+}
+
 sub _github_get {
   my ($ua, $url) = @_;
 
@@ -193,8 +219,16 @@ sub _summarize_reviews {
   my %latest;
   my @order;
   for my $review (@{$reviews}) {
+    next unless ref($review) eq 'HASH';
+
+    # A review left by a since-deleted GitHub account comes back with a null
+    # user, so guard before dereferencing rather than auto-vivifying/dying.
+    next unless ref($review->{user}) eq 'HASH';
+
     my $login = $review->{user}{login};
-    my $state = $review->{state};
+    next unless defined $login;
+
+    my $state = $review->{state} // '';
 
     # COMMENTED is not a conclusive review state; skip it
     next if $state eq 'COMMENTED';

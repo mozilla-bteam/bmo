@@ -14,8 +14,7 @@ use warnings;
 use parent qw(Bugzilla::Extension);
 
 use Bugzilla;
-
-use constant GITHUB_CONTENT_TYPE => 'text/x-github-pull-request';
+use Bugzilla::Extension::GitHubPullRequests::Constants;
 
 our $VERSION = '0.01';
 
@@ -24,6 +23,7 @@ sub template_before_process {
   my $file = $args->{'file'};
   my $vars = $args->{'vars'};
 
+  return unless Bugzilla->params->{github_pr_status_enabled};
   return unless Bugzilla->user->id;
   return unless $file =~ /bug_modal\/(header|edit)\.html\.tmpl$/;
 
@@ -38,6 +38,10 @@ sub template_before_process {
   foreach my $attachment (@{$bug->attachments}) {
     next if $attachment->contenttype ne GITHUB_CONTENT_TYPE;
     next if $attachment->isobsolete;
+
+    # Don't reveal that a private PR attachment exists to users who aren't
+    # permitted to see it; the WebService applies the same check.
+    next if $attachment->isprivate && !Bugzilla->user->is_insider;
     $has_prs = 1;
     $linked_pr_count++;
   }
