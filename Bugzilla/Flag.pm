@@ -42,6 +42,7 @@ whose names start with _ or a re specifically noted as being private.
 use Scalar::Util qw(blessed);
 use Storable qw(dclone);
 
+use Bugzilla::FlagActivity;
 use Bugzilla::FlagType;
 use Bugzilla::Hook;
 use Bugzilla::User;
@@ -489,6 +490,18 @@ sub create {
   $params->{creation_date} = $params->{modification_date} = $timestamp;
 
   $flag = $class->SUPER::create($params);
+
+  Bugzilla::FlagActivity->create({
+    flag_when     => $timestamp,
+    setter_id     => $flag->setter_id,
+    status        => $flag->status,
+    type_id       => $flag->type_id,
+    flag_id       => $flag->id,
+    requestee_id  => $flag->requestee_id,
+    bug_id        => $flag->bug_id,
+    attachment_id => $flag->attach_id,
+  });
+
   return $flag;
 }
 
@@ -505,6 +518,17 @@ sub update {
     $self->{'modification_date'}
       = format_time($timestamp, '%Y-%m-%d %T', Bugzilla->local_timezone);
     Bugzilla->memcached->clear({table => 'flags', id => $self->id});
+
+    Bugzilla::FlagActivity->create({
+      flag_when     => $timestamp,
+      setter_id     => $self->setter_id,
+      status        => $self->status,
+      type_id       => $self->type_id,
+      flag_id       => $self->id,
+      requestee_id  => $self->requestee_id,
+      bug_id        => $self->bug_id,
+      attachment_id => $self->attach_id,
+    });
   }
 
   # BMO - provide a hook which passes the flag object
@@ -575,6 +599,18 @@ sub update_flags {
     # because that isn't passed to remove_from_db().
     Bugzilla::Hook::process('flag_deleted',
       {flag => $old_flag, timestamp => $timestamp});
+
+    Bugzilla::FlagActivity->create({
+      flag_when     => $timestamp,
+      setter_id     => Bugzilla->user->id,
+      status        => 'X',
+      type_id       => $old_flag->type_id,
+      flag_id       => $old_flag->id,
+      requestee_id  => $old_flag->requestee_id,
+      bug_id        => $old_flag->bug_id,
+      attachment_id => $old_flag->attach_id,
+    });
+
     $old_flag->remove_from_db();
   }
 
@@ -685,6 +721,18 @@ sub force_retarget {
       my ($timestamp) = $dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
       Bugzilla::Hook::process('flag_deleted',
         {flag => $flag, timestamp => $timestamp});
+
+      Bugzilla::FlagActivity->create({
+        flag_when     => $timestamp,
+        setter_id     => Bugzilla->user->id,
+        status        => 'X',
+        type_id       => $flag->type_id,
+        flag_id       => $flag->id,
+        requestee_id  => $flag->requestee_id,
+        bug_id        => $flag->bug_id,
+        attachment_id => $flag->attach_id,
+      });
+
       $flag->remove_from_db();
     }
   }
