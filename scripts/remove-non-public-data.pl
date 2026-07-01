@@ -92,7 +92,7 @@ my %whitelist = (
       id name type custom description obsolete
       )
   ],
-  flag_state_activity => [
+  flag_activity => [
     qw(
       id flag_when type_id flag_id setter_id requestee_id bug_id
       attachment_id status
@@ -267,8 +267,8 @@ $dbh->do("
            AND (SELECT COUNT(*) FROM attachments WHERE attachments.submitter_id = profiles.userid) = 0
            AND (SELECT COUNT(*) FROM flags WHERE flags.setter_id = profiles.userid) = 0
            AND (SELECT COUNT(*) FROM flags WHERE flags.requestee_id = profiles.userid) = 0
-           AND (SELECT COUNT(*) FROM flag_state_activity WHERE flag_state_activity.setter_id = profiles.userid) = 0
-           AND (SELECT COUNT(*) FROM flag_state_activity WHERE flag_state_activity.requestee_id = profiles.userid) = 0
+           AND (SELECT COUNT(*) FROM flag_activity WHERE flag_activity.setter_id = profiles.userid) = 0
+           AND (SELECT COUNT(*) FROM flag_activity WHERE flag_activity.requestee_id = profiles.userid) = 0
 ");
 
 sub drop_referencing {
