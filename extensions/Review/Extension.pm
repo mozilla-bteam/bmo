@@ -930,6 +930,14 @@ sub db_schema_abstract_schema {
 
 sub install_update_db {
   my $dbh = Bugzilla->dbh;
+
+  # Bug 1806896 - rename flag_state_activity to flag_activity (now in core schema)
+  if ($dbh->bz_table_info('flag_state_activity')
+    && !$dbh->bz_table_info('flag_activity'))
+  {
+    $dbh->do('RENAME TABLE flag_state_activity TO flag_activity');
+  }
+
   $dbh->bz_add_column('products', 'reviewer_required',
     {TYPE => 'BOOLEAN', NOTNULL => 1, DEFAULT => 'FALSE'});
   $dbh->bz_add_column('profiles', 'review_request_count',
@@ -954,7 +962,8 @@ sub install_update_db {
   }
 
   # Bug 1588221 - dkl@mozilla.com
-  $dbh->bz_alter_column('flag_state_activity', 'attachment_id', {TYPE => 'INT5'});
+  # Bug 1806896 - table renamed from flag_state_activity to flag_activity
+  $dbh->bz_alter_column('flag_activity', 'attachment_id', {TYPE => 'INT5'});
 }
 
 sub install_filesystem {
