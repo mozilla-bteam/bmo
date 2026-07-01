@@ -7,5 +7,10 @@
 
 # Bug 1806896 - class moved to core as Bugzilla::FlagActivity
 package Bugzilla::Extension::Review::FlagStateActivity;
+
+use 5.10.1;
+use strict;
+use warnings;
+
 use parent 'Bugzilla::FlagActivity';
 1;
