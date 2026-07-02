@@ -763,9 +763,10 @@ use constant ABSTRACT_SCHEMA => {
       status => {TYPE => 'CHAR(1)', NOTNULL => 1},
     ],
     INDEXES => [
-      flag_activity_flag_id_idx => ['flag_id'],
-      flag_activity_type_id_idx => ['type_id'],
-      flag_activity_bug_id_idx  => ['bug_id'],
+      flag_activity_flag_id_idx     => ['flag_id'],
+      flag_activity_type_id_idx     => ['type_id'],
+      flag_activity_bug_id_idx      => ['bug_id'],
+      flag_activity_status_when_idx => ['status', 'flag_when'],
     ],
   },
 
