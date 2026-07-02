@@ -4368,18 +4368,27 @@ sub in_group {
 }
 
 # Returns extra group names to add when cloning $self into $target_product.
-# If the bug is in its source product's default security group and the target
-# product has a different one, the target group name is returned so the clone
-# stays secure (Bug 2028240).
+# When cloning across products, any of the bug's groups that aren't valid in
+# the target product are silently dropped. If that would lose a group, we add
+# the target product's default security group so the clone stays restricted to
+# the best of our ability. This mirrors what happens when a bug is moved
+# between products (see Bugzilla::check_default_product_security_group, which
+# the verify-new-product template calls with the dropped groups), and covers
+# non-default security groups such as dom-core-security -- not just the source
+# product's own default (Bug 2028240, Bug 2049554).
 sub extra_security_groups_for_clone {
   my ($self, $target_product) = @_;
   return () if $self->product_id == $target_product->id;
   return () unless $target_product->can('default_security_group');
+  return () unless @{$self->groups_in};
+
+  # If every group the bug is in carries over to the target product, then no
+  # restriction is lost and there is nothing to compensate for.
+  my $dropped = $self->get_invalid_groups(
+    {bug_ids => [$self->id], product => $target_product});
+  return () unless @$dropped;
 
   my @clone_groups = map { $_->name } @{$self->groups_in};
-  my $source_sec = eval { $self->product_obj->default_security_group };
-  return () unless $source_sec && grep { $_ eq $source_sec } @clone_groups;
-
   my $target_sec = eval { $target_product->default_security_group };
   return () unless $target_sec && !grep { $_ eq $target_sec } @clone_groups;
 
