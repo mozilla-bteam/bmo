@@ -267,20 +267,20 @@ sub rest_resources {
 }
 
 sub _flag_activity_to_hash {
-  my ($self, $fsa, $params) = @_;
+  my ($self, $fa, $params) = @_;
 
   my %flag = (
-    id            => $self->type('int',    $fsa->id),
-    creation_time => $self->type('string', $fsa->flag_when),
-    type          => $self->_flagtype_to_hash($fsa->type),
-    setter        => $self->_user_to_hash($fsa->setter),
-    bug_id        => $self->type('int',    $fsa->bug_id),
-    attachment_id => $self->type('int',    $fsa->attachment_id),
-    status        => $self->type('string', $fsa->status),
+    id            => $self->type('int',    $fa->id),
+    creation_time => $self->type('string', $fa->flag_when),
+    type          => $self->_flagtype_to_hash($fa->type),
+    setter        => $self->_user_to_hash($fa->setter),
+    bug_id        => $self->type('int',    $fa->bug_id),
+    attachment_id => $self->type('int',    $fa->attachment_id),
+    status        => $self->type('string', $fa->status),
   );
 
-  $flag{requestee} = $self->_user_to_hash($fsa->requestee) if $fsa->requestee;
-  $flag{flag_id} = $self->type('int', $fsa->flag_id) unless $params->{flag_id};
+  $flag{requestee} = $self->_user_to_hash($fa->requestee) if $fa->requestee;
+  $flag{flag_id} = $self->type('int', $fa->flag_id) unless $params->{flag_id};
 
   return filter($params, \%flag);
 }
