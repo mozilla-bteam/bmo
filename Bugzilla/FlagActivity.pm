@@ -11,7 +11,7 @@ use 5.10.1;
 use strict;
 use warnings;
 
-use Bugzilla::Error qw(ThrowUserError);
+use Bugzilla::Error;
 use Bugzilla::Util qw(trim datetime_from);
 use List::MoreUtils qw(none);
 
