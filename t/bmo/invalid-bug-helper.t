@@ -18,6 +18,13 @@ BEGIN {
 
 use Test::More;
 
+use Bugzilla;
+use Bugzilla::Constants;
+use Bugzilla::Bug;
+use Bugzilla::Group;
+use Bugzilla::Product;
+use Bugzilla::User;
+
 # Load Bugzilla::Extension to install the INC_HOOK that maps
 # Bugzilla::Extension::NAME::* to extensions/NAME/lib/*.
 use_ok('Bugzilla::Extension');
@@ -58,5 +65,79 @@ ok(grep({ $_ eq 'close_as_invalid' } @public),
 my @params = Bugzilla::Extension::InvalidBugHelper::Config->get_param_list;
 my %param_names = map { $_->{name} => 1 } @params;
 ok($param_names{invalidbughelper_warning_text}, 'warning_text param defined');
+
+# Verify close_as_invalid refuses to act on bugs reported by an editbugs
+# member, regardless of who is performing the close (Bug 1684509).
+
+BEGIN { Bugzilla->extensions }
+Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
+Bugzilla->error_mode(ERROR_MODE_DIE);
+
+my $product = Bugzilla::Product->new({name => 'Firefox'})
+  || (Bugzilla::Product->get_all)[0];
+my $editbugs_group = Bugzilla::Group->new({name => 'editbugs'});
+
+plan skip_all => 'Need a product and the editbugs group to test close_as_invalid'
+  unless $product && $editbugs_group;
+
+my $dbh = Bugzilla->dbh;
+my $admin = Bugzilla::User->new({name => 'admin@mozilla.bugs'});
+plan skip_all => 'Need an editbugs admin user to test close_as_invalid'
+  unless $admin && $admin->in_group('editbugs');
+
+sub make_reporter {
+  my ($in_editbugs) = @_;
+  my $user = Bugzilla::User->create({
+    login_name => 'invalid-bug-helper-test-' . $$ . '-' . (0 + rand(100000)) . '@bmo.tld',
+    cryptpassword => '*',
+  });
+  $dbh->do(
+    'INSERT INTO user_group_map (user_id, group_id, isbless, grant_type) VALUES (?, ?, 0, ?)',
+    undef, $user->id, $editbugs_group->id, GRANT_DIRECT)
+    if $in_editbugs;
+  return Bugzilla::User->new($user->id);
+}
+
+sub make_bug_as {
+  my ($reporter) = @_;
+  Bugzilla->set_user($reporter);
+  return Bugzilla::Bug->create({
+    short_desc   => 'Invalid bug helper reporter test ' . $$,
+    product      => $product->name,
+    component    => $product->components->[0]->name,
+    bug_type     => 'defect',
+    bug_severity => 'normal',
+    op_sys       => 'Unspecified',
+    rep_platform => 'Unspecified',
+    version      => $product->versions->[0]->name,
+  });
+}
+
+my $editbugs_reporter = make_reporter(1);
+my $plain_reporter    = make_reporter(0);
+
+my $bug_from_editbugs_reporter = make_bug_as($editbugs_reporter);
+my $bug_from_plain_reporter    = make_bug_as($plain_reporter);
+
+Bugzilla->set_user($admin);
+
+my $ws = 'Bugzilla::Extension::InvalidBugHelper::WebService';
+
+eval { $ws->close_as_invalid({bug_id => $bug_from_editbugs_reporter->id}) };
+like($@, qr/Cannot Be Closed as Invalid|already resolved/,
+  'close_as_invalid refuses a bug reported by an editbugs member');
+
+# The real return-value serialization (->type) is only provided by the
+# JSON-RPC/REST server at dispatch time; stub it here so we can exercise
+# close_as_invalid's business logic directly.
+no strict 'refs';
+no warnings 'redefine';
+local *{"${ws}::type"} = sub { return $_[2] };
+use strict 'refs';
+
+my $result = eval { $ws->close_as_invalid({bug_id => $bug_from_plain_reporter->id}) };
+is($@, '', 'close_as_invalid does not throw for a bug reported by a non-editbugs user');
+is($result->{product}, 'Invalid Bugs', 'bug from non-editbugs reporter is moved to Invalid Bugs')
+  if $result;
 
 done_testing();
