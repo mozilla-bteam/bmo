@@ -139,8 +139,10 @@ push(
   )
 );
 
+# No fixture bug has a vote, so searching by votes must return an empty
+# (but well-formed) result. bugs => 0 asserts exactly that.
 push(@tests,
-  {args => {votes => 1}, test => 'Search by votes'})
+  {args => {votes => 1}, test => 'Search by votes', bugs => 0})
   if $config->{test_extensions};
 
 sub check_search {
