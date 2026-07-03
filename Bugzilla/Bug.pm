@@ -2713,9 +2713,17 @@ sub set_all {
 
   $self->_add_remove($params, 'see_also');
 
-  # And set custom fields.
+  # And set custom fields. Only fields enabled for the bug's current
+  # product/component are considered; product/component were already applied
+  # via SUPER::set_all above, so this reflects the post-move state. This is
+  # intentional (bug 2036191): a value submitted for a field not enabled on
+  # the target product/component is ignored rather than written, closing the
+  # glitch where e.g. cf_crash_signature could be stored on a product that
+  # doesn't expose it.
   my @custom_fields
-    = grep { $_->type != FIELD_TYPE_EXTENSION } Bugzilla->active_custom_fields;
+    = grep { $_->type != FIELD_TYPE_EXTENSION } Bugzilla->active_custom_fields(
+        {product => $self->product_obj, component => $self->component_obj}
+    );
   foreach my $field (@custom_fields) {
     my $fname = $field->name;
     if (exists $params->{$fname}) {
