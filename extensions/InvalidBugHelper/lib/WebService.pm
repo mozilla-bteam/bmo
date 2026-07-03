@@ -35,6 +35,10 @@ sub close_as_invalid {
 
   my $bug = Bugzilla::Bug->check({id => $bug_id});
 
+  if ($bug->reporter->in_group('editbugs')) {
+    ThrowUserError('bug_status_unresolvable', {bug => $bug});
+  }
+
   # Block non-members from closing bugs with mandatory security groups.
   foreach my $group (@{$bug->groups_in}) {
     my $gc = $bug->product_obj->group_controls->{$group->id};
