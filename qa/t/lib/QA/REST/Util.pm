@@ -98,7 +98,7 @@ sub create_test_bugs {
 sub _create_one {
   my ($t, $url, $api_key, $fields) = @_;
   $t->post_ok(
-    $url . 'rest/bug' => {'X-Bugzilla-API-Key' => $api_key} => json => $fields)
+    $url . 'rest/bug' => api_headers($api_key) => json => $fields)
     ->status_is(200);
   return $t->tx->res->json->{id};
 }
@@ -108,14 +108,17 @@ sub _create_one {
 sub test_bug {
   my ($fields, $bug, $expect, $test, $creation_time) = @_;
 
+  # include_fields/exclude_fields are the same for every field, so build
+  # them once rather than on every loop iteration.
+  my @include = @{$test->{args}{include_fields} || []};
+  my @exclude = @{$test->{args}{exclude_fields} || []};
+
   foreach my $field (sort @$fields) {
 
     # "description" is used by Bug.create but comments are not returned
     # by Bug.get or Bug.search.
     next if $field eq 'description';
 
-    my @include = @{$test->{args}{include_fields} || []};
-    my @exclude = @{$test->{args}{exclude_fields} || []};
     if ( (@include and !grep { $_ eq $field } @include)
       or (@exclude and grep { $_ eq $field } @exclude))
     {
@@ -133,7 +136,9 @@ sub test_bug {
         ok(grep({ $_ eq $cc_item } @{$bug->{cc}}), "$field contains $cc_item");
       }
     }
-    elsif ($field eq 'creation_time' or $field eq 'last_change_time') {
+    elsif (($field eq 'creation_time' or $field eq 'last_change_time')
+      and defined $creation_time)
+    {
       my $creation_day = $creation_time->ymd;
       like(
         $bug->{$field},

@@ -140,7 +140,7 @@ push(
 );
 
 push(@tests,
-  {args => {votes => 1}, test => 'Search by votes', bugs => -1})
+  {args => {votes => 1}, test => 'Search by votes'})
   if $config->{test_extensions};
 
 sub check_search {

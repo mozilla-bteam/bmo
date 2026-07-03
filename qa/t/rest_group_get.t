@@ -69,7 +69,7 @@ $t->get_ok($url
 my $result = $t->tx->res->json;
 my $user_found = 0;
 foreach my $user (@{$result->{groups}->[0]->{membership}}) {
-  $user_found = 1 if $user->{id} = $user_id;
+  $user_found = 1 if $user->{id} == $user_id;
 }
 ok($user_found, "User was included in membership list of new group");
 
