@@ -1,3 +1,4 @@
+#!/usr/bin/env perl
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -5,17 +6,26 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-######################################
-# Test for xmlrpc call to User.get() #
-######################################
+#####################################################
+# Test for REST call to User.get()                  #
+# GET /rest/user                                     #
+#####################################################
 
+use 5.10.1;
 use strict;
 use warnings;
 use lib qw(lib ../../lib ../../local/lib/perl5);
-use QA::Util;
+
+use Bugzilla;
+use QA::Util qw(get_config);
 use QA::Tests qw(PRIVATE_BUG_USER);
-use Test::More tests => 330;
-our ($config, @clients) = get_rpc_clients();
+use QA::REST::Util qw(api_headers rest_get_url);
+
+use Test::Mojo;
+use Test::More;
+
+my $config = get_config();
+my $url     = Bugzilla->localconfig->urlbase;
 
 my $get_user        = $config->{'unprivileged_user_login'};
 my $canconfirm_user = $config->{'canconfirm_user_login'};
@@ -23,8 +33,8 @@ my $priv_user       = $config->{PRIVATE_BUG_USER . '_user_login'};
 my $disabled        = $config->{'disabled_user_login'};
 my $disabled_match  = substr($disabled, 0, length($disabled) - 1);
 
-# These are the basic tests. There are tests for include_fields
-# and exclude_field below.
+my $t = Test::Mojo->new();
+$t->ua->max_redirects(1);
 
 my @tests = (
   {
@@ -117,35 +127,15 @@ my @tests = (
   },
 
   # groups returned
-  {
-    user => 'admin',
-    args => {names => [$get_user]},
-    test => 'Admin can get user',
-  },
-  {
-    user => 'admin',
-    args => {names => [$canconfirm_user]},
-    test => 'Admin can get user',
-  },
-  {
-    user => 'canconfirm',
-    args => {names => [$canconfirm_user]},
-    test => 'Privileged user can get themselves',
-  },
-  {
-    user => 'editbugs',
-    args => {names => [$canconfirm_user]},
-    test => 'Privileged user can get another user',
-  },
+  {user => 'admin',      args => {names => [$get_user]},        test => 'Admin can get user'},
+  {user => 'admin',      args => {names => [$canconfirm_user]}, test => 'Admin can get user'},
+  {user => 'canconfirm', args => {names => [$canconfirm_user]}, test => 'Privileged user can get themselves'},
+  {user => 'editbugs',   args => {names => [$canconfirm_user]}, test => 'Privileged user can get another user'},
 );
 
-sub post_success {
-  my ($call, $t) = @_;
-
-  my $result = $call->result;
-  is(scalar @{$result->{users}}, 1, "Got exactly one user");
-  my $item = $result->{users}->[0];
-  my $user = $t->{user} || '';
+sub check_success {
+  my ($test, $item) = @_;
+  my $user = $test->{user} || '';
 
   if ($user eq 'admin') {
     ok(
@@ -157,45 +147,30 @@ sub post_success {
     );
   }
   elsif ($user) {
-    ok(
-      exists $item->{email} && exists $item->{can_login},
-      'Logged-in user correctly gets email and can_login'
-    );
-    ok(
-      !exists $item->{email_enabled} && !exists $item->{login_denied_text},
-      "Non-admin user doesn't get email_enabled and login_denied_text"
-    );
+    ok(exists $item->{email} && exists $item->{can_login},
+      'Logged-in user correctly gets email and can_login');
+    ok(!exists $item->{email_enabled} && !exists $item->{login_denied_text},
+      "Non-admin user doesn't get email_enabled and login_denied_text");
   }
   else {
     my @item_keys = sort keys %$item;
-    is_deeply(
-      \@item_keys,
-      ['id', 'name', 'nick', 'real_name'],
-      'Only id, name, nick and real_name are returned to logged-out users'
-    );
+    is_deeply(\@item_keys, ['id', 'name', 'nick', 'real_name'],
+      'Only id, name, nick and real_name are returned to logged-out users');
     return;
   }
 
   my $username = $config->{"${user}_user_login"};
 
-  # FIXME: We have no way to create a saved search or a saved report from
-  #        the WebService, so we cannot test that the correct data is returned
-  #        if the user is accessing their own account.
   if ($username eq $item->{name}) {
     ok(exists $item->{saved_searches},
       'Users can get the list of saved searches and reports for their own account');
   }
   else {
-    ok(
-      !exists $item->{saved_searches},
-      "Users cannot get the list of saved searches and reports from someone else's account"
-    );
+    ok(!exists $item->{saved_searches},
+      "Users cannot get the list of saved searches and reports from someone else's account");
   }
 
   my @groups = map { $_->{name} } @{$item->{groups}};
-
-  # Admins can see all groups a user belongs to (assuming they inherited
-  # membership for all groups). Same for a user querying their own account.
   if ($username eq $item->{name} || $user eq 'admin') {
     if ($username eq $get_user) {
       ok(!scalar @groups, "The unprivileged user doesn't belong to any group");
@@ -209,62 +184,49 @@ sub post_success {
   }
 }
 
-foreach my $rpc (@clients) {
-  $rpc->bz_run_tests(
-    tests        => \@tests,
-    method       => 'User.get',
-    post_success => \&post_success
-  );
+foreach my $test (@tests) {
+  my $api_key = $test->{user} ? $config->{"$test->{user}_user_api_key"} : undef;
+  my $headers = api_headers($api_key);
+  my $url_obj = rest_get_url($url, 'rest/user', $test->{args});
 
-  #############################
-  # Include and Exclude Tests #
-  #############################
-
-  my $include_nothing = $rpc->bz_call_success(
-    'User.get',
-    {names => [$get_user], include_fields => ['asdfasdfsdf'],},
-    'User.get including only invalid fields'
-  );
-  is(scalar keys %{$include_nothing->result->{users}->[0]},
-    0, 'No fields returned for user');
-
-  my $include_one = $rpc->bz_call_success(
-    'User.get',
-    {names => [$get_user], include_fields => ['id'],},
-    'User.get including only id'
-  );
-  is(scalar keys %{$include_one->result->{users}->[0]},
-    1, 'Only one field returned for user');
-
-  my $exclude_none = $rpc->bz_call_success(
-    'User.get',
-    {names => [$get_user], exclude_fields => ['asdfasdfsdf'],},
-    'User.get excluding only invalid fields'
-  );
-  is(scalar keys %{$exclude_none->result->{users}->[0]},
-    4, 'All fields returned for user');
-
-  my $exclude_one = $rpc->bz_call_success(
-    'User.get',
-    {names => [$get_user], exclude_fields => ['id'],},
-    'User.get excluding id'
-  );
-  is(scalar keys %{$exclude_one->result->{users}->[0]},
-    3, 'Only three fields returned for user');
-
-  my $override = $rpc->bz_call_success(
-    'User.get',
-    {
-      names          => [$get_user],
-      include_fields => ['id', 'name'],
-      exclude_fields => ['id']
-    },
-    'User.get with both include and exclude'
-  );
-  is(scalar keys %{$override->result->{users}->[0]}, 1,
-    'Only one field returned');
-  ok(
-    exists $override->result->{users}->[0]->{name},
-    '...and that field is the "name" field'
-  );
+  if (my $error = $test->{error}) {
+    $t->get_ok($url_obj => $headers)->status_isnt(200);
+    like($t->tx->res->json->{message}, qr/\Q$error\E/, "$test->{test}: $error");
+  }
+  else {
+    $t->get_ok($url_obj => $headers)->status_is(200);
+    my $users = $t->tx->res->json->{users};
+    is(scalar @$users, 1, "$test->{test}: got exactly one user");
+    check_success($test, $users->[0]);
+  }
 }
+
+#############################
+# Include and Exclude Tests #
+#############################
+
+my $anon = api_headers(undef);
+
+$t->get_ok(rest_get_url($url, 'rest/user',
+  {names => [$get_user], include_fields => ['asdfasdfsdf']}) => $anon)->status_is(200);
+is(scalar keys %{$t->tx->res->json->{users}[0]}, 0, 'No fields returned for user');
+
+$t->get_ok(rest_get_url($url, 'rest/user',
+  {names => [$get_user], include_fields => ['id']}) => $anon)->status_is(200);
+is(scalar keys %{$t->tx->res->json->{users}[0]}, 1, 'Only one field returned for user');
+
+$t->get_ok(rest_get_url($url, 'rest/user',
+  {names => [$get_user], exclude_fields => ['asdfasdfsdf']}) => $anon)->status_is(200);
+is(scalar keys %{$t->tx->res->json->{users}[0]}, 4, 'All fields returned for user');
+
+$t->get_ok(rest_get_url($url, 'rest/user',
+  {names => [$get_user], exclude_fields => ['id']}) => $anon)->status_is(200);
+is(scalar keys %{$t->tx->res->json->{users}[0]}, 3, 'Only three fields returned for user');
+
+$t->get_ok(rest_get_url($url, 'rest/user',
+  {names => [$get_user], include_fields => ['id', 'name'], exclude_fields => ['id']})
+  => $anon)->status_is(200);
+is(scalar keys %{$t->tx->res->json->{users}[0]}, 1, 'Only one field returned');
+ok(exists $t->tx->res->json->{users}[0]{name}, '...and that field is the "name" field');
+
+done_testing();

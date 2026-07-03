@@ -28,6 +28,8 @@ sub _rest_resources {
     {GET => {method => 'login'}},
     qr{^/logout$},
     {GET => {method => 'logout'}},
+    qr{^/user/offer_account_by_email$},
+    {POST => {method => 'offer_account_by_email'}},
     qr{^/user$},
     {
       GET  => {method => 'get'},

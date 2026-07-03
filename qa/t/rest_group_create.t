@@ -1,3 +1,4 @@
+#!/usr/bin/env perl
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -5,25 +6,29 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-##########################################
-# Test for xmlrpc call to Group.create() #
-##########################################
+#####################################################
+# Test for REST call to Group.create()              #
+# POST /rest/group                                   #
+#####################################################
 
+use 5.10.1;
 use strict;
 use warnings;
 use lib qw(lib ../../lib ../../local/lib/perl5);
-use Test::More tests => 77;
-use QA::Util;
+
+use Bugzilla;
+use QA::Util qw(get_config random_string);
+
+use Test::Mojo;
+use Test::More;
 
 use constant DESCRIPTION => 'Group created by Group.create';
 
-sub post_success {
-  my $call = shift;
-  my $gid  = $call->result->{id};
-  ok($gid, "Got a non-zero group ID: $gid");
-}
+my $config = get_config();
+my $url    = Bugzilla->localconfig->urlbase;
 
-my ($config, $xmlrpc, $jsonrpc, $jsonrpc_get) = get_rpc_clients();
+my $t = Test::Mojo->new();
+$t->ua->max_redirects(1);
 
 my @tests = (
   {
@@ -74,47 +79,45 @@ my @tests = (
     test  => 'Name to Group.create already exists but with a different case',
   },
   {
-    user => 'admin',
-    args =>
-      {name => random_string(20), description => DESCRIPTION, user_regexp => '\\'},
+    user  => 'admin',
+    args  => {name => random_string(20), description => DESCRIPTION, user_regexp => '\\'},
     error => 'The regular expression you entered is invalid',
     test  => 'The regular expression passed to Group.create is invalid',
   },
+  {
+    user => 'admin',
+    args => {name => random_string(20), description => DESCRIPTION},
+    test => 'Passing the name and description only works',
+  },
+  {
+    user => 'admin',
+    args => {
+      name        => random_string(20),
+      description => DESCRIPTION,
+      user_regexp => '\@foo.com$',
+      is_active   => 1,
+      icon_url    => 'https://www.bugzilla.org/favicon.ico'
+    },
+    test => 'Passing all arguments works',
+  },
 );
 
-$jsonrpc_get->bz_call_fail(
-  'Group.create',
-  {name => random_string(20), description => 'Created with JSON-RPC via GET'},
-  'must use HTTP POST',
-  'Group.create fails over GET'
-);
+foreach my $test (@tests) {
+  my %headers;
+  if (my $user = $test->{user}) {
+    $headers{'X-Bugzilla-API-Key'} = $config->{"${user}_user_api_key"};
+  }
 
-foreach my $rpc ($xmlrpc, $jsonrpc) {
-
-  # Tests which work must be called from here,
-  # to avoid creating twice the same group.
-  my @all_tests = (
-    @tests,
-    {
-      user => 'admin',
-      args => {name => random_string(20), description => DESCRIPTION},
-      test => 'Passing the name and description only works',
-    },
-    {
-      user => 'admin',
-      args => {
-        name        => random_string(20),
-        description => DESCRIPTION,
-        user_regexp => '\@foo.com$',
-        is_active   => 1,
-        icon_url    => 'https://www.bugzilla.org/favicon.ico'
-      },
-      test => 'Passing all arguments works',
-    },
-  );
-  $rpc->bz_run_tests(
-    tests        => \@all_tests,
-    method       => 'Group.create',
-    post_success => \&post_success
-  );
+  if (my $error = $test->{error}) {
+    $t->post_ok(
+      $url . 'rest/group' => \%headers => json => $test->{args})->status_isnt(200);
+    like($t->tx->res->json->{message}, qr/\Q$error\E/, "$test->{test}: $error");
+  }
+  else {
+    $t->post_ok(
+      $url . 'rest/group' => \%headers => json => $test->{args})->status_is(201);
+    ok($t->tx->res->json->{id}, "$test->{test}: got a non-zero group id");
+  }
 }
+
+done_testing();

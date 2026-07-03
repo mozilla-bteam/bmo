@@ -57,7 +57,6 @@ use base qw(Exporter);
   screenshot_page
 
   get_selenium
-  get_rpc_clients
   check_page_load
 
   WAIT_TIME
@@ -148,36 +147,6 @@ sub get_selenium {
   return ($sel, $config);
 }
 
-sub get_xmlrpc_client {
-  my $config = get_config();
-  my $xmlrpc_url
-    = $config->{browser_url}
-    . "/xmlrpc.cgi";
-
-  require QA::RPC::XMLRPC;
-  my $rpc = new QA::RPC::XMLRPC(proxy => $xmlrpc_url);
-  return ($rpc, $config);
-}
-
-sub get_jsonrpc_client {
-  my ($get_mode) = @_;
-  require QA::RPC::JSONRPC;
-  my $rpc = new QA::RPC::JSONRPC();
-
-  # If we don't set a long timeout, then the Bug.add_comment test
-  # where we add a too-large comment fails.
-  $rpc->transport->timeout(180);
-  $rpc->version($get_mode ? '1.1' : '1.0');
-  $rpc->bz_get_mode($get_mode);
-  return $rpc;
-}
-
-sub get_rpc_clients {
-  my ($xmlrpc, $config) = get_xmlrpc_client();
-  my $jsonrpc     = get_jsonrpc_client();
-  my $jsonrpc_get = get_jsonrpc_client('GET');
-  return ($config, $xmlrpc, $jsonrpc, $jsonrpc_get);
-}
 
 ################################
 # Helpers for Selenium Scripts #

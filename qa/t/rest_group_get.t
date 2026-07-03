@@ -69,7 +69,7 @@ $t->get_ok($url
 my $result = $t->tx->res->json;
 my $user_found = 0;
 foreach my $user (@{$result->{groups}->[0]->{membership}}) {
-  $user_found = 1 if $user->{id} = $user_id;
+  $user_found = 1 if $user->{id} == $user_id;
 }
 ok($user_found, "User was included in membership list of new group");
 
@@ -87,5 +87,12 @@ $t->put_ok(
 $t->get_ok(
   $url . "rest/group/$group_id" => {'X-Bugzilla-API-Key' => $unprivileged_api_key})
   ->status_is(200)->json_is('/groups/0/name', 'secret-group');
+
+# Clean up: remove the unprivileged user from can_see_groups again so that
+# later tests (e.g. rest_user_get.t) still see it as belonging to no groups.
+$t->put_ok($url
+    . "rest/user/$unprivileged_login" => {'X-Bugzilla-API-Key' => $admin_api_key}
+    => json => {groups => {remove => ['can_see_groups']}})->status_is(200)
+  ->json_has('/users');
 
 done_testing();
