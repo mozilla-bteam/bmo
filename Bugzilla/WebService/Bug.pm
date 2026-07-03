@@ -1750,6 +1750,11 @@ sub _bug_to_hash {
     next if !filter_wants($params, $name, ['default', 'custom']);
     my $raw = $bug->$name;
     next if !defined($raw) || $raw eq '';
+
+    # Single-select fields store the '---' sentinel when unset; treat it as
+    # empty so hidden fields left at their default aren't surfaced as noise.
+    next if $field->type == FIELD_TYPE_SINGLE_SELECT && $raw eq '---';
+
     $item{$name} = $self->_format_cf_value($field, $raw);
   }
 
