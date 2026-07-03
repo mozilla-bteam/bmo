@@ -147,7 +147,8 @@ sub cmd_test_sanity {
 }
 
 sub cmd_test_webservices {
-  cmd_test_qa('{webservice,rest}_*.t');
+  my (@patterns) = @_;
+  cmd_test_qa(@patterns ? "@patterns" : 'rest_*.t');
 }
 
 sub cmd_test_selenium {

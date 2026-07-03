@@ -1,3 +1,4 @@
+#!/usr/bin/env perl
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -5,23 +6,30 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-########################################
-# Test for xmlrpc call to Bug.create() #
-########################################
+#####################################################
+# Test for REST call to Bug.create()                #
+# POST /rest/bug                                     #
+#####################################################
 
+use 5.10.1;
 use strict;
 use warnings;
 use lib qw(lib ../../lib ../../local/lib/perl5);
+
+use Bugzilla;
 use Storable qw(dclone);
-use Test::More tests => 323;
-use QA::Util;
+use QA::Util qw(get_config random_string);
 use QA::Tests qw(create_bug_fields PRIVATE_BUG_USER);
+use QA::REST::Util qw(api_headers test_bug);
 
-my ($config, $xmlrpc, $jsonrpc, $jsonrpc_get) = get_rpc_clients();
+use Test::Mojo;
+use Test::More;
 
-########################
-# Bug.create() testing #
-########################
+my $config = get_config();
+my $url     = Bugzilla->localconfig->urlbase;
+
+my $t = Test::Mojo->new();
+$t->ua->max_redirects(1);
 
 my $bug_fields = create_bug_fields($config);
 
@@ -159,12 +167,6 @@ my $fields = {
   },
 };
 
-$jsonrpc_get->bz_call_fail(
-  'Bug.create', $bug_fields,
-  'must use HTTP POST',
-  'create fails over GET'
-);
-
 my @tests = (
   {
     args  => $bug_fields,
@@ -181,11 +183,8 @@ my @tests = (
       target_milestone => 'QAMilestone',
       version          => 'QAVersion',
       groups           => ['QA-Selenium-TEST'],
-
-      # These are set here because we can't actually set them,
-      # and we need the values to be correct for post_success.
-      qa_contact => $config->{PRIVATE_BUG_USER . '_user_login'},
-      status     => 'UNCONFIRMED'
+      qa_contact       => $config->{PRIVATE_BUG_USER . '_user_login'},
+      status           => 'UNCONFIRMED'
     },
     test => "Authorized user can file a bug against a group",
   },
@@ -194,12 +193,9 @@ my @tests = (
     args => {
       %$bug_fields,
       comment_is_private => 1,
-
-      # These are here because PRIVATE_BUG_USER can't set them
-      # and we need their values to be correct for post_success.
-      assigned_to => $config->{'permanent_user_login'},
-      qa_contact  => '',
-      status      => 'UNCONFIRMED'
+      assigned_to        => $config->{'permanent_user_login'},
+      qa_contact         => '',
+      status             => 'UNCONFIRMED'
     },
     test => "Insider can create a private description"
   },
@@ -210,7 +206,7 @@ my @tests = (
   },
 );
 
-# Convert the $fields tests into standard bz_run_tests format.
+# Convert the $fields tests into the standard test table format.
 foreach my $field (sort keys %$fields) {
   my $test_values = $fields->{$field};
   foreach my $test_name (sort keys %$test_values) {
@@ -218,46 +214,56 @@ foreach my $field (sort keys %$fields) {
     my $check_value  = $test_values->{$test_name}->{value};
     my $error        = $test_values->{$test_name}->{faultstring};
     $input_fields->{$field} = $check_value;
-    my $test = {
-      user  => 'editbugs',
-      args  => $input_fields,
-      error => $error,
-      test  => "$field $test_name: fails as expected"
-    };
-    push(@tests, $test);
+    push(@tests,
+      {
+        user  => 'editbugs',
+        args  => $input_fields,
+        error => $error,
+        test  => "$field $test_name: fails as expected"
+      });
   }
 }
 
 sub post_success {
-  my ($call, $t, $rpc) = @_;
+  my ($test, $json, $api_key) = @_;
 
-  my $id = $call->result->{id};
-  ok($id, $rpc->TYPE . ": Result has an id: $id");
+  my $id = $json->{id};
+  ok($id, "Result has an id: $id");
 
-  my $get_call = $rpc->bz_call_success('Bug.get', {ids => [$id]});
-  my $bug = $get_call->result->{bugs}->[0];
+  $t->get_ok($url . "rest/bug/$id" => api_headers($api_key))->status_is(200);
+  my $bug = $t->tx->res->json->{bugs}->[0];
 
-  my $expect = dclone $t->{args};
-
+  my $expect = dclone $test->{args};
   my $comment_is_private = delete $expect->{comment_is_private};
-  $expect->{creator} = $rpc->bz_config->{$t->{user} . '_user_login'};
+  $expect->{creator} = $config->{$test->{user} . '_user_login'};
 
   my @fields = keys %$expect;
-  $rpc->bz_test_bug(\@fields, $bug, $expect, $t);
+  test_bug(\@fields, $bug, $expect, $test);
 
-  my $comment_call = $rpc->bz_call_success('Bug.comments', {ids => [$id]});
-  my $comment = $comment_call->result->{bugs}->{$id}->{comments}->[0];
+  $t->get_ok($url . "rest/bug/$id/comment" => api_headers($api_key))
+    ->status_is(200);
+  my $comment = $t->tx->res->json->{bugs}->{$id}->{comments}->[0];
   is(
     $comment->{is_private} ? 1 : 0,
     $comment_is_private    ? 1 : 0,
-    $rpc->TYPE . ": comment privacy is correct"
+    "comment privacy is correct"
   );
 }
 
-foreach my $rpc ($jsonrpc, $xmlrpc) {
-  $rpc->bz_run_tests(
-    tests        => \@tests,
-    method       => 'Bug.create',
-    post_success => \&post_success
-  );
+foreach my $test (@tests) {
+  my $api_key = $test->{user} ? $config->{"$test->{user}_user_api_key"} : undef;
+  my $headers = api_headers($api_key);
+
+  if (my $error = $test->{error}) {
+    $t->post_ok($url . 'rest/bug' => $headers => json => $test->{args})
+      ->status_isnt(200);
+    like($t->tx->res->json->{message}, qr/$error/, "$test->{test}");
+  }
+  else {
+    $t->post_ok($url . 'rest/bug' => $headers => json => $test->{args})
+      ->status_is(200);
+    post_success($test, $t->tx->res->json, $api_key);
+  }
 }
+
+done_testing();

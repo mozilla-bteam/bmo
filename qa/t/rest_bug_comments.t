@@ -1,3 +1,4 @@
+#!/usr/bin/env perl
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -5,22 +6,34 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-##########################################
-# Test for xmlrpc call to Bug.comments() #
-##########################################
+#####################################################
+# Test for REST call to Bug.comments()              #
+# GET /rest/bug/<id>/comment                          #
+# GET /rest/bug/comment/<comment_id>                  #
+#####################################################
 
+use 5.10.1;
 use strict;
 use warnings;
 use lib qw(lib ../../lib ../../local/lib/perl5);
-use DateTime;
-use QA::Util;
-use QA::Tests qw(STANDARD_BUG_TESTS PRIVATE_BUG_USER);
-use Test::More tests => 331;
-my ($config, @clients) = get_rpc_clients();
 
-# These gets populated when we call Bug.add_comment.
-our $creation_time;
-our %comments = (
+use Bugzilla;
+use DateTime;
+use QA::Util qw(get_config);
+use QA::Tests qw(STANDARD_BUG_TESTS PRIVATE_BUG_USER);
+use QA::REST::Util qw(api_headers);
+
+use Test::Mojo;
+use Test::More;
+
+my $config = get_config();
+my $url     = Bugzilla->localconfig->urlbase;
+
+my $t = Test::Mojo->new();
+$t->ua->max_redirects(1);
+
+my $creation_time;
+my %comments = (
   public_comment_public_bug   => 0,
   public_comment_private_bug  => 0,
   private_comment_public_bug  => 0,
@@ -28,32 +41,23 @@ our %comments = (
 );
 
 sub test_comments {
-  my ($comments_returned, $call, $t, $rpc) = @_;
+  my ($comments_returned, $test) = @_;
 
   my $comment = $comments_returned->[0];
   ok($comment->{bug_id}, "bug_id exists");
 
-  # FIXME: At some point we should test attachment_id here.
-
-  if ($t->{args}->{comment_ids}) {
-    my $expected_id = $t->{args}->{comment_ids}->[0];
+  if ($test->{args}->{comment_ids}) {
+    my $expected_id = $test->{args}->{comment_ids}->[0];
     is($comment->{id}, $expected_id, "comment id is correct");
 
     my %reverse_map   = reverse %comments;
     my $expected_text = $reverse_map{$expected_id};
     is($comment->{text}, $expected_text, "comment has the correct text");
 
-    my $priv_login = $rpc->bz_config->{PRIVATE_BUG_USER . '_user_login'};
+    my $priv_login = $config->{PRIVATE_BUG_USER . '_user_login'};
     is($comment->{creator}, $priv_login, "comment creator is correct");
 
-
-    my $creation_day;
-    if ($rpc->isa('QA::RPC::XMLRPC')) {
-      $creation_day = $creation_time->ymd('');
-    }
-    else {
-      $creation_day = $creation_time->ymd;
-    }
+    my $creation_day = $creation_time->ymd;
     like(
       $comment->{time},
       qr/^\Q${creation_day}\ET\d\d:\d\d:\d\d/,
@@ -71,58 +75,44 @@ sub test_comments {
 # Bug ID Tests #
 ################
 
-sub post_bug_success {
-  my ($call, $t) = @_;
-  my @bugs = values %{$call->result->{bugs}};
-  is(scalar @bugs, 1, "Got exactly one bug");
-  my @comments = map { @{$_->{comments}} } @bugs;
-  test_comments(\@comments, @_);
-}
+foreach my $test (@{STANDARD_BUG_TESTS()}) {
+  my $id = $test->{args}{ids}[0];
+  next if !defined $id;
 
-foreach my $rpc (@clients) {
-  $rpc->bz_run_tests(
-    tests        => STANDARD_BUG_TESTS,
-    method       => 'Bug.comments',
-    post_success => \&post_bug_success
-  );
+  my $api_key = $test->{user} ? $config->{"$test->{user}_user_api_key"} : undef;
+  my $headers = api_headers($api_key);
+  my $path    = $url . "rest/bug/$id/comment";
+
+  if (my $error = $test->{error}) {
+    $t->get_ok($path => $headers)->status_isnt(200);
+    like($t->tx->res->json->{message}, qr/\Q$error\E/, "$test->{test}: $error");
+  }
+  else {
+    $t->get_ok($path => $headers)->status_is(200);
+    my @bugs = values %{$t->tx->res->json->{bugs}};
+    is(scalar @bugs, 1, "Got exactly one bug");
+    my @returned = map { @{$_->{comments}} } @bugs;
+    test_comments(\@returned, $test);
+  }
 }
 
 ####################
 # Comment ID Tests #
 ####################
 
-# First, create comments using add_comment.
-my @add_comment_tests;
+# First, create comments using add_comment, as PRIVATE_BUG_USER.
+$creation_time = DateTime->now();
+my $priv_key = $config->{PRIVATE_BUG_USER . '_user_api_key'};
+
 foreach my $key (keys %comments) {
   $key =~ /^([a-z]+)_comment_(\w+)$/;
   my $is_private = ($1 eq 'private' ? 1 : 0);
-  my $bug_alias = $2;
-  push(
-    @add_comment_tests,
-    {
-      args => {id => $bug_alias, comment => $key, private => $is_private},
-      test => "Add comment: $key",
-      user => PRIVATE_BUG_USER
-    }
-  );
+  my $bug_alias  = $2;
+  $t->post_ok($url . "rest/bug/$bug_alias/comment" =>
+      {'X-Bugzilla-API-Key' => $priv_key} =>
+      json => {comment => $key, is_private => $is_private})->status_is(201);
+  $comments{$key} = $t->tx->res->json->{id};
 }
-
-# Set the comment id for each comment that we add, so we can test getting
-# them back, later.
-sub post_add {
-  my ($call, $t) = @_;
-  my $key = $t->{args}->{comment};
-  $comments{$key} = $call->result->{id};
-}
-
-$creation_time = DateTime->now();
-
-# We only need to create these comments once, with one of the interfaces.
-$clients[0]->bz_run_tests(
-  tests        => \@add_comment_tests,
-  method       => 'Bug.add_comment',
-  post_success => \&post_add
-);
 
 # Now check access on each private and public comment
 
@@ -187,17 +177,22 @@ my @comment_tests = (
   },
 );
 
-sub post_comments {
-  my ($call) = @_;
-  my @comments = values %{$call->result->{comments}};
-  is(scalar @comments, 1, "Got exactly one comment");
-  test_comments(\@comments, @_);
+foreach my $test (@comment_tests) {
+  my $cid     = $test->{args}{comment_ids}[0];
+  my $api_key = $test->{user} ? $config->{"$test->{user}_user_api_key"} : undef;
+  my $headers = api_headers($api_key);
+  my $path    = $url . "rest/bug/comment/$cid";
+
+  if (my $error = $test->{error}) {
+    $t->get_ok($path => $headers)->status_isnt(200);
+    like($t->tx->res->json->{message}, qr/\Q$error\E/, "$test->{test}: $error");
+  }
+  else {
+    $t->get_ok($path => $headers)->status_is(200);
+    my @returned = values %{$t->tx->res->json->{comments}};
+    is(scalar @returned, 1, "Got exactly one comment");
+    test_comments(\@returned, $test);
+  }
 }
 
-foreach my $rpc (@clients) {
-  $rpc->bz_run_tests(
-    tests        => \@comment_tests,
-    method       => 'Bug.comments',
-    post_success => \&post_comments
-  );
-}
+done_testing();
