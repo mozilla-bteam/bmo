@@ -20,13 +20,22 @@ our @EXPORT = qw(
   GITHUB_API_TIMEOUT
   GITHUB_CACHE_SECONDS
   GITHUB_ERROR_CACHE_SECONDS
+  GITHUB_MAX_PULL_REQUESTS
+  GITHUB_REVIEWS_PER_PAGE
 );
 
 # Attachment content type used to mark a GitHub pull request link.
 use constant GITHUB_CONTENT_TYPE => 'text/x-github-pull-request';
 
 # Matches a GitHub PR URL, capturing (owner, repo, pr_number).
-use constant GITHUB_PR_REGEX => qr{^https://github\.com/([^/]+)/([^/]+)/pull/(\d+)/?$};
+# The owner and repo are restricted to the character set GitHub actually
+# permits (alphanumerics plus '.', '_' and '-'). This is deliberately strict:
+# the URL comes from attachment data, which any user who can attach to a bug
+# controls, so a permissive pattern would let characters like '?', '#' or '%'
+# through and inject query strings or extra path segments into the requests we
+# make to GitHub. It also keeps the values safe to echo back in API responses.
+use constant GITHUB_PR_REGEX =>
+  qr{^https://github\.com/([A-Za-z0-9._-]+)/([A-Za-z0-9._-]+)/pull/(\d+)/?$};
 
 use constant GITHUB_API_BASE    => 'https://api.github.com';
 use constant GITHUB_API_TIMEOUT => 10;
@@ -40,5 +49,20 @@ use constant GITHUB_CACHE_SECONDS => 300;
 # failures (rate limiting, outages, private repos) don't re-hit GitHub on every
 # bug view, while still recovering quickly once the PR becomes reachable again.
 use constant GITHUB_ERROR_CACHE_SECONDS => 60;
+
+# Upper bound on how many pull requests we will fetch for a single bug. Each
+# uncached PR triggers outbound calls to GitHub, and PR attachments are
+# user-supplied, so this caps the worst-case work (and outbound traffic) a
+# single API request can generate. Real bugs rarely link this many PRs.
+use constant GITHUB_MAX_PULL_REQUESTS => 50;
+
+# Page size requested for a PR's reviews. GitHub returns reviews oldest-first
+# and defaults to 30 per page, so on a busy PR the first page would be the
+# *oldest* reviews - the wrong subset for computing each reviewer's latest
+# state. Requesting GitHub's maximum (100) in a single call gives the correct
+# result for effectively every PR while keeping this to one bounded request.
+# A PR with more than 100 review events (extremely rare) could still report a
+# stale reviewer state; we accept that rather than paginate unboundedly.
+use constant GITHUB_REVIEWS_PER_PAGE => 100;
 
 1;

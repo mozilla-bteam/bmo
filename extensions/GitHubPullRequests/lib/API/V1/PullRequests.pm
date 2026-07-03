@@ -5,48 +5,43 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-package Bugzilla::Extension::GitHubPullRequests::WebService;
+package Bugzilla::Extension::GitHubPullRequests::API::V1::PullRequests;
 
 use 5.10.1;
-use strict;
-use warnings;
-
-use base qw(Bugzilla::WebService);
+use Mojo::Base qw( Mojolicious::Controller );
 
 use Bugzilla::Bug;
 use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Logging;
-use Bugzilla::WebService::Constants;
 use Bugzilla::Extension::GitHubPullRequests::Constants;
-use Types::Standard qw(-types);
-use Type::Params qw(compile);
 
 use JSON qw(decode_json);
 use LWP::UserAgent;
+use URI::Escape qw(uri_escape);
 
-use constant READ_ONLY => qw(
-  bug_pull_requests
-);
-
-use constant PUBLIC_METHODS => qw(
-  bug_pull_requests
-);
+sub setup_routes {
+  my ($class, $r) = @_;
+  $r->get('/githubpr/bug_pull_requests/:bug_id')
+    ->to('GitHubPullRequests::API::V1::PullRequests#bug_pull_requests');
+}
 
 sub bug_pull_requests {
-  state $check = compile(Object, Dict [bug_id => Int]);
-  my ($self, $params) = $check->(@_);
+  my ($self) = @_;
+  Bugzilla->usage_mode(USAGE_MODE_MOJO_REST);
 
-  my $user = Bugzilla->login(LOGIN_REQUIRED);
+  my $user = $self->bugzilla->login(LOGIN_REQUIRED);
+  $user->id || return $self->user_error('login_required');
 
   # Kill switch: when disabled, return nothing rather than querying GitHub.
-  return {pull_requests => []}
+  return $self->render(json => {pull_requests => []})
     unless Bugzilla->params->{github_pr_status_enabled};
 
-  ThrowUserError('invalid_parameter', {name => 'bug_id', err => 'required'})
-    unless $params->{bug_id};
+  my $bug_id = $self->param('bug_id');
+  return $self->user_error('invalid_parameter', {name => 'bug_id', err => 'required'})
+    unless $bug_id;
 
-  my $bug = Bugzilla::Bug->check({id => $params->{bug_id}, cache => 1});
+  my $bug = Bugzilla::Bug->check({id => $bug_id, cache => 1});
 
   my $ua = LWP::UserAgent->new(timeout => GITHUB_API_TIMEOUT);
   $ua->agent('BMO-Bugzilla/1.0');
@@ -79,18 +74,39 @@ sub bug_pull_requests {
       next;
     }
 
+    # Bound the amount of work a single request can trigger. Anyone who can
+    # attach to a bug can add PR attachments, and each uncached PR makes two
+    # outbound calls to GitHub, so an unbounded loop is an amplification/DoS
+    # vector (and risks rate-limiting our API token). Stop once we hit the cap.
+    if (@pull_requests >= GITHUB_MAX_PULL_REQUESTS) {
+      WARN( "GitHub: bug "
+          . $bug->id
+          . " has more than "
+          . GITHUB_MAX_PULL_REQUESTS
+          . " PR attachments; not fetching the rest");
+      last;
+    }
+
     my $pr_data = _fetch_pull_request($ua, $owner, $repo, $pr_number);
     push @pull_requests, $pr_data;
   }
 
-  return {pull_requests => \@pull_requests};
+  return $self->render(json => {pull_requests => \@pull_requests});
 }
 
 sub _fetch_pull_request {
   my ($ua, $owner, $repo, $pr_number) = @_;
 
-  my $url     = "https://github.com/$owner/$repo/pull/$pr_number";
-  my $api_url = GITHUB_API_BASE . "/repos/$owner/$repo/pulls/$pr_number";
+  # Percent-encode the path segments as defense in depth. GITHUB_PR_REGEX
+  # already limits these to a URL-safe character set, but encoding guarantees
+  # that any unexpected character is treated as literal path content and cannot
+  # inject a query string, fragment, or additional path segments into the
+  # requests we send to GitHub. $pr_number is digits-only so needs no encoding.
+  my $enc_owner = uri_escape($owner);
+  my $enc_repo  = uri_escape($repo);
+
+  my $url     = "https://github.com/$enc_owner/$enc_repo/pull/$pr_number";
+  my $api_url = GITHUB_API_BASE . "/repos/$enc_owner/$enc_repo/pulls/$pr_number";
 
   my $base = {
     url       => $url,
@@ -135,7 +151,8 @@ sub _fetch_pull_request {
 
   my @labels = map { $_->{name} } @{$pr->{labels} // []};
 
-  my $reviews_response = _github_get($ua, $api_url . '/reviews');
+  my $reviews_response
+    = _github_get($ua, $api_url . '/reviews?per_page=' . GITHUB_REVIEWS_PER_PAGE);
   my @reviews;
   if ($reviews_response->{ok}) {
     @reviews = _summarize_reviews($reviews_response->{data});
@@ -222,18 +239,6 @@ sub _summarize_reviews {
   }
 
   return map { {user => $_, state => $latest{$_}} } @order;
-}
-
-sub rest_resources {
-  return [
-    qr{^/githubpr/bug_pull_requests/(\d+)$},
-    {
-      GET => {
-        method => 'bug_pull_requests',
-        params => sub { return {bug_id => $_[0]} },
-      },
-    },
-  ];
 }
 
 1;
