@@ -1493,6 +1493,7 @@
   [% IF user.id %]
     <div id="new-comment-actions">
       <button type="submit" class="save-btn primary" id="bottom-save-btn">Save Changes</button>
+      [%+ Hook.process('bottom_actions', 'bug_modal/edit.html.tmpl') %]
       <div id="resolve-as">
         [%
           IF bug.resolution == "";
