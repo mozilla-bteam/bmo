@@ -29,7 +29,7 @@ use Bugzilla::Status;
 use Bugzilla::Token;
 
 use Date::Parse;
-use List::Util qw(any);
+use List::Util qw(any all);
 use List::MoreUtils qw(uniq);
 
 
@@ -890,9 +890,21 @@ $vars->{'closedstates'} = [map { $_->name } closed_bug_statuses()];
 
 # Determine which status filter tab is active for the toggle UI.
 {
-  my @requested = $params->param('bug_status');
+  my @requested   = $params->param('bug_status');
+  my @resolution  = $params->param('resolution');
   if (!@requested || any { $_ eq '__all__' } @requested) {
-    $vars->{'status_filter'} = 'all';
+    # resolution=--- (unresolved) only matches open bugs; a resolution list
+    # with no "---" only matches closed bugs. Either way that's a more
+    # specific filter than "all", even though bug_status wasn't set.
+    if (@resolution && all { $_ eq '---' } @resolution) {
+      $vars->{'status_filter'} = 'open';
+    }
+    elsif (@resolution && !(any { $_ eq '---' } @resolution)) {
+      $vars->{'status_filter'} = 'closed';
+    }
+    else {
+      $vars->{'status_filter'} = 'all';
+    }
   }
   elsif (any { $_ eq '__open__' } @requested) {
     $vars->{'status_filter'} = 'open';
