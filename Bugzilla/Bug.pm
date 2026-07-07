@@ -2717,9 +2717,17 @@ sub set_all {
 
   $self->_add_remove($params, 'see_also');
 
-  # And set custom fields.
+  # And set custom fields. Only fields enabled for the bug's current
+  # product/component are considered; product/component were already applied
+  # via SUPER::set_all above, so this reflects the post-move state. This is
+  # intentional (bug 2036191): a value submitted for a field not enabled on
+  # the target product/component is ignored rather than written, closing the
+  # glitch where e.g. cf_crash_signature could be stored on a product that
+  # doesn't expose it.
   my @custom_fields
-    = grep { $_->type != FIELD_TYPE_EXTENSION } Bugzilla->active_custom_fields;
+    = grep { $_->type != FIELD_TYPE_EXTENSION } Bugzilla->active_custom_fields(
+        {product => $self->product_obj, component => $self->component_obj}
+    );
   foreach my $field (@custom_fields) {
     my $fname = $field->name;
     if (exists $params->{$fname}) {
@@ -3054,15 +3062,32 @@ sub _set_product {
     # We copy this array because the original array is modified while we're
     # working, and that confuses "foreach".
     my @current_groups = @{$self->groups_in};
+    my $dropped_group  = 0;
     foreach my $group (@current_groups) {
       if (!$product->group_is_valid($group)) {
         $self->remove_group($group);
+        $dropped_group = 1;
       }
     }
 
     # Make sure the bug is in all the mandatory groups for the new product.
     foreach my $group (@{$product->groups_mandatory}) {
       $self->add_group($group);
+    }
+
+    # If any of the bug's groups were dropped because they aren't valid in the
+    # new product, add the target product's default security group so the bug
+    # stays restricted to the best of our ability. This covers non-default
+    # security groups such as dom-core-security, not just the source product's
+    # own default (Bug 2028240, Bug 2049554, Bug 2038147). Runs for all usage
+    # modes; the browser path additionally pre-selects the group in the
+    # verify-new-product UI via _check_default_product_security_group() in the
+    # BMO extension.
+    my @pre_move_names = map { $_->name } @current_groups;
+    for my $sec_group (
+      _target_security_group_when_dropping($product, \@pre_move_names, $dropped_group))
+    {
+      $self->add_group($sec_group);
     }
   }
   else {
@@ -4372,20 +4397,45 @@ sub in_group {
 }
 
 # Returns extra group names to add when cloning $self into $target_product.
-# If the bug is in its source product's default security group and the target
-# product has a different one, the target group name is returned so the clone
-# stays secure (Bug 2028240).
+# When cloning across products, any of the bug's groups that aren't valid in
+# the target product are silently dropped. If that would lose a group, we add
+# the target product's default security group so the clone stays restricted to
+# the best of our ability. This mirrors what happens when a bug is moved
+# between products (see Bugzilla::check_default_product_security_group, which
+# the verify-new-product template calls with the dropped groups), and covers
+# non-default security groups such as dom-core-security -- not just the source
+# product's own default (Bug 2028240, Bug 2049554).
 sub extra_security_groups_for_clone {
   my ($self, $target_product) = @_;
   return () if $self->product_id == $target_product->id;
+  return () unless @{$self->groups_in};
+
+  # If every group the bug is in carries over to the target product, then no
+  # restriction is lost and there is nothing to compensate for.
+  my $dropped = $self->get_invalid_groups(
+    {bug_ids => [$self->id], product => $target_product});
+
+  my @group_names = map { $_->name } @{$self->groups_in};
+  return _target_security_group_when_dropping($target_product, \@group_names,
+    scalar @$dropped);
+}
+
+# Returns the target product's default security group name to add when a bug is
+# moved or cloned into $target_product and at least one of its groups would be
+# dropped there ($any_dropped is true). Returns () when nothing is dropped, the
+# target has no default security group, or the bug is already in it.
+# $group_names is an arrayref of the bug's current group names (caller supplies
+# the snapshot it needs). This keeps a bug that was secured in *any* group --
+# not only the source product's own default security group -- restricted after
+# a product change (Bug 2028240, Bug 2049554, Bug 2038147).
+sub _target_security_group_when_dropping {
+  my ($target_product, $group_names, $any_dropped) = @_;
+  return () unless $any_dropped;
   return () unless $target_product->can('default_security_group');
 
-  my @clone_groups = map { $_->name } @{$self->groups_in};
-  my $source_sec = eval { $self->product_obj->default_security_group };
-  return () unless $source_sec && grep { $_ eq $source_sec } @clone_groups;
-
+  local $@;
   my $target_sec = eval { $target_product->default_security_group };
-  return () unless $target_sec && !grep { $_ eq $target_sec } @clone_groups;
+  return () unless $target_sec && !grep { $_ eq $target_sec } @$group_names;
 
   return ($target_sec);
 }

@@ -1754,20 +1754,31 @@ sub _bug_to_hash {
   foreach my $field (@custom_fields) {
     my $name = $field->name;
     next if !filter_wants($params, $name, ['default', 'custom']);
-    if ($field->type == FIELD_TYPE_BUG_ID) {
-      $item{$name} = $self->type('int', $bug->$name);
-    }
-    elsif ($field->type == FIELD_TYPE_DATETIME || $field->type == FIELD_TYPE_DATE) {
-      my $value = $bug->$name;
-      $item{$name} = defined($value) ? $self->type('dateTime', $value) : undef;
-    }
-    elsif ($field->type == FIELD_TYPE_MULTI_SELECT) {
-      my @values = map { $self->type('string', $_) } @{$bug->$name};
-      $item{$name} = \@values;
-    }
-    else {
-      $item{$name} = $self->type('string', $bug->$name);
-    }
+    $item{$name} = $self->_format_cf_value($field, $bug->$name);
+  }
+
+  # Include stored values for CFs not enabled for this product/component,
+  # so callers aren't silently missing data when a bug retains a value after
+  # its product/component changed.  Multi-select CFs are excluded: they are
+  # not preloaded by DB_COLUMNS and each accessor fires a separate SELECT,
+  # making them too expensive to include for hidden fields across many bugs.
+  my %seen_cf = map { $_->name => 1 } @custom_fields;
+  my @hidden_cfs = grep {
+    !$seen_cf{$_->name}
+      && $_->type != FIELD_TYPE_EXTENSION
+      && $_->type != FIELD_TYPE_MULTI_SELECT
+  } Bugzilla->active_custom_fields({skip_extensions => 1});
+  foreach my $field (@hidden_cfs) {
+    my $name = $field->name;
+    next if !filter_wants($params, $name, ['default', 'custom']);
+    my $raw = $bug->$name;
+    next if !defined($raw) || $raw eq '';
+
+    # Single-select fields store the '---' sentinel when unset; treat it as
+    # empty so hidden fields left at their default aren't surfaced as noise.
+    next if $field->type == FIELD_TYPE_SINGLE_SELECT && $raw eq '---';
+
+    $item{$name} = $self->_format_cf_value($field, $raw);
   }
 
   # Timetracking fields are only sent if the user can see them.
@@ -1821,6 +1832,22 @@ sub _bug_to_hash {
   }
 
   return \%item;
+}
+
+sub _format_cf_value {
+  my ($self, $field, $value) = @_;
+  if ($field->type == FIELD_TYPE_BUG_ID) {
+    return $self->type('int', $value);
+  }
+  elsif ($field->type == FIELD_TYPE_DATETIME || $field->type == FIELD_TYPE_DATE) {
+    return defined($value) ? $self->type('dateTime', $value) : undef;
+  }
+  elsif ($field->type == FIELD_TYPE_MULTI_SELECT) {
+    return [map { $self->type('string', $_) } @{$value}];
+  }
+  else {
+    return $self->type('string', $value);
+  }
 }
 
 sub _user_to_hash {

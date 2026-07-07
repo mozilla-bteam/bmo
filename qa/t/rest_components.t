@@ -133,4 +133,10 @@ $t->get_ok($url
     {'X-Bugzilla-API-Key' => $api_key})->status_is(200)
   ->json_is('/name' => 'Test / Component');
 
+# Clean up: revoke the edittriageowners membership granted above so later
+# tests (e.g. rest_user_get.t) still see this user as belonging to no groups.
+$t->put_ok($url
+    . 'rest/user/no-privs@mozilla.test' => {'X-Bugzilla-API-Key' => $api_key}
+    => json => {groups => {remove => ['edittriageowners']}})->status_is(200);
+
 done_testing();

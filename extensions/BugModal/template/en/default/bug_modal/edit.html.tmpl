@@ -1534,6 +1534,7 @@
           END;
         %]
       </div>
+      [%+ Hook.process('bottom_actions', 'bug_modal/edit.html.tmpl') %]
       <div id="bottom-status" style="display:none">
         [% INCLUDE status_block prefix="bottom-" %]
       </div>

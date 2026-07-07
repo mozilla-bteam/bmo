@@ -50,10 +50,4 @@ sub template_before_process {
   $vars->{github_linked_pr_count}    = $linked_pr_count;
 }
 
-sub webservice {
-  my ($self, $args) = @_;
-  $args->{dispatch}->{GitHubPullRequests}
-    = 'Bugzilla::Extension::GitHubPullRequests::WebService';
-}
-
 __PACKAGE__->NAME;

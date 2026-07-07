@@ -36,7 +36,6 @@
 .gh-state-draft  { background-color: #6e7781; color: #fff; }
 .gh-state-merged { background-color: #8250df; color: #fff; }
 .gh-state-closed { background-color: #cf222e; color: #fff; }
-.gh-state-pending { background-color: #d4d4d4; color: #57606a; }
 
 /* Reviewer list */
 .gh-reviewer-list {

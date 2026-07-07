@@ -18,35 +18,27 @@ our @EXPORT = qw(
   GITHUB_PR_REGEX
   GITHUB_API_BASE
   GITHUB_API_TIMEOUT
-  GITHUB_REQUEST_BUDGET
-  GITHUB_LOCK_SECONDS
   GITHUB_CACHE_SECONDS
   GITHUB_ERROR_CACHE_SECONDS
+  GITHUB_MAX_PULL_REQUESTS
+  GITHUB_REVIEWS_PER_PAGE
 );
 
 # Attachment content type used to mark a GitHub pull request link.
 use constant GITHUB_CONTENT_TYPE => 'text/x-github-pull-request';
 
 # Matches a GitHub PR URL, capturing (owner, repo, pr_number).
-use constant GITHUB_PR_REGEX => qr{^https://github\.com/([^/]+)/([^/]+)/pull/(\d+)/?$};
+# The owner and repo are restricted to the character set GitHub actually
+# permits (alphanumerics plus '.', '_' and '-'). This is deliberately strict:
+# the URL comes from attachment data, which any user who can attach to a bug
+# controls, so a permissive pattern would let characters like '?', '#' or '%'
+# through and inject query strings or extra path segments into the requests we
+# make to GitHub. It also keeps the values safe to echo back in API responses.
+use constant GITHUB_PR_REGEX =>
+  qr{^https://github\.com/([A-Za-z0-9._-]+)/([A-Za-z0-9._-]+)/pull/(\d+)/?$};
 
-use constant GITHUB_API_BASE => 'https://api.github.com';
-
-# Per-call timeout for a single GitHub API request.
-use constant GITHUB_API_TIMEOUT => 5;
-
-# Overall wall-clock budget (in seconds) for synchronously fetching PRs in a
-# single request. Once exceeded we stop hitting GitHub and return the remaining
-# PRs as "pending" rather than tying up the web worker. This is a soft limit:
-# an in-progress PR may overrun it by up to GITHUB_API_TIMEOUT per call. The
-# cache warms progressively across reloads as earlier PRs become cache hits.
-use constant GITHUB_REQUEST_BUDGET => 15;
-
-# TTL of the per-PR in-flight lock. While one request is fetching a PR, other
-# concurrent requests skip it (returning "pending") instead of stampeding
-# GitHub with duplicate calls. The lock expires on its own; on success the
-# result is cached so later requests are served from cache regardless.
-use constant GITHUB_LOCK_SECONDS => 15;
+use constant GITHUB_API_BASE    => 'https://api.github.com';
+use constant GITHUB_API_TIMEOUT => 10;
 
 # How long (in seconds) to cache a PR's summary in memcached. GitHub's
 # unauthenticated rate limit is low (60 req/hr per IP) and authenticated is
@@ -57,5 +49,20 @@ use constant GITHUB_CACHE_SECONDS => 300;
 # failures (rate limiting, outages, private repos) don't re-hit GitHub on every
 # bug view, while still recovering quickly once the PR becomes reachable again.
 use constant GITHUB_ERROR_CACHE_SECONDS => 60;
+
+# Upper bound on how many pull requests we will fetch for a single bug. Each
+# uncached PR triggers outbound calls to GitHub, and PR attachments are
+# user-supplied, so this caps the worst-case work (and outbound traffic) a
+# single API request can generate. Real bugs rarely link this many PRs.
+use constant GITHUB_MAX_PULL_REQUESTS => 50;
+
+# Page size requested for a PR's reviews. GitHub returns reviews oldest-first
+# and defaults to 30 per page, so on a busy PR the first page would be the
+# *oldest* reviews - the wrong subset for computing each reviewer's latest
+# state. Requesting GitHub's maximum (100) in a single call gives the correct
+# result for effectively every PR while keeping this to one bounded request.
+# A PR with more than 100 review events (extremely rare) could still report a
+# stale reviewer state; we accept that rather than paginate unboundedly.
+use constant GITHUB_REVIEWS_PER_PAGE => 100;
 
 1;
