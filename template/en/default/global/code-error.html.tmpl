@@ -550,7 +550,8 @@
     so is therefore being ignored.
 
   [% ELSIF error == "github_pr_bug_not_found" %]
-    The pull request title did not contain a valid [% terms.bug %] ID.
+    The pull request title did not contain a valid [% terms.bug %] ID,
+    the [% terms.bug %] does not exist, or is not publicly visible.
 
   [% ELSIF error == "github_pr_attachment_exists" %]
     The pull request contained a [% terms.bug %] ID that already has an attachment

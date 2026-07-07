@@ -94,7 +94,7 @@ sub pull_request {
   # can see it (non-fatal).
   my ($bug_id) = $title =~ BUG_RE;
   my $bug = Bugzilla::Bug->new($bug_id);
-  if ($bug->{error}) {
+  if ($bug->{error} || !Bugzilla->user->can_see_bug($bug->id)) {
     $template->process('global/code-error.html.tmpl',
       {error => 'github_pr_bug_not_found'}, \$message)
       || die $template->error();
