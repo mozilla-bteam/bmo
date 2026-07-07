@@ -383,6 +383,10 @@ input[type="number"] {
   white-space: nowrap;
 }
 
+#close-as-invalid-btn {
+  margin-left: 16px;
+}
+
 #after-comment-commit-button {
   margin-bottom: 4px;
 }
