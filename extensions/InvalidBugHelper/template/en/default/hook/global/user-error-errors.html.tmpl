@@ -9,4 +9,8 @@
 [% IF error == "bug_status_unresolvable" %]
   [% title = BLOCK %][% terms.Bug %] Cannot Be Closed as Invalid[% END %]
   This [% terms.bug %] is already resolved or is in the Invalid [% terms.Bugs %] product.
+[% ELSIF error == "invalid_bug_reporter_is_trusted" %]
+  [% title = BLOCK %][% terms.Bug %] Cannot Be Closed as Invalid[% END %]
+  This [% terms.bug %] was reported by a member of the 'editbugs' group and
+  cannot be closed as invalid.
 [% END %]

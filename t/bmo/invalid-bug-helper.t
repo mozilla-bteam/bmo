@@ -124,7 +124,7 @@ Bugzilla->set_user($admin);
 my $ws = 'Bugzilla::Extension::InvalidBugHelper::WebService';
 
 eval { $ws->close_as_invalid({bug_id => $bug_from_editbugs_reporter->id}) };
-like($@, qr/Cannot Be Closed as Invalid|already resolved/,
+like($@, qr/reported by a member of the 'editbugs' group/,
   'close_as_invalid refuses a bug reported by an editbugs member');
 
 # The real return-value serialization (->type) is only provided by the
