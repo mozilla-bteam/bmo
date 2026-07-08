@@ -277,6 +277,7 @@ sub db_schema_abstract_schema {
     INDEXES => [
       tracking_flags_values_idx =>
         {FIELDS => ['tracking_flag_id', 'value'], TYPE => 'UNIQUE',},
+      tracking_flag_id_idx => ['tracking_flag_id']
     ],
   };
   $args->{'schema'}->{'tracking_flags_bugs'} = {
