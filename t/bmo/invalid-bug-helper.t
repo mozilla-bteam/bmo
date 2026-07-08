@@ -135,9 +135,14 @@ no warnings 'redefine';
 local *{"${ws}::type"} = sub { return $_[2] };
 use strict 'refs';
 
-my $result = eval { $ws->close_as_invalid({bug_id => $bug_from_plain_reporter->id}) };
-is($@, '', 'close_as_invalid does not throw for a bug reported by a non-editbugs user');
-is($result->{product}, 'Invalid Bugs', 'bug from non-editbugs reporter is moved to Invalid Bugs')
-  if $result;
+SKIP: {
+  skip 'Need the Invalid Bugs product to test the non-editbugs-reporter path', 2
+    unless Bugzilla::Product->new({name => 'Invalid Bugs'});
+
+  my $result = eval { $ws->close_as_invalid({bug_id => $bug_from_plain_reporter->id}) };
+  is($@, '', 'close_as_invalid does not throw for a bug reported by a non-editbugs user');
+  is($result->{product}, 'Invalid Bugs', 'bug from non-editbugs reporter is moved to Invalid Bugs')
+    if $result;
+}
 
 done_testing();
