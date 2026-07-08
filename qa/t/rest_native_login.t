@@ -84,7 +84,8 @@ $t->post_ok(
 # value here also confirms the browser login above succeeded.
 $t->get_ok($url . 'home')->status_is(200);
 my $global = $t->tx->res->dom->at('#bugzilla-global');
-my $bugzilla_config = $global ? decode_json($global->{'data-bugzilla'}) : {};
+my $bugzilla_json = $global ? $global->attr('data-bugzilla') : undef;
+my $bugzilla_config = $bugzilla_json ? decode_json($bugzilla_json) : {};
 my $api_token = $bugzilla_config->{api_token};
 ok($api_token, 'Logged in and obtained a Bugzilla_api_token');
 
