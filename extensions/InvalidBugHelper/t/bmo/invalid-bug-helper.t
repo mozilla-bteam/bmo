@@ -70,7 +70,7 @@ ok($param_names{invalidbughelper_warning_text}, 'warning_text param defined');
 # member, regardless of who is performing the close (Bug 1684509).
 
 BEGIN { Bugzilla->extensions }
-Bugzilla->usage_mode(USAGE_MODE_CMDLINE);
+Bugzilla->usage_mode(USAGE_MODE_TEST);
 Bugzilla->error_mode(ERROR_MODE_DIE);
 
 my $product = Bugzilla::Product->new({name => 'Firefox'})
@@ -141,8 +141,8 @@ SKIP: {
 
   my $result = eval { $ws->close_as_invalid({bug_id => $bug_from_plain_reporter->id}) };
   is($@, '', 'close_as_invalid does not throw for a bug reported by a non-editbugs user');
-  is($result->{product}, 'Invalid Bugs', 'bug from non-editbugs reporter is moved to Invalid Bugs')
-    if $result;
+  is(ref $result eq 'HASH' ? $result->{product} : undef, 'Invalid Bugs',
+    'bug from non-editbugs reporter is moved to Invalid Bugs');
 }
 
 done_testing();
