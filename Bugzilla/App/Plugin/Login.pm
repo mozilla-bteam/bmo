@@ -10,6 +10,8 @@ use 5.10.1;
 use Mojo::Base 'Mojolicious::Plugin';
 
 use Bugzilla::Constants;
+use Bugzilla::Error;
+use Bugzilla::Token;
 use Bugzilla::User::APIKey;
 use Bugzilla::Util qw(with_writable_database);
 
@@ -52,9 +54,36 @@ sub register {
 
       # Try cookies first if we are using the web UI
       my $usage_mode = Bugzilla->usage_mode;
-      if ($usage_mode == USAGE_MODE_BROWSER || $usage_mode == USAGE_MODE_MOJO) {
+      if ( $usage_mode == USAGE_MODE_BROWSER
+        || $usage_mode == USAGE_MODE_MOJO
+        || $usage_mode == USAGE_MODE_MOJO_REST)
+      {
         my $login_cookie  = $c->cookie("Bugzilla_logincookie");
         my $login_user_id = $c->cookie("Bugzilla_login");
+
+        # For REST API requests, cookie authentication additionally requires a
+        # valid Bugzilla_api_token which acts as a CSRF token. This mirrors the
+        # legacy WebService flow in Bugzilla::Auth::Login::Cookie.
+        if ($usage_mode == USAGE_MODE_MOJO_REST) {
+          if (defined(my $api_token = $c->param('Bugzilla_api_token'))) {
+            my ($token_user_id, undef, undef, $token_type)
+              = Bugzilla::Token::GetTokenData($api_token);
+            if ( !defined $token_type
+              || $token_type ne 'api_token'
+              || !$login_user_id
+              || $login_user_id != $token_user_id)
+            {
+              Bugzilla->check_rate_limit('token_mismatch');
+              ThrowUserError('auth_invalid_token', {token => $api_token});
+            }
+          }
+          elsif ($login_cookie) {
+
+            # REST requires an api-token when using cookie authentication;
+            # fall back to a non-authenticated request.
+            $login_cookie = '';
+          }
+        }
 
         if ($login_cookie && $login_user_id) {
           my $db_cookie
