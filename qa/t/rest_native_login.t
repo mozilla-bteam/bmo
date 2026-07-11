@@ -102,4 +102,12 @@ $t->get_ok($url . $endpoint)->status_is(401);
 $t->get_ok($url . $endpoint . '&Bugzilla_api_token=invalid-token-value')
   ->status_is(400);
 
+# 3d. A valid Bugzilla_api_token WITHOUT the matching login cookie must not
+#     authenticate. A leaked/stolen token is useless on its own; it is only
+#     honoured alongside the session cookie it belongs to. Use a fresh user
+#     agent so no login cookies are sent.
+my $t_no_cookie = Test::Mojo->new();
+$t_no_cookie->get_ok($url . $endpoint . '&Bugzilla_api_token=' . $api_token)
+  ->status_is(400);
+
 done_testing();
