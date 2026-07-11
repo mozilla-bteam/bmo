@@ -52,6 +52,10 @@
   active_attachments = 0;
   obsolete_attachments = 0;
   external_attachments = 0;
+  # external_attachments_total also counts obsolete externals so the "Show
+  # External" button is still rendered (and the rows remain reachable) when
+  # every external attachment happens to be obsolete.
+  external_attachments_total = 0;
 
   attachment_hide_types = {};
   IF Param('attachment_hide_content_types');
@@ -62,11 +66,15 @@
 
   FOREACH attachment IN bug.attachments;
     NEXT IF attachment.isprivate && !(user.is_insider || attachment.attacher.id == user.id || (attachment.is_bounty_attachment && bug.reporter.id == user.id)) ;
+    is_external = attachment_hide_types.${attachment.contenttype} ? 1 : 0;
+    IF is_external;
+      external_attachments_total = external_attachments_total + 1;
+    END;
     IF attachment.isobsolete;
       obsolete_attachments = obsolete_attachments + 1;
     ELSE;
       active_attachments = active_attachments + 1;
-      IF attachment_hide_types.${attachment.contenttype};
+      IF is_external;
         external_attachments = external_attachments + 1;
       END;
     END;
@@ -1425,6 +1433,7 @@
         active_attachments = active_attachments
         obsolete_attachments = obsolete_attachments
         external_attachments = external_attachments
+        external_attachments_total = external_attachments_total
         attachment_hide_types = attachment_hide_types
     %]
   [% END %]
