@@ -165,6 +165,83 @@ sub _object_modified {
   }
 
   $self->_push_object('modify', $object, $change_set, $changes_data);
+
+  # Dependency/regression relationship edits on one bug also affect the
+  # corresponding field on related bugs; emit synthetic modify events so
+  # webhook consumers receive both sides of the relationship change.
+  if ($object->isa('Bugzilla::Bug')) {
+    my $counterpart_changes = _counterpart_bug_changes($object, $changes);
+    foreach my $related_bug_id (sort { $a <=> $b } keys %$counterpart_changes) {
+      my $related_bug = Bugzilla::Bug->new($related_bug_id);
+      next if !$related_bug || $related_bug->{error};
+
+      my $related_changes_data = {
+        timestamp => $args->{'timestamp'},
+        changes   => $counterpart_changes->{$related_bug_id},
+        indirect_change => {
+          type          => 'dependency',
+          source_bug_id => $object->id,
+        },
+      };
+      $self->_push_object('modify', $related_bug, $change_set, $related_changes_data);
+    }
+  }
+}
+
+sub _counterpart_bug_changes {
+  my ($source_bug, $changes) = @_;
+
+  my %field_map = (
+    blocked      => 'dependson',
+    dependson    => 'blocked',
+    regresses    => 'regressed_by',
+    regressed_by => 'regresses',
+  );
+
+  my %result;
+  foreach my $source_field (sort keys %field_map) {
+    next unless exists $changes->{$source_field};
+
+    my $counterpart_field = $field_map{$source_field};
+    my ($old_value, $new_value) = @{$changes->{$source_field}};
+    my $old_ids = _parse_related_bug_ids($old_value);
+    my $new_ids = _parse_related_bug_ids($new_value);
+
+    my %all_ids = map { $_ => 1 } (keys %$old_ids, keys %$new_ids);
+    foreach my $related_bug_id (sort { $a <=> $b } keys %all_ids) {
+      my $in_old = exists $old_ids->{$related_bug_id};
+      my $in_new = exists $new_ids->{$related_bug_id};
+      next if $in_old == $in_new;
+
+      push @{$result{$related_bug_id}}, {
+        field   => $counterpart_field,
+        removed => $in_old ? $source_bug->id : '',
+        added   => $in_new ? $source_bug->id : '',
+      };
+    }
+  }
+
+  return \%result;
+}
+
+sub _parse_related_bug_ids {
+  my ($raw_value) = @_;
+
+  my $value = '';
+  if (ref $raw_value eq 'ARRAY') {
+    $value = join(',', @$raw_value);
+  }
+  elsif (defined $raw_value) {
+    $value = $raw_value;
+  }
+
+  my %ids;
+  foreach my $id (split(/[\s,]+/, $value)) {
+    next unless $id =~ /^\d+$/;
+    $ids{$id} = 1;
+  }
+
+  return \%ids;
 }
 
 sub _get_object_from_args {
@@ -290,6 +367,9 @@ sub _push_object {
   $rh_event->{'action'}      = $message_type;
   $rh_event->{'target'}      = $name;
   $rh_event->{'change_set'}  = $change_set;
+  if (exists $changes->{'indirect_change'}) {
+    $rh_event->{'indirect_change'} = $changes->{'indirect_change'};
+  }
   $rh_event->{'routing_key'} = "$name.$message_type";
   if (exists $rh_event->{'changes'}) {
     $rh_event->{'routing_key'}
