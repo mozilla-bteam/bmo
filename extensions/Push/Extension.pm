@@ -169,22 +169,34 @@ sub _object_modified {
   # Dependency/regression relationship edits on one bug also affect the
   # corresponding field on related bugs; emit synthetic modify events so
   # webhook consumers receive both sides of the relationship change.
-  if ($object->isa('Bugzilla::Bug')) {
-    my $counterpart_changes = _counterpart_bug_changes($object, $changes);
-    foreach my $related_bug_id (sort { $a <=> $b } keys %$counterpart_changes) {
-      my $related_bug = Bugzilla::Bug->new($related_bug_id);
-      next if !$related_bug || $related_bug->{error};
+  $self->_emit_counterpart_bug_modify_events(
+    $object,
+    $changes,
+    $args->{'timestamp'},
+    $change_set,
+  );
+}
 
-      my $related_changes_data = {
-        timestamp => $args->{'timestamp'},
-        changes   => $counterpart_changes->{$related_bug_id},
-        indirect_change => {
-          type          => 'dependency',
-          source_bug_id => $object->id,
-        },
-      };
-      $self->_push_object('modify', $related_bug, $change_set, $related_changes_data);
-    }
+sub _emit_counterpart_bug_modify_events {
+  my ($self, $source_bug, $changes, $timestamp, $change_set) = @_;
+
+  return unless $source_bug && $source_bug->isa('Bugzilla::Bug');
+  return unless $changes && scalar keys %$changes;
+
+  my $counterpart_changes = _counterpart_bug_changes($source_bug, $changes);
+  foreach my $related_bug_id (sort { $a <=> $b } keys %$counterpart_changes) {
+    my $related_bug = Bugzilla::Bug->new($related_bug_id);
+    next if !$related_bug || $related_bug->{error};
+
+    my $related_changes_data = {
+      timestamp => $timestamp,
+      changes   => $counterpart_changes->{$related_bug_id},
+      indirect_change => {
+        type          => 'dependency',
+        source_bug_id => $source_bug->id,
+      },
+    };
+    $self->_push_object('modify', $related_bug, $change_set, $related_changes_data);
   }
 }
 
@@ -444,6 +456,23 @@ sub bug_end_of_create {
   my ($self, $args) = @_;
   return unless $self->_enabled;
   $self->_object_created($args);
+
+  my $bug = $args->{bug};
+  return unless $bug && $bug->isa('Bugzilla::Bug');
+
+  my %creation_relation_changes;
+  foreach my $field (qw(blocked dependson regresses regressed_by)) {
+    my $related_ids = $bug->$field || [];
+    next unless @$related_ids;
+    $creation_relation_changes{$field} = ['', join(', ', @$related_ids)];
+  }
+
+  $self->_emit_counterpart_bug_modify_events(
+    $bug,
+    \%creation_relation_changes,
+    $args->{timestamp},
+    change_set_id(),
+  );
 }
 
 sub bug_end_of_update {
