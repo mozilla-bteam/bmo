@@ -277,6 +277,7 @@ sub db_schema_abstract_schema {
     INDEXES => [
       tracking_flags_values_idx =>
         {FIELDS => ['tracking_flag_id', 'value'], TYPE => 'UNIQUE',},
+      tracking_flags_values_tracking_flag_id_idx => ['tracking_flag_id'],
     ],
   };
   $args->{'schema'}->{'tracking_flags_bugs'} = {
@@ -341,6 +342,10 @@ sub install_update_db {
   $dbh->bz_add_column('tracking_flags_values', 'comment',
     {TYPE => 'TEXT', NOTNULL => 0,},
   );
+
+  $dbh->bz_add_index('tracking_flags_values',
+    'tracking_flags_values_tracking_flag_id_idx',
+    [qw(tracking_flag_id)]);
 }
 
 sub install_filesystem {
