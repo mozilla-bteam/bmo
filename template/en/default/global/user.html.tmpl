@@ -26,10 +26,13 @@
 <span class="vcard vcard_[% who.id FILTER html %]">
   [% FILTER collapse %]
     [% IF user.id %]
-      <a class="email [%= "bz_inactive" UNLESS who.is_enabled %]" href="mailto:[% who.email FILTER html %]"
-         onclick="return show_usermenu([% who.id FILTER none %], '[% who.email FILTER js %]', '[% who.name FILTER js %]',
-                  [% user.in_group('editusers') || user.in_group('disableusers') || user.bless_groups.size > 0 ? "true" : "false" %]);"
-        title="[% who.identity FILTER html %]">
+      <a class="email [%= "bz_inactive" UNLESS who.is_enabled %] show_usermenu" href="mailto:[% who.email FILTER html %]"
+         data-user-id="[% who.id FILTER html %]"
+         data-user-email="[% who.email FILTER html %]"
+         data-user-name="[% who.name FILTER html %]"
+         data-show-edit="[% user.in_group('editusers') || user.in_group('disableusers') || user.bless_groups.size > 0 ? 1 : 0 %]"
+         data-hide-profile="0"
+         title="[% who.identity FILTER html %]">
     [%- END -%]
     [% IF who %]
       [% IF who.name %]
