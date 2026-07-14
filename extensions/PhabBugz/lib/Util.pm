@@ -36,6 +36,7 @@ our @EXPORT = qw(
   get_bug_role_phids
   intersect
   is_attachment_phab_revision
+  is_auto_assign_excluded
   is_bug_assigned
   request
   set_attachment_approval_flags
@@ -271,6 +272,18 @@ sub get_bug_role_phids {
 
 sub is_bug_assigned {
   return $_[0]->assigned_to->email ne 'nobody@mozilla.org';
+}
+
+# Returns true if the given Bugzilla::User's login is present in the
+# `phabricator_auto_assign_exclude_list` parameter. This is used to prevent
+# automatically assigning a bug to automation accounts (e.g. Hackbot) that
+# author Phabricator revisions.
+sub is_auto_assign_excluded {
+  my ($user) = @_;
+  my $list = Bugzilla->params->{phabricator_auto_assign_exclude_list};
+  return 0 unless $list;
+  my $login = lc $user->login;
+  return any { lc(trim($_)) eq $login } split /[\s,]+/, $list;
 }
 
 sub is_attachment_phab_revision {

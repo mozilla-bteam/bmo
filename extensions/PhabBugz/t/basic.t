@@ -23,7 +23,8 @@ use Try::Tiny;
 
 use ok 'Bugzilla::Extension::PhabBugz::Constants';
 use ok 'Bugzilla::Extension::PhabBugz::Feed';
-use ok 'Bugzilla::Extension::PhabBugz::Util', qw( get_attachment_revisions );
+use ok 'Bugzilla::Extension::PhabBugz::Util',
+  qw( get_attachment_revisions is_auto_assign_excluded );
 can_ok('Bugzilla::Extension::PhabBugz::Feed', 'group_query');
 
 our @group_members;
@@ -237,6 +238,33 @@ JSON
   is($revisions->[0]->bug_id, 23, 'Bugzilla ID is 23');
   ok(try { $revisions->[0]->update }, 'update revision');
 
+};
+
+# is_auto_assign_excluded honours the phabricator_auto_assign_exclude_list param
+do {
+
+  package Fake::AssignUser;
+  sub new   { return bless {login => $_[1]}, $_[0] }
+  sub login { return $_[0]->{login} }
+
+  package main;
+
+  my $bot = Fake::AssignUser->new('hackbot@mozilla.tld');
+  my $dev = Fake::AssignUser->new('developer@mozilla.com');
+
+  local Bugzilla->params->{phabricator_auto_assign_exclude_list} = '';
+  ok(!is_auto_assign_excluded($bot), 'empty exclude list excludes nobody');
+
+  local Bugzilla->params->{phabricator_auto_assign_exclude_list}
+    = 'hackbot@mozilla.tld, other-bot@bmo.tld';
+  ok(is_auto_assign_excluded($bot), 'listed account is excluded');
+  ok(!is_auto_assign_excluded($dev), 'unlisted account is not excluded');
+
+  # Case-insensitive, whitespace/comma delimited parsing.
+  local Bugzilla->params->{phabricator_auto_assign_exclude_list}
+    = "Hackbot\@Mozilla.tld\nother-bot\@bmo.tld";
+  ok(is_auto_assign_excluded($bot),
+    'matching is case-insensitive and newline delimited');
 };
 
 done_testing;

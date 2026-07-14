@@ -38,6 +38,7 @@ use Bugzilla::Extension::PhabBugz::Util qw(
   create_revision_attachment
   get_bug_role_phids
   is_attachment_phab_revision
+  is_auto_assign_excluded
   is_bug_assigned
   request
   set_attachment_approval_flags
@@ -783,13 +784,21 @@ sub process_revision_change {
   # the revision has reviewers assigned to it.
   # Skip this change if 'leave-open' and 'intermittent-failure'
   # keywords are set (bug 1673348).
+  #
+  # Do not auto-assign the bug if the revision author is listed in the
+  # `phabricator_auto_assign_exclude_list` parameter (e.g. an automation
+  # account such as Hackbot). When such a revision is later commandeered by a
+  # developer, the commandeer transaction re-runs this code with the developer
+  # as the new revision author, assigning the bug to whoever commandeered it.
+  my $submitter     = $revision->author->bugzilla_user;
+  my $is_commandeer = $story_text =~ /\s+commandeered\s+D\d+/;
   if (
     !is_bug_assigned($bug)
     && $revision->status ne 'abandoned'
-    && @{$revision->reviews}
+    && ($is_commandeer || @{$revision->reviews})
+    && !is_auto_assign_excluded($submitter)
     && !($bug->has_keyword('leave-open') && $bug->has_keyword('intermittent-failure'))
   ) {
-    my $submitter = $revision->author->bugzilla_user;
     INFO('Assigning bug ' . $bug->id . ' to ' . $submitter->email);
     $bug->set_assigned_to($submitter);
     if (any { $bug->status->name eq $_ } 'NEW', 'UNCONFIRMED') {
