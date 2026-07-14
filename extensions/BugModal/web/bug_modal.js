@@ -1228,6 +1228,7 @@ $(function() {
             $('#bottom-resolution').val($(event.target).text()).change();
             $('#top-save-btn').show();
             $('#resolve-as').hide();
+            $('#close-as-invalid-btn').hide();
             $('#bottom-status').show();
             if ($('#bottom-dup_id').is(":visible")) {
                 $('#bottom-dup_id').focus();
@@ -1242,6 +1243,7 @@ $(function() {
             $('#bug_status').val($(event.target).data('status')).change();
             $('#top-save-btn').show();
             $('#resolve-as').hide();
+            $('#close-as-invalid-btn').hide();
             $('#bottom-status').show();
             if ($('#bottom-dup_id').is(":visible")) {
                 $('#bottom-dup_id').focus();

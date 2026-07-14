@@ -11,7 +11,8 @@
      AND user.can_enter_product("Invalid Bugs")
      AND bug.bug_status != "RESOLVED"
      AND bug.bug_status != "VERIFIED"
-     AND bug.product != "Invalid Bugs";
+     AND bug.product != "Invalid Bugs"
+     AND NOT bug.reporter.in_group("editbugs");
    IF can_close_invalid;
      FOREACH group IN bug.groups_in;
        gc = bug.product_obj.group_controls.${group.id};
