@@ -13,11 +13,12 @@
   padding: 4px 8px;
   text-align: left;
   vertical-align: top;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--grid-border-color);
 }
 
 .github-pull-requests thead th {
-  background-color: #f5f5f5;
+  background-color: var(--grid-header-background-color);
+  color: var(--primary-text-color);
   font-weight: bold;
   white-space: nowrap;
 }
@@ -77,12 +78,12 @@
 
 /* Inaccessible row */
 .github-pr-inaccessible td {
-  color: #6e7781;
+  color: var(--secondary-text-color);
 }
 
 .gh-inaccessible-note {
   font-style: italic;
-  color: #6e7781;
+  color: var(--secondary-text-color);
 }
 
 /* Column sizing hints */
