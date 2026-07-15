@@ -40,9 +40,11 @@ our @EXPORT = qw(
   is_bug_assigned
   request
   set_attachment_approval_flags
+  set_bug_assignee
   set_phab_user
   set_reviewer_rotation
   set_intermittent_reviewers
+  should_auto_assign_revision
 );
 
 use constant LEGACY_APPROVAL_MAPPING => {
@@ -284,6 +286,77 @@ sub is_auto_assign_excluded {
   return 0 unless $list;
   my $login = lc $user->login;
   return any { lc(trim($_)) eq $login } split /[\s,]+/, $list;
+}
+
+# Decide whether a Phabricator revision change should auto-assign its bug to
+# the current revision author. Kept as a pure predicate (no Bugzilla state) so
+# the assignment logic can be unit tested. Expects a hashref with:
+#   bug_assigned            - bug already has a real assignee
+#   is_abandoned            - revision status is 'abandoned'
+#   submitter_excluded      - current author is in the exclude list
+#   leave_open_intermittent - bug has both leave-open + intermittent-failure
+#   has_reviews             - revision has reviewers assigned
+#   is_commandeer           - this change is a commandeer transaction
+#   prior_author_excluded   - the original revision author was excluded
+# A revision normally auto-assigns only once it has reviewers. A commandeer is
+# allowed to bypass the reviewer requirement, but only when the revision was
+# originally authored by an excluded account (e.g. Hackbot); otherwise ordinary
+# commandeers of reviewer-less revisions would start auto-assigning bugs.
+sub should_auto_assign_revision {
+  my ($args) = @_;
+  return 0 if $args->{bug_assigned};
+  return 0 if $args->{is_abandoned};
+  return 0 if $args->{submitter_excluded};
+  return 0 if $args->{leave_open_intermittent};
+  return 1 if $args->{has_reviews};
+  return 1 if $args->{is_commandeer} && $args->{prior_author_excluded};
+  return 0;
+}
+
+# Assign the bug to the current revision author when appropriate (see
+# should_auto_assign_revision for the rules). The caller is responsible for
+# committing the change via $bug->update. `$story_text` is the Phabricator feed
+# story text, used to detect commandeer transactions.
+sub set_bug_assignee {
+  my ($revision, $bug, $story_text) = @_;
+  $story_text //= '';
+
+  # Locate the BMO attachment representing this revision so we can tell who
+  # originally authored it. The attacher is recorded when the attachment is
+  # created and persists across a commandeer, so it identifies the original
+  # (possibly excluded, e.g. Hackbot) author even after the revision author
+  # has changed.
+  my $revision_uri = Bugzilla->params->{phabricator_base_uri} . 'D' . $revision->id;
+  my $attachment = first {
+    is_attachment_phab_revision($_) && trim($_->data) eq $revision_uri
+  }
+  @{$bug->attachments};
+
+  my $submitter = $revision->author->bugzilla_user;
+
+  return
+    unless should_auto_assign_revision({
+    bug_assigned       => is_bug_assigned($bug),
+    is_abandoned       => ($revision->status eq 'abandoned'),
+    submitter_excluded => is_auto_assign_excluded($submitter),
+    has_reviews        => scalar @{$revision->reviews},
+    is_commandeer      => ($story_text =~ /\s+commandeered\s+D\d+/ ? 1 : 0),
+    prior_author_excluded =>
+      ($attachment ? is_auto_assign_excluded($attachment->attacher) : 0),
+    leave_open_intermittent => (
+           $bug->has_keyword('leave-open')
+        && $bug->has_keyword('intermittent-failure')
+    ),
+    });
+
+  INFO('Assigning bug ' . $bug->id . ' to ' . $submitter->email);
+  $bug->set_assigned_to($submitter);
+  if (any { $bug->status->name eq $_ } 'NEW', 'UNCONFIRMED') {
+    INFO('Setting bug ' . $bug->id . ' to ASSIGNED');
+    $bug->set_bug_status('ASSIGNED');
+  }
+
+  return;
 }
 
 sub is_attachment_phab_revision {
