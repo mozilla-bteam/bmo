@@ -192,8 +192,8 @@ sub _emit_counterpart_bug_modify_events {
       timestamp => $timestamp,
       changes   => $counterpart_changes->{$related_bug_id},
       indirect_change => {
-        type          => 'dependency',
-        source_bug_id => $source_bug->id,
+      type          => 'related',
+      source_bug_id => $source_bug->id,
       },
     };
     $self->_push_object('modify', $related_bug, $change_set, $related_changes_data);
