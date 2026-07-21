@@ -1,4 +1,6 @@
-FROM perl:5.40.0-slim AS builder
+FROM perl:5.44.0-slim AS builder
+
+ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update \
     && apt-get upgrade -y \
@@ -33,9 +35,9 @@ RUN apt-file update \
     | xargs -IFILE apt-file search -l FILE \
     | sort -u > PACKAGES
 
-FROM perl:5.40.0-slim
+FROM perl:5.44.0-slim
 
-ENV DEBIAN_FRONTEND noninteractive
+ARG DEBIAN_FRONTEND=noninteractive
 
 COPY --from=builder /app/local /app/local
 COPY --from=builder /app/PACKAGES /app/PACKAGES
