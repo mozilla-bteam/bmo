@@ -16,5 +16,12 @@
      phabricator_enabled     => 'Enable Phabricator Integration',
      phabricator_base_uri    => 'Phabricator Base URI',
      phabricator_api_key     => 'Phabricator User API Key',
+     phabricator_auto_assign_exclude_list =>
+       'A space or comma delimited list of Bugzilla accounts (login names).'
+       _ ' When a revision is authored by one of these accounts (for example'
+       _ ' an automation bot such as Hackbot), the associated bug will not be'
+       _ ' automatically assigned to that account. If such a revision is later'
+       _ ' commandeered by a developer, the bug is assigned to the developer'
+       _ ' who commandeered it.',
    }
 %]
