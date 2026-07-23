@@ -27,6 +27,11 @@ sub get_param_list {
       checker => \&check_urlbase
     },
     {name => 'phabricator_api_key', type => 't', default => '',},
+    {
+      name    => 'phabricator_auto_assign_exclude_list',
+      type    => 't',
+      default => '',
+    },
   );
 
   return @params;

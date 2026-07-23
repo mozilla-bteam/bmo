@@ -13,7 +13,7 @@ use IO::Async::Timer::Periodic;
 use IO::Async::Loop;
 use IO::Async::Signal;
 use List::Util qw(first);
-use List::MoreUtils qw(any uniq);
+use List::MoreUtils qw(uniq);
 use Moo;
 use Try::Tiny;
 use Type::Params qw( compile );
@@ -38,9 +38,9 @@ use Bugzilla::Extension::PhabBugz::Util qw(
   create_revision_attachment
   get_bug_role_phids
   is_attachment_phab_revision
-  is_bug_assigned
   request
   set_attachment_approval_flags
+  set_bug_assignee
   set_phab_user
   set_intermittent_reviewers
   set_reviewer_rotation
@@ -779,24 +779,10 @@ sub process_revision_change {
     $revision->set_status('request-review');
   }
 
-  # Assign the bug to the submitter if it isn't already owned and
-  # the revision has reviewers assigned to it.
-  # Skip this change if 'leave-open' and 'intermittent-failure'
-  # keywords are set (bug 1673348).
-  if (
-    !is_bug_assigned($bug)
-    && $revision->status ne 'abandoned'
-    && @{$revision->reviews}
-    && !($bug->has_keyword('leave-open') && $bug->has_keyword('intermittent-failure'))
-  ) {
-    my $submitter = $revision->author->bugzilla_user;
-    INFO('Assigning bug ' . $bug->id . ' to ' . $submitter->email);
-    $bug->set_assigned_to($submitter);
-    if (any { $bug->status->name eq $_ } 'NEW', 'UNCONFIRMED') {
-      INFO('Setting bug ' . $bug->id . ' to ASSIGNED');
-      $bug->set_bug_status('ASSIGNED');
-    }
-  }
+  # Assign the bug to the current revision author when appropriate (unassigned
+  # bug with reviewers, or a commandeer of a revision originally authored by an
+  # excluded account such as Hackbot). See set_bug_assignee for the full rules.
+  set_bug_assignee($revision, $bug, $story_text);
 
   # Finish up
   $bug->update($timestamp);
