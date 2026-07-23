@@ -602,7 +602,7 @@ sub update_flags {
 
     Bugzilla::FlagActivity->create({
       flag_when     => $timestamp,
-      setter_id     => Bugzilla->user->id,
+      setter_id     => Bugzilla->user->id || $old_flag->setter_id,
       status        => 'X',
       type_id       => $old_flag->type_id,
       flag_id       => $old_flag->id,
@@ -724,7 +724,7 @@ sub force_retarget {
 
       Bugzilla::FlagActivity->create({
         flag_when     => $timestamp,
-        setter_id     => Bugzilla->user->id,
+        setter_id     => Bugzilla->user->id || $flag->setter_id,
         status        => 'X',
         type_id       => $flag->type_id,
         flag_id       => $flag->id,
