@@ -844,7 +844,7 @@ sub update_table_definitions {
   # Bug 1949556 - dkl@mozilla.com
   $dbh->bz_add_index('audit_log', 'audit_log_object_id_idx', ['object_id']);
 
-  # Bug 1806896 - xavier@mozilla.com
+  # Bug 1806896 - xavier.lhour@gmail.com
   _migrate_flag_state_activity();
 
   ################################################################
@@ -4521,10 +4521,21 @@ sub _migrate_flag_state_activity {
   if ($dbh->bz_table_info('flag_activity')) {
     my ($new_count) = $dbh->selectrow_array('SELECT COUNT(*) FROM flag_activity');
     return if $new_count;
-    $dbh->bz_drop_table('flag_activity');
   }
 
-  $dbh->bz_rename_table('flag_state_activity', 'flag_activity');
+  # Copy rows into the already-indexed core flag_activity table instead of
+  # renaming flag_state_activity over it, which would discard its indexes.
+  # id is not carried over: nothing references flag_activity.id externally.
+  $dbh->do(
+    'INSERT INTO flag_activity
+       (flag_when, type_id, flag_id, setter_id, requestee_id, bug_id,
+        attachment_id, status)
+     SELECT flag_when, type_id, flag_id, setter_id, requestee_id, bug_id,
+            attachment_id, status
+       FROM flag_state_activity'
+  );
+
+  $dbh->bz_drop_table('flag_state_activity');
 }
 
 1;
