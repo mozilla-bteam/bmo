@@ -23,7 +23,8 @@ use Try::Tiny;
 
 use ok 'Bugzilla::Extension::PhabBugz::Constants';
 use ok 'Bugzilla::Extension::PhabBugz::Feed';
-use ok 'Bugzilla::Extension::PhabBugz::Util', qw( get_attachment_revisions );
+use ok 'Bugzilla::Extension::PhabBugz::Util',
+  qw( get_attachment_revisions is_auto_assign_excluded should_auto_assign_revision );
 can_ok('Bugzilla::Extension::PhabBugz::Feed', 'group_query');
 
 our @group_members;
@@ -237,6 +238,92 @@ JSON
   is($revisions->[0]->bug_id, 23, 'Bugzilla ID is 23');
   ok(try { $revisions->[0]->update }, 'update revision');
 
+};
+
+# is_auto_assign_excluded honours the phabricator_auto_assign_exclude_list param
+do {
+
+  package Fake::AssignUser;
+  sub new   { return bless {login => $_[1]}, $_[0] }
+  sub login { return $_[0]->{login} }
+
+  package main;
+
+  my $bot = Fake::AssignUser->new('hackbot@mozilla.tld');
+  my $dev = Fake::AssignUser->new('developer@mozilla.com');
+
+  local Bugzilla->params->{phabricator_auto_assign_exclude_list} = '';
+  ok(!is_auto_assign_excluded($bot), 'empty exclude list excludes nobody');
+
+  local Bugzilla->params->{phabricator_auto_assign_exclude_list}
+    = 'hackbot@mozilla.tld, other-bot@bmo.tld';
+  ok(is_auto_assign_excluded($bot), 'listed account is excluded');
+  ok(!is_auto_assign_excluded($dev), 'unlisted account is not excluded');
+
+  # Case-insensitive, whitespace/comma delimited parsing.
+  local Bugzilla->params->{phabricator_auto_assign_exclude_list}
+    = "Hackbot\@Mozilla.tld\nother-bot\@bmo.tld";
+  ok(is_auto_assign_excluded($bot),
+    'matching is case-insensitive and newline delimited');
+};
+
+# should_auto_assign_revision decides whether to auto-assign the bug.
+do {
+  my %base = (
+    bug_assigned            => 0,
+    is_abandoned            => 0,
+    submitter_excluded      => 0,
+    leave_open_intermittent => 0,
+    has_reviews             => 0,
+    is_commandeer           => 0,
+    prior_author_excluded   => 0,
+  );
+
+  ok(
+    should_auto_assign_revision({%base, has_reviews => 1}),
+    'ordinary revision with reviewers is assigned'
+  );
+
+  ok(
+    !should_auto_assign_revision(
+      {%base, has_reviews => 1, submitter_excluded => 1}
+    ),
+    'excluded author (e.g. Hackbot) is never assigned, even with reviewers'
+  );
+
+  ok(
+    should_auto_assign_revision(
+      {%base, is_commandeer => 1, prior_author_excluded => 1}
+    ),
+    'commandeer of an excluded-author revision assigns the developer without reviewers'
+  );
+
+  ok(
+    !should_auto_assign_revision({%base, is_commandeer => 1}),
+    'commandeer of an ordinary reviewer-less revision is not assigned'
+  );
+
+  ok(
+    !should_auto_assign_revision({%base}),
+    'reviewer-less non-commandeer change is not assigned'
+  );
+
+  ok(
+    !should_auto_assign_revision({%base, has_reviews => 1, bug_assigned => 1}),
+    'already-assigned bug is left alone'
+  );
+
+  ok(
+    !should_auto_assign_revision({%base, has_reviews => 1, is_abandoned => 1}),
+    'abandoned revision is not assigned'
+  );
+
+  ok(
+    !should_auto_assign_revision(
+      {%base, has_reviews => 1, leave_open_intermittent => 1}
+    ),
+    'leave-open + intermittent-failure bug is not assigned'
+  );
 };
 
 done_testing;
