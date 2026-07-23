@@ -5,7 +5,6 @@
 "use strict";
 
 const GitHubPullRequests = {
-  showClosed: false,
   pullRequests: [],
 
   // Maps PR state to display label and CSS class
@@ -39,9 +38,6 @@ const GitHubPullRequests = {
 
     if (pr.state && this.isClosedState(pr.state)) {
       tr.classList.add("github-pr-closed");
-      if (!this.showClosed) {
-        tr.classList.add("bz_default_hidden");
-      }
     }
 
     // PR number cell
@@ -167,22 +163,7 @@ const GitHubPullRequests = {
     return tr;
   },
 
-  updateVisibility() {
-    for (const pr of this.pullRequests) {
-      const tr = document.querySelector(`tr[data-pr-url="${CSS.escape(pr.url)}"]`);
-      if (!tr) continue;
-      if (this.isClosedState(pr.state || "")) {
-        tr.classList.toggle("bz_default_hidden", !this.showClosed);
-      }
-    }
-  },
-
   async onLoad() {
-    const showClosedCheckbox = document.querySelector("#github-show-closed");
-    if (!showClosedCheckbox) return;
-
-    this.showClosed = showClosedCheckbox.checked;
-
     const tbody = document.querySelector("tbody.github-prs-body");
     if (!tbody) return;
 
@@ -212,26 +193,12 @@ const GitHubPullRequests = {
           tbody.insertBefore(this.buildRow(pr), loadingRow);
         }
         loadingRow.classList.add("bz_default_hidden");
-
-        // Show the closed toggle if any PRs are closed/merged
-        const hasClosed = this.pullRequests.some(pr => this.isClosedState(pr.state || ""));
-        if (hasClosed) {
-          const showClosedTbody = document.querySelector("tbody.github-show-closed");
-          if (showClosedTbody) {
-            showClosedTbody.classList.remove("bz_default_hidden");
-          }
-        }
       }
     } catch (e) {
       console.error(e);
       displayLoadError(e.message);
       loadingRow.classList.add("bz_default_hidden");
     }
-
-    showClosedCheckbox.addEventListener("click", () => {
-      this.showClosed = showClosedCheckbox.checked;
-      this.updateVisibility();
-    });
   },
 };
 
