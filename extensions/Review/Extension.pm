@@ -371,7 +371,6 @@ sub object_end_of_create {
   }
 }
 
-
 sub object_end_of_update {
   my ($self, $args) = @_;
   my ($object, $old_object, $changes) = @$args{qw(object old_object changes)};
