@@ -462,7 +462,7 @@ see L<Bugzilla::WebService>.
 
 Please note that I<everything> about this JSON-RPC interface is
 B<EXPERIMENTAL>. If you want a fully stable API, please use the
-C<Bugzilla::WebService::Server::XMLRPC|XML-RPC> interface.
+C<Bugzilla::WebService::Server::REST|REST> interface.
 
 =head1 JSON-RPC
 

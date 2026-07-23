@@ -19,7 +19,7 @@ use warnings;
 
 use Bugzilla::Constants;
 use Bugzilla::Install::Util qw(install_string bin_loc success);
-use List::Util qw(max);
+use List::Util              qw(max);
 use Term::ANSIColor;
 use CPAN::Meta;
 use CPAN::Meta::Prereqs;
@@ -68,24 +68,18 @@ use constant APACHE => qw(apachectl httpd apache2 apache);
 
 # If we don't find any of the above binaries in the normal PATH,
 # these are extra places we look.
-use constant APACHE_PATH => [
-  qw(
-    /usr/sbin
-    /usr/local/sbin
-    /usr/libexec
-    /usr/local/libexec
-    )
-];
+use constant APACHE_PATH => [qw(
+  /usr/sbin
+  /usr/local/sbin
+  /usr/libexec
+  /usr/local/libexec
+)];
 
 # This maps features to the files that require that feature in order
 # to compile. It is used by t/001compile.t and mod_perl.pl.
 use constant FEATURE_FILES => (
-  rest    => ['Bugzilla/WebService/Server/REST.pm', 'rest.cgi'],
-  jsonrpc => ['Bugzilla/WebService/Server/JSONRPC.pm', 'jsonrpc.cgi'],
-  xmlrpc  => [
-    'Bugzilla/WebService/Server/XMLRPC.pm', 'xmlrpc.cgi',
-    'Bugzilla/WebService.pm',               'Bugzilla/WebService/*.pm'
-  ],
+  rest          => ['Bugzilla/WebService/Server/REST.pm',    'rest.cgi'],
+  jsonrpc       => ['Bugzilla/WebService/Server/JSONRPC.pm', 'jsonrpc.cgi'],
   moving        => ['importxml.pl'],
   auth_ldap     => ['Bugzilla/Auth/Verify/LDAP.pm'],
   auth_radius   => ['Bugzilla/Auth/Verify/RADIUS.pm'],
@@ -112,7 +106,8 @@ sub check_all_cpan_features {
   my @features = sort { $a->identifier cmp $b->identifier } $meta->features;
   foreach my $feature (@features) {
     next if $feature->identifier eq 'features';
-    printf "Feature '%s': %s\n", $feature->identifier // 'unknown', $feature->description // 'unknown',
+    printf "Feature '%s': %s\n", $feature->identifier // 'unknown',
+      $feature->description // 'unknown',
       if $output;
     my $result = check_cpan_feature($feature, $dirs, $output);
     print "\n" if $output;
@@ -172,7 +167,7 @@ sub _check_module {
   }
   else {
     my $metadata = Module::Metadata->new_from_module($module, inc => $dirs);
-    my $version = eval { $metadata->version };
+    my $version  = eval { $metadata->version };
     my $ok = $metadata && $version && $reqs->accepts_module($module, $version || 0);
     _checking_for({
       package => $module,
@@ -257,7 +252,7 @@ sub _checking_for {
   }
 
   my $black_string = $blacklisted ? install_string('blacklisted') : '';
-  my $want_string = $wanted ? "$wanted" : install_string('any');
+  my $want_string  = $wanted      ? "$wanted" : install_string('any');
 
   my $str = sprintf "%s %20s %-11s $ok_string $black_string\n",
     (' ' x $checking_for_indent) . install_string('checking_for'), $package,

@@ -522,10 +522,6 @@ see L<Bugzilla::WebService>. The L<Bugzilla::WebService::Server::REST>
 module is a sub-class of L<Bugzilla::WebService::Server::JSONRPC> so any
 method documentation not found here can be viewed in it's POD.
 
-Please note that I<everything> about this REST interface is
-B<EXPERIMENTAL>. If you want a fully stable API, please use the
-C<Bugzilla::WebService::Server::XMLRPC|XML-RPC> interface.
-
 =head1 CONNECTING
 
 The endpoint for the REST interface is the C<rest.cgi> script in

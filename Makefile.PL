@@ -192,18 +192,6 @@ my %optional_features = (
         {requires => {'File::Which' => 0, 'File::Copy::Recursive' => 0,}}
     },
   },
-  xmlrpc => {
-    description => 'XML-RPC Interface',
-    prereqs     => {
-      runtime => {
-        requires => {
-          'XMLRPC::Lite' => '0.712',
-          'SOAP::Lite'   => '0.712',
-          'Test::Taint'  => '1.06'
-        }
-      }
-    }
-  },
   auth_ldap => {
     description => 'LDAP Authentication',
     prereqs     => {runtime => {requires => {'Net::LDAP' => 0}}},
