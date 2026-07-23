@@ -4518,11 +4518,11 @@ sub _migrate_flag_state_activity {
 
   return unless $dbh->bz_table_info('flag_state_activity');
 
-  if ($dbh->bz_table_info('flag_activity')) {
-    my ($new_count) = $dbh->selectrow_array('SELECT COUNT(*) FROM flag_activity');
-    return if $new_count;
-  }
-
+  # Always copy, even if flag_activity already has rows: if a prior
+  # checksetup run created flag_activity but died before reaching this
+  # migration, live traffic can write new rows via Bugzilla::Flag in the
+  # meantime, and skipping here would orphan flag_state_activity forever.
+  #
   # Copy rows into the already-indexed core flag_activity table instead of
   # renaming flag_state_activity over it, which would discard its indexes.
   # id is not carried over: nothing references flag_activity.id externally.
