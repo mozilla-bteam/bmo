@@ -844,6 +844,9 @@ sub update_table_definitions {
   # Bug 1949556 - dkl@mozilla.com
   $dbh->bz_add_index('audit_log', 'audit_log_object_id_idx', ['object_id']);
 
+  # Bug 1806896 - xavier@mozilla.com
+  _migrate_flag_state_activity();
+
   ################################################################
   # New --TABLE-- changes should go *** A B O V E *** this point #
   ################################################################
@@ -4508,6 +4511,20 @@ sub _migrate_profiles_modification_ts {
 
   $dbh->bz_alter_column('profiles', 'modification_ts',
     {TYPE => 'DATETIME', NOTNULL => 1});
+}
+
+sub _migrate_flag_state_activity {
+  my $dbh = Bugzilla->dbh;
+
+  return unless $dbh->bz_table_info('flag_state_activity');
+
+  if ($dbh->bz_table_info('flag_activity')) {
+    my ($new_count) = $dbh->selectrow_array('SELECT COUNT(*) FROM flag_activity');
+    return if $new_count;
+    $dbh->bz_drop_table('flag_activity');
+  }
+
+  $dbh->bz_rename_table('flag_state_activity', 'flag_activity');
 }
 
 1;

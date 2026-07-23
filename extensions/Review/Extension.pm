@@ -866,21 +866,6 @@ sub db_schema_abstract_schema {
 sub install_update_db {
   my $dbh = Bugzilla->dbh;
 
-  # Bug 1806896 - migrate flag_state_activity to flag_activity (now in core schema)
-  if ($dbh->bz_table_info('flag_state_activity')) {
-    if ($dbh->bz_table_info('flag_activity')) {
-      my ($new_count) = $dbh->selectrow_array('SELECT COUNT(*) FROM flag_activity');
-      $new_count ||= 0;
-      if (!$new_count) {
-        $dbh->bz_drop_table('flag_activity');
-        $dbh->bz_rename_table('flag_state_activity', 'flag_activity');
-      }
-    }
-    else {
-      $dbh->bz_rename_table('flag_state_activity', 'flag_activity');
-    }
-  }
-
   $dbh->bz_add_column('products', 'reviewer_required',
     {TYPE => 'BOOLEAN', NOTNULL => 1, DEFAULT => 'FALSE'});
   $dbh->bz_add_column('profiles', 'review_request_count',
