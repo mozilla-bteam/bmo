@@ -29,7 +29,6 @@ our @EXPORT = qw(
   ERROR_UNKNOWN_FATAL
   ERROR_UNKNOWN_TRANSIENT
 
-  XMLRPC_CONTENT_TYPE_WHITELIST
   REST_CONTENT_TYPE_WHITELIST
 
   WS_DISPATCH
@@ -237,11 +236,9 @@ use constant WS_ERROR_CODE => {
 
   # Errors thrown by the WebService itself. The ones that are negative
   # conform to http://xmlrpc-epi.sourceforge.net/specs/rfc.fault_codes.php
-  xmlrpc_invalid_value          => -32600,
   unknown_method                => -32601,
   json_rpc_post_only            => 32610,
   json_rpc_invalid_callback     => 32611,
-  xmlrpc_illegal_content_type   => 32612,
   json_rpc_illegal_content_type => 32613,
   rest_invalid_resource         => 32614,
 };
@@ -297,11 +294,6 @@ use constant ERROR_UNKNOWN_FATAL     => -32000;
 use constant ERROR_UNKNOWN_TRANSIENT => 32000;
 
 use constant ERROR_GENERAL => 999;
-
-use constant XMLRPC_CONTENT_TYPE_WHITELIST => qw(
-  text/xml
-  application/xml
-);
 
 # The first content type specified is used as the default.
 use constant REST_CONTENT_TYPE_WHITELIST => qw(
