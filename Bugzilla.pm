@@ -602,7 +602,7 @@ sub log_user_request {
   my $server      = "web";
 
   if ($script_name =~ /rest\.cgi/) {
-    $server = $script_name =~ /BzAPI/ ? "bzapi" : "rest";
+    $server = "rest";
   }
   elsif ($script_name =~ /jsonrpc\.cgi/) {
     $server = "jsonrpc";

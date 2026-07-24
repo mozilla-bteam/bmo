@@ -387,8 +387,7 @@ sub _find_resource {
   }
 
   Bugzilla::Hook::process('webservice_rest_resources',
-    {rpc => $self, resources => $resources})
-    if Bugzilla::request_cache->{bzapi};
+    {rpc => $self, resources => $resources});
 
   # Use the resources hash from each module loaded earlier to determine
   # which handler to use based on a regex match of the CGI path.
