@@ -167,10 +167,11 @@ sub send {
       delete $payload->{event}->{changes};
     }
 
-    if (exists $payload->{event}->{indirect_change}->{source_bug_id}) {
-      my $source_bug_id = $payload->{event}->{indirect_change}->{source_bug_id};
+    my $indirect_change = $payload->{event}->{indirect_change};
+    if (ref $indirect_change eq 'HASH' && exists $indirect_change->{source_bug_id}) {
+      my $source_bug_id = $indirect_change->{source_bug_id};
       if (!$webhook->user->can_see_bug($source_bug_id)) {
-        delete $payload->{event}->{indirect_change}->{source_bug_id};
+        delete $indirect_change->{source_bug_id};
       }
     }
 
