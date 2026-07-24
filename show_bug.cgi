@@ -57,7 +57,13 @@ if (!$cgi->param('id') && $single) {
   exit;
 }
 
-if ($format_params->{format} eq 'modal') {
+# Base the enforcing-CSP decision on the *normalized* format returned by
+# get_format() -- i.e. the value that actually selects the template that gets
+# rendered -- not on the raw, unsanitized `format` URL parameter. Otherwise a
+# value such as `format=mod%21al` renders the modal template (get_format strips
+# the `!`) while this check sees `mod!al` and silently skips the enforcing
+# modal CSP, leaving the page on the report-only default policy.
+if ($format->{format} && $format->{format} eq 'modal') {
   my $bug_id = $cgi->param('id');
   detaint_natural($bug_id);
   $C->content_security_policy(SHOW_BUG_MODAL_CSP($bug_id));
