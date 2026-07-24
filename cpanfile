@@ -89,6 +89,7 @@ requires 'Mojolicious::Plugin::OAuth2::Server', '0.44';
 requires 'Moo', '2.002004';
 requires 'MooX::StrictConstructor', '0.008';
 requires 'Mozilla::CA', '20160104';
+requires 'Net::CIDR';
 requires 'Net::DNS';
 requires 'Net::SMTP::TLS';
 requires 'Package::Stash', '0.37';
