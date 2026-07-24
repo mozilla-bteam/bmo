@@ -176,6 +176,12 @@ sub send {
     }
 
     _redact_indirect_relationship_change_bug_ids($webhook->user, $payload->{event});
+    if (ref $indirect_change eq 'HASH'
+      && ($indirect_change->{type} || '') eq 'related'
+      && !exists $payload->{event}->{changes})
+    {
+      return PUSH_RESULT_BLOCKED;
+    }
 
     delete $payload->{$target};
     $payload->{bug} = $bug_data;
