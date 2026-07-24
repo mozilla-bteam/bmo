@@ -28,3 +28,7 @@ __lbheartbeat__
 
 /skins/contrib/Dusk/admin.css
 /skins/contrib/Dusk/bug.css
+
+# Front-end build (see package.json / scripts/build-frontend.mjs).
+# Generated library files under js/ are committed; node_modules is not.
+/node_modules

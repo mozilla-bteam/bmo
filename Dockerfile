@@ -1,3 +1,17 @@
+
+# Regenerate the third-party front-end libraries (jQuery, Prism, mermaid, ...)
+# from the versions pinned in package-lock.json. Node lives only in this stage;
+# the runtime image stays Node-free.
+FROM node:20-slim AS assets
+
+WORKDIR /build
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY scripts/build-frontend.mjs ./scripts/build-frontend.mjs
+COPY js ./js
+# Rebuild, then fail the image build if the committed files were stale.
+RUN npm run build && npm run verify
+
 FROM us-docker.pkg.dev/moz-fx-bugzilla-prod/bugzilla-prod/bmo-perl-slim:20260721 AS base
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -22,6 +36,10 @@ RUN apt-get update \
 WORKDIR /app
 
 COPY . /app
+
+# Overlay the freshly-built third-party front-end libraries so the image always
+# matches package-lock.json even if the committed copies drift.
+COPY --from=assets /build/js /app/js
 
 RUN chown -R app:app /app && \
     perl -I/app -I/app/local/lib/perl5 -c -E 'use Bugzilla; BEGIN { Bugzilla->extensions }' && \
