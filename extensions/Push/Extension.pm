@@ -184,16 +184,26 @@ sub _emit_counterpart_bug_modify_events {
   return unless $changes && scalar keys %$changes;
 
   my $counterpart_changes = _counterpart_bug_changes($source_bug, $changes);
-  foreach my $related_bug_id (sort { $a <=> $b } keys %$counterpart_changes) {
-    my $related_bug = Bugzilla::Bug->new($related_bug_id);
-    next if !$related_bug || $related_bug->{error};
+  my @related_bug_ids = sort { $a <=> $b } keys %$counterpart_changes;
+  return unless @related_bug_ids;
+
+  my $related_bugs = Bugzilla::Bug->new_from_list(\@related_bug_ids);
+  my %related_bug_map = map { $_->id => $_ } grep { !$_->{error} } @$related_bugs;
+
+  foreach my $related_bug_id (@related_bug_ids) {
+    my $related_bug = $related_bug_map{$related_bug_id};
+    next if !$related_bug;
+
+    # Do not emit counterpart payloads for private target bugs because
+    # connectors may not uniformly apply per-consumer visibility checks.
+    next unless is_public($related_bug);
 
     my $related_changes_data = {
       timestamp => $timestamp,
       changes   => $counterpart_changes->{$related_bug_id},
       indirect_change => {
-      type          => 'related',
-      source_bug_id => $source_bug->id,
+        type          => 'related',
+        source_bug_id => $source_bug->id,
       },
     };
     $self->_push_object('modify', $related_bug, $change_set, $related_changes_data);
