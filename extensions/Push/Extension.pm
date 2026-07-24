@@ -424,6 +424,24 @@ sub _push_object {
 # update/create hooks
 #
 
+sub bug_before_create {
+  my ($self, $args) = @_;
+  return unless $self->_enabled;
+
+  my $params = $args->{params} || return;
+  my $stash  = $args->{stash}  || return;
+
+  my %relation_values;
+  foreach my $field (qw(blocked dependson regresses regressed_by)) {
+    my $value = $params->{$field};
+    next unless ref $value eq 'ARRAY' && @$value;
+    $relation_values{$field} = [@$value];
+  }
+
+  return unless keys %relation_values;
+  $stash->{push_creation_relation_values} = \%relation_values;
+}
+
 sub object_end_of_create {
   my ($self, $args) = @_;
   return unless $self->_enabled;
@@ -470,9 +488,15 @@ sub bug_end_of_create {
   my $bug = $args->{bug};
   return unless $bug && $bug->isa('Bugzilla::Bug');
 
+  my $stash = $args->{stash};
+  return unless ref $stash eq 'HASH';
+  return unless exists $stash->{push_creation_relation_values};
+
+  my $creation_relation_values = $stash->{push_creation_relation_values};
+
   my %creation_relation_changes;
   foreach my $field (qw(blocked dependson regresses regressed_by)) {
-    my $related_ids = $bug->$field || [];
+    my $related_ids = $creation_relation_values->{$field} || [];
     next unless @$related_ids;
     $creation_relation_changes{$field} = ['', join(', ', @$related_ids)];
   }
