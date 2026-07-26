@@ -47,4 +47,16 @@ $t->post_ok(
   ->content_is("The request is too large. Attachments are limited to 10 MB.\n")
   ->content_unlike(qr/bug_type/i);
 
+my $config = Bugzilla::Config->new;
+$config->set_param(maxattachmentsize => 2047);
+$config->update;
+$t->post_ok(
+  '/post_bug.cgi' => {
+    'Content-Length' => length($body),
+    'Content-Type'   => "multipart/form-data; boundary=$boundary",
+  } => $body
+)->status_is(413)
+  ->content_is(
+  "The request is too large. Attachments are limited to 2047 KB.\n");
+
 done_testing;
