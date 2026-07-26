@@ -52,12 +52,11 @@ The error contents look similar to:
      "code": 123
    }
 
-To protect the application from large requests, Bugzilla returns a 302 redirect
-to the homepage when your query string is too long. The current limit is 10 KB,
-which can accept roughly 1,000 bug IDs in the ``id`` parameter for the
-``/rest/bug`` method, but it could be smaller or may lead to a 414 URI Too Long
-HTTP error depending on the server configuration. Split your query into multiple
-requests if you encounter the issue.
+.. _rest-query-string-limit:
+
+BMO rejects request URLs around 8 KB with a ``414 URI Too Long`` response.
+Keep URLs conservatively below that size and split large queries into multiple
+requests.
 
 Common Data Types
 -----------------
@@ -89,6 +88,8 @@ object    A mapping of keys to values. Called a "hash", "dict", or "map" in
 Parameters that are required will be displayed in **bold** in the parameters
 table for each API method.
 
+.. _rest-authentication:
+
 Authentication
 --------------
 
@@ -115,6 +116,8 @@ Useful Parameters
 
 Many calls take common arguments. These are documented below and linked from
 the individual calls where these parameters are used.
+
+.. _rest-include-fields:
 
 **Including Fields**
 
