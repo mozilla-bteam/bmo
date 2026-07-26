@@ -6,7 +6,7 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-[% SET MFA_HOWTO = "https://wiki.mozilla.org/BMO/UserGuide/Two-Factor_Authentication" %]
+[% SET MFA_HOWTO = "https://bmo.readthedocs.io/en/latest/using/two-factor-authentication.html" %]
 [% tab_footer = BLOCK %]
   <form action="[% basepath FILTER none %]token.cgi" method="post" id="forgot-form">
     <input type="hidden" name="loginname" value="[% user.login FILTER html %]">
@@ -39,6 +39,7 @@
     To do this on your account please click on "Reset Password";
     this will email you instructions to start the password reset process.
   </p>
+  [% INCLUDE help_blurb %]
   [% RETURN %]
 [% END %]
 
@@ -50,6 +51,7 @@
       Here are your recovery codes.
     </p>
 
+    [% INCLUDE help_blurb %]
     [% INCLUDE recovery_blurb %]
     <iframe id="mfa-recovery-frame" tabindex="-1"
             src="[% basepath FILTER none %]userprefs.cgi?tab=mfa&frame=recovery&t=[% mfa_recovery_token FILTER uri %]">
@@ -59,12 +61,8 @@
     [% IF user.mfa != 'Duo' && user.in_duo_required_group && !user.in_duo_excluded_group %]
       <p class="mfa-warning-msg">
         You are in a group requiring Duo Security for two-factor authentication. You must
-        first disabled your current two-factor authentication and then select Duo Security
+        first disable your current two-factor authentication and then select Duo Security
         before continuing to use [% terms.Bugzilla %].
-      </p>
-      <p>
-        <b>Need help setting up 2FA?</b>
-        You may want to <a href="[% MFA_HOWTO FILTER html %]">read these comprehensive instructions</a>.
       </p>
     [% END %]
     <p>
@@ -74,6 +72,7 @@
         [% CASE "Duo" %]Duo Security
       [% END %]</b>.
     </p>
+    [% INCLUDE help_blurb %]
     <input type="hidden" name="mfa_action" id="mfa-action" value="disable">
 
     <div class="mfa-buttons">
@@ -172,15 +171,12 @@
           before continuing to use [% terms.Bugzilla %].
         [% END %]
       </p>
-      <p>
-        <b>Need help setting up 2FA?</b>
-        You may want to <a href="[% MFA_HOWTO FILTER html %]">read these comprehensive instructions</a>.
-      </p>
     [% ELSE %]
       <p>
         Two-factor authentication is currently <b>disabled</b>.
       </p>
     [% END %]
+    [% INCLUDE help_blurb %]
     <input type="hidden" name="mfa_action" id="mfa-action" value="enable">
     <input type="hidden" name="mfa" id="mfa">
 
@@ -321,4 +317,11 @@
     <li>If in doubt, generate and print new recovery codes</li>
     <li><b>Do not store these codes electronically</b></li>
   </ul>
+[% END %]
+
+[% BLOCK help_blurb %]
+  <p>
+    <b>Need help with 2FA?</b>
+    Read the <a href="[% MFA_HOWTO FILTER html %]">two-factor authentication user guide</a>.
+  </p>
 [% END %]

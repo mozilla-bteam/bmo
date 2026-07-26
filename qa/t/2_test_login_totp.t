@@ -18,11 +18,18 @@ use Test::More "no_plan";
 use QA::Util;
 
 my ($sel, $config) = get_selenium();
+my $mfa_help_url
+  = 'https://bmo.readthedocs.io/en/latest/using/two-factor-authentication.html';
 
 # Enable TOTP for the admin user
 log_in($sel, $config, 'admin');
 $sel->open_ok('/userprefs.cgi?tab=mfa');
 $sel->title_is('User Preferences');
+is(
+  $sel->get_attribute('link=two-factor authentication user guide@href'),
+  $mfa_help_url,
+  'MFA help is available before enrollment'
+);
 $sel->click_ok('mfa-select-totp');
 $sel->type_ok('mfa-password', $config->{admin_user_passwd});
 
@@ -50,12 +57,22 @@ my $auth = Auth::GoogleAuth->new({
 $sel->type_ok('mfa-totp-enable-code', $auth->code);
 $sel->click_ok('update');
 $sel->title_is('User Preferences');
+is(
+  $sel->get_attribute('link=two-factor authentication user guide@href'),
+  $mfa_help_url,
+  'MFA help is available after enrollment'
+);
 
 #  Generate recovery codes to use in testing
 $sel->click_ok('mfa-recovery');
 $sel->type_ok('mfa-password', $config->{admin_user_passwd});
 $sel->type_ok('code',         $auth->code);
 $sel->click_ok('update');
+is(
+  $sel->get_attribute('link=two-factor authentication user guide@href'),
+  $mfa_help_url,
+  'MFA help is available with recovery codes'
+);
 
 # Hack needed view contents of TOTP iframe and return the recovery codes
 my $recovery_string = $sel->driver->execute_script('
