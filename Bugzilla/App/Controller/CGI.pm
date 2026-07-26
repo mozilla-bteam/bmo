@@ -60,6 +60,28 @@ sub load_one {
   my $inner = quote_sub $inner_name, $content, {}, \%options;
   my $wrapper = sub {
     my ($c) = @_;
+
+    if ($c->req->is_limit_exceeded) {
+      my $message      = 'The request is too large.';
+      my $content_type = $c->req->headers->content_type // '';
+      if ($file eq 'post_bug.cgi'
+        && $content_type =~ m{^multipart/form-data\b}i)
+      {
+        my $max_size = Bugzilla->params->{maxattachmentsize};
+        if ($max_size) {
+          my $limit = "$max_size KB";
+          if ($max_size >= 1024) {
+            $limit = sprintf('%.2f MB', $max_size / 1024);
+            $limit =~ s/\.?0+ MB$/ MB/;
+          }
+          $message .= " Attachments are limited to $limit.";
+        }
+      }
+
+      $c->res->headers->content_type('text/plain; charset=UTF-8');
+      return $c->render(text => "$message\n", status => 413);
+    }
+
     Bugzilla->request_cache->{mojo_controller} = $c;
     my $stdin = $c->_STDIN;
     local %ENV                         = $c->_ENV($file);
