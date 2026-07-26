@@ -70,10 +70,7 @@ sub load_one {
         my $max_size = Bugzilla->params->{maxattachmentsize};
         if ($max_size) {
           my $limit = "$max_size KB";
-          if ($max_size >= 1024) {
-            $limit = sprintf('%.2f MB', $max_size / 1024);
-            $limit =~ s/\.?0+ MB$/ MB/;
-          }
+          $limit = $max_size / 1024 . ' MB' if $max_size % 1024 == 0;
           $message .= " Attachments are limited to $limit.";
         }
       }
