@@ -14,10 +14,22 @@ use Bugzilla::Extension::TrackingFlags::Flag;
 use Bugzilla::Extension::TrackingFlags::Flag::Bug;
 use Bugzilla::Util qw(fetch_product_versions);
 
+# Products that are not relevant to Firefox release management and so should
+# never have their nightly/beta tracking flags set automatically.
+use constant EXCLUDED_PRODUCTS => ('Enterprise Products');
+
+sub _is_excluded_product {
+  my ($self, $bug) = @_;
+  my $product = $bug->product;
+  return grep { $_ eq $product } EXCLUDED_PRODUCTS;
+}
+
 sub evaluate_create {
   my ($self, $args) = @_;
   my $bug       = $args->{bug};
   my $timestamp = $args->{timestamp};
+
+  return if $self->_is_excluded_product($bug);
 
   if ($bug->bug_severity eq 'S1') {
     my $cache    = Bugzilla->request_cache->{tracking_flags_create_params};
@@ -59,6 +71,8 @@ sub evaluate_change {
   my ($self, $args) = @_;
   my ($bug, $old_bug, $timestamp, $changes)
     = @$args{qw(bug old_bug timestamp changes)};
+
+  return if $self->_is_excluded_product($bug);
 
   if ( $changes
     && exists $changes->{bug_severity}
@@ -116,11 +130,11 @@ sub evaluate_change {
 }
 
 sub _fetch_nightly_beta_versions {
-  my $versions  = fetch_product_versions('firefox');
-  if (!$versions
+  my $versions = fetch_product_versions('firefox');
+  if ( !$versions
     || !exists $versions->{FIREFOX_NIGHTLY}
-    || !exists $versions->{LATEST_FIREFOX_RELEASED_DEVEL_VERSION}
-  ) {
+    || !exists $versions->{LATEST_FIREFOX_RELEASED_DEVEL_VERSION})
+  {
     return {nightly => 0, beta => 0};
   }
   my ($nightly) = split /\./, $versions->{FIREFOX_NIGHTLY};
