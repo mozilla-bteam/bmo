@@ -40,11 +40,17 @@ discuss webhooks or another event-driven approach.
 
 Poll incrementally instead of repeating a full search. The
 ``last_change_time`` parameter to :ref:`rest_search_bugs` returns bugs modified
-at or after the supplied timestamp. A polling cycle should:
+at or after the supplied timestamp. Bug searches may use a read replica, while
+``GET /rest/time`` reads the primary database. Because BMO does not guarantee a
+maximum replication lag, an integration that requires a guaranteed polling
+window should confirm the current operational guidance with the BMO team.
+A polling cycle should:
 
 * obtain BMO's current ``db_time`` from :ref:`GET /rest/time <rest-time>`
   before searching;
-* search from slightly before the previous successful cycle's recorded time;
+* search from before the previous successful cycle's recorded time by an
+  overlap that covers database replication lag and the API's one-second
+  timestamp precision;
 * process every result before saving the new ``db_time``; and
 * de-duplicate on bug ID and ``last_change_time`` so that the overlap is safe.
 
