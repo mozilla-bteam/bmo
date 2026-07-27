@@ -1684,8 +1684,7 @@ Params:
 
 A hashref where you can specify the names of your modules and which Perl
 module handles the functions for that module. (This is actually sent to
-the WebService server's C<dispatch> method. You can see how that's used
-in F<jsonrpc.cgi>.)
+the WebService server's C<dispatch> method.)
 
 The Perl module name will most likely start with C<Bugzilla::Extension::Foo::>
 (where "Foo" is the name of your extension).

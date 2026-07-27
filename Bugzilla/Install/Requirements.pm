@@ -79,7 +79,7 @@ use constant APACHE_PATH => [qw(
 # to compile. It is used by t/001compile.t and mod_perl.pl.
 use constant FEATURE_FILES => (
   rest          => ['Bugzilla/WebService/Server/REST.pm',    'rest.cgi'],
-  jsonrpc       => ['Bugzilla/WebService/Server/JSONRPC.pm', 'jsonrpc.cgi'],
+  jsonrpc       => ['Bugzilla/WebService/Server/JSONRPC.pm'],
   moving        => ['importxml.pl'],
   auth_ldap     => ['Bugzilla/Auth/Verify/LDAP.pm'],
   auth_radius   => ['Bugzilla/Auth/Verify/RADIUS.pm'],
