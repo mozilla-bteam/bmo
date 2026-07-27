@@ -59,7 +59,7 @@ sub pull_request {
     return $self->render(json => {error => 0});
   }
 
-  # Validate JSON input 
+  # Validate JSON input
   my $payload = $self->req->json;
   my @errors  = joi->object->props(
     action       => joi->string->required,
@@ -122,87 +122,85 @@ sub pull_request {
       $bug->id
     );
 
-    my ($existing_attach_id) = $dbh->selectrow_array(
-      'SELECT attachments.attach_id
-         FROM attachments
-         INNER JOIN attach_data ON attach_data.id = attachments.attach_id
-        WHERE attachments.bug_id = ?
-          AND attachments.mimetype = ?
-          AND attach_data.thedata = ?
-        LIMIT 1',
-      undef,
-      $bug->id,
-      'text/x-github-pull-request',
-      $html_url
-    );
+    my $existing_attachments = Bugzilla::Attachment->match({
+      bug_id   => $bug->id,
+      mimetype => 'text/x-github-pull-request',
+    });
 
-    if ($existing_attach_id) {
+    foreach my $existing_attachment (@$existing_attachments) {
+      next if $existing_attachment->data ne $html_url;
       $template->process('global/code-error.html.tmpl',
         {error => 'github_pr_attachment_exists'}, \$message)
         || die $template->error();
       $duplicate = 1;
-      $dbh->bz_commit_transaction;
-      return 1;
+      last;
     }
 
-    my $timestamp = $dbh->selectrow_array("SELECT NOW()");
+    if ($duplicate) {
+      $dbh->bz_commit_transaction;
+      1;
+    }
+    else {
 
-    $attachment = Bugzilla::Attachment->create({
-      bug         => $bug,
-      creation_ts => $timestamp,
-      data        => $html_url,
-      description => "[$repository] $title (#$pr_number)",
-      filename    => "github-$repo_filename-$pr_number-url.txt",
-      ispatch     => 0,
-      isprivate   => 0,
-      mimetype    => 'text/x-github-pull-request',
-    });
+      my $timestamp = $dbh->selectrow_array("SELECT NOW()");
 
-    # Insert a comment about the new attachment into the database.
-    $bug->add_comment(
-      '',
-      {
-        type        => CMT_ATTACHMENT_CREATED,
-        extra_data  => $attachment->id,
-        is_markdown => (Bugzilla->params->{use_markdown} ? 1 : 0)
-      }
-    );
-    $bug->update($timestamp);
+      $attachment = Bugzilla::Attachment->create({
+        bug         => $bug,
+        creation_ts => $timestamp,
+        data        => $html_url,
+        description => "[$repository] $title (#$pr_number)",
+        filename    => "github-$repo_filename-$pr_number-url.txt",
+        ispatch     => 0,
+        isprivate   => 0,
+        mimetype    => 'text/x-github-pull-request',
+      });
 
-    # Fixup attachments with same github pull request but on different bugs
-    my %other_bugs;
-    my $other_attachments = Bugzilla::Attachment->match({
-      mimetype => 'text/x-github-pull-request',
-      filename => "github-$repo_filename-$pr_number-url.txt",
-      WHERE    => {'bug_id != ? AND NOT isobsolete' => $bug->id}
-    });
-    foreach my $attachment (@$other_attachments) {
-
-      # data doesn't match this URL, skip it
-      next if $attachment->data ne $html_url;
-
-      $other_bugs{$attachment->bug_id}++;
-      my $moved_comment
-        = "GitHub pull request attachment was moved to bug "
-        . $bug->id
-        . ". Setting attachment "
-        . $attachment->id
-        . " to obsolete.";
-      $attachment->set_is_obsolete(1);
-      $attachment->bug->add_comment(
-        $moved_comment,
+      # Insert a comment about the new attachment into the database.
+      $bug->add_comment(
+        '',
         {
-          type        => CMT_ATTACHMENT_UPDATED,
+          type        => CMT_ATTACHMENT_CREATED,
           extra_data  => $attachment->id,
           is_markdown => (Bugzilla->params->{use_markdown} ? 1 : 0)
         }
       );
-      $attachment->bug->update($timestamp);
-      $attachment->update($timestamp);
-    }
+      $bug->update($timestamp);
 
-    $dbh->bz_commit_transaction;
-    1;
+      # Fixup attachments with same github pull request but on different bugs
+      my %other_bugs;
+      my $other_attachments = Bugzilla::Attachment->match({
+        mimetype => 'text/x-github-pull-request',
+        filename => "github-$repo_filename-$pr_number-url.txt",
+        WHERE    => {'bug_id != ? AND NOT isobsolete' => $bug->id}
+      });
+      foreach my $attachment (@$other_attachments) {
+
+        # data doesn't match this URL, skip it
+        next if $attachment->data ne $html_url;
+
+        $other_bugs{$attachment->bug_id}++;
+        my $moved_comment
+          = "GitHub pull request attachment was moved to bug "
+          . $bug->id
+          . ". Setting attachment "
+          . $attachment->id
+          . " to obsolete.";
+        $attachment->set_is_obsolete(1);
+        $attachment->bug->add_comment(
+          $moved_comment,
+          {
+            type        => CMT_ATTACHMENT_UPDATED,
+            extra_data  => $attachment->id,
+            is_markdown => (Bugzilla->params->{use_markdown} ? 1 : 0)
+          }
+        );
+        $attachment->bug->update($timestamp);
+        $attachment->update($timestamp);
+      }
+
+      $dbh->bz_commit_transaction;
+      1;
+    }
   } or do {
     my $error = $@;
     $dbh->bz_rollback_transaction;
@@ -243,7 +241,7 @@ sub push_comment {
     return $self->render(json => {error => 0});
   }
 
-  # Validate JSON input 
+  # Validate JSON input
   my $payload = $self->req->json;
   my @errors  = joi->object->props(
     ref => joi->string->required,
@@ -474,7 +472,7 @@ sub _set_status_flag {
 
   # In order to determine the appropriate status flag for the default
   # branch, we have to find out what the current *nightly* Firefox version is.
-  # fetch_product_versions() calls an API endpoint maintained by rel-eng that 
+  # fetch_product_versions() calls an API endpoint maintained by rel-eng that
   # returns all of the current product versions so we can use that.
   my $version;
   if ($branch eq 'main' || $branch eq 'master') {
