@@ -101,77 +101,116 @@ sub pull_request {
     return $self->render(json => {error => 1, message => $message});
   }
 
-  # Check if bug already has this pull request attached (non-fatal)
-  foreach my $attachment (@{$bug->attachments}) {
-    next if $attachment->contenttype ne 'text/x-github-pull-request';
-    if ($attachment->data eq $html_url) {
-      $template->process('global/code-error.html.tmpl',
-        {error => 'github_pr_attachment_exists'}, \$message)
-        || die $template->error();
-      return $self->render(json => {error => 1, message => $message});
-    }
-  }
-
-  # Create new attachment using pull request URL as attachment content
+  # Create new attachment using pull request URL as attachment content.
+  # This path must be serialized per bug because concurrent webhook deliveries
+  # can otherwise race between duplicate-check and insert.
   my $auto_user = Bugzilla::User->check({name => 'github-automation@bmo.tld'});
   $auto_user->{groups}       = [Bugzilla::Group->get_all];
   $auto_user->{bless_groups} = [Bugzilla::Group->get_all];
   Bugzilla->set_user($auto_user);
 
-  my $timestamp = Bugzilla->dbh->selectrow_array("SELECT NOW()");
+  my $dbh = Bugzilla->dbh;
+  my ($attachment, $duplicate);
+  eval {
+    $dbh->bz_start_transaction;
 
-  my $attachment = Bugzilla::Attachment->create({
-    bug         => $bug,
-    creation_ts => $timestamp,
-    data        => $html_url,
-    description => "[$repository] $title (#$pr_number)",
-    filename    => "github-$repo_filename-$pr_number-url.txt",
-    ispatch     => 0,
-    isprivate   => 0,
-    mimetype    => 'text/x-github-pull-request',
-  });
+    # Serialize all PR-link writes for this bug to make opened-event handling
+    # idempotent under concurrent deliveries.
+    $dbh->selectrow_array(
+      'SELECT bug_id FROM bugs WHERE bug_id = ? FOR UPDATE',
+      undef,
+      $bug->id
+    );
 
-  # Insert a comment about the new attachment into the database.
-  $bug->add_comment(
-    '',
-    {
-      type        => CMT_ATTACHMENT_CREATED,
-      extra_data  => $attachment->id,
-      is_markdown => (Bugzilla->params->{use_markdown} ? 1 : 0)
+    my ($existing_attach_id) = $dbh->selectrow_array(
+      'SELECT attachments.attach_id
+         FROM attachments
+         INNER JOIN attach_data ON attach_data.id = attachments.attach_id
+        WHERE attachments.bug_id = ?
+          AND attachments.mimetype = ?
+          AND attach_data.thedata = ?
+        LIMIT 1',
+      undef,
+      $bug->id,
+      'text/x-github-pull-request',
+      $html_url
+    );
+
+    if ($existing_attach_id) {
+      $template->process('global/code-error.html.tmpl',
+        {error => 'github_pr_attachment_exists'}, \$message)
+        || die $template->error();
+      $duplicate = 1;
+      $dbh->bz_commit_transaction;
+      return 1;
     }
-  );
-  $bug->update($timestamp);
 
-  # Fixup attachments with same github pull request but on different bugs
-  my %other_bugs;
-  my $other_attachments = Bugzilla::Attachment->match({
-    mimetype => 'text/x-github-pull-request',
-    filename => "github-$repo_filename-$pr_number-url.txt",
-    WHERE    => {'bug_id != ? AND NOT isobsolete' => $bug->id}
-  });
-  foreach my $attachment (@$other_attachments) {
+    my $timestamp = $dbh->selectrow_array("SELECT NOW()");
 
-    # data doesn't match this URL, skip it
-    next if $attachment->data ne $html_url;
+    $attachment = Bugzilla::Attachment->create({
+      bug         => $bug,
+      creation_ts => $timestamp,
+      data        => $html_url,
+      description => "[$repository] $title (#$pr_number)",
+      filename    => "github-$repo_filename-$pr_number-url.txt",
+      ispatch     => 0,
+      isprivate   => 0,
+      mimetype    => 'text/x-github-pull-request',
+    });
 
-    $other_bugs{$attachment->bug_id}++;
-    my $moved_comment
-      = "GitHub pull request attachment was moved to bug "
-      . $bug->id
-      . ". Setting attachment "
-      . $attachment->id
-      . " to obsolete.";
-    $attachment->set_is_obsolete(1);
-    $attachment->bug->add_comment(
-      $moved_comment,
+    # Insert a comment about the new attachment into the database.
+    $bug->add_comment(
+      '',
       {
-        type        => CMT_ATTACHMENT_UPDATED,
+        type        => CMT_ATTACHMENT_CREATED,
         extra_data  => $attachment->id,
         is_markdown => (Bugzilla->params->{use_markdown} ? 1 : 0)
       }
     );
-    $attachment->bug->update($timestamp);
-    $attachment->update($timestamp);
+    $bug->update($timestamp);
+
+    # Fixup attachments with same github pull request but on different bugs
+    my %other_bugs;
+    my $other_attachments = Bugzilla::Attachment->match({
+      mimetype => 'text/x-github-pull-request',
+      filename => "github-$repo_filename-$pr_number-url.txt",
+      WHERE    => {'bug_id != ? AND NOT isobsolete' => $bug->id}
+    });
+    foreach my $attachment (@$other_attachments) {
+
+      # data doesn't match this URL, skip it
+      next if $attachment->data ne $html_url;
+
+      $other_bugs{$attachment->bug_id}++;
+      my $moved_comment
+        = "GitHub pull request attachment was moved to bug "
+        . $bug->id
+        . ". Setting attachment "
+        . $attachment->id
+        . " to obsolete.";
+      $attachment->set_is_obsolete(1);
+      $attachment->bug->add_comment(
+        $moved_comment,
+        {
+          type        => CMT_ATTACHMENT_UPDATED,
+          extra_data  => $attachment->id,
+          is_markdown => (Bugzilla->params->{use_markdown} ? 1 : 0)
+        }
+      );
+      $attachment->bug->update($timestamp);
+      $attachment->update($timestamp);
+    }
+
+    $dbh->bz_commit_transaction;
+    1;
+  } or do {
+    my $error = $@;
+    $dbh->bz_rollback_transaction;
+    die $error;
+  };
+
+  if ($duplicate) {
+    return $self->render(json => {error => 1, message => $message});
   }
 
   # Return new attachment id when successful

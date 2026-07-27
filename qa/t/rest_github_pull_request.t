@@ -167,6 +167,18 @@ $t->post_ok(
   ->json_like('/message' =>
     qr/The pull request contained a bug ID that already has an attachment/);
 
+# Verify the bug still has exactly one active attachment for this PR URL.
+$t->get_ok(
+  $url . "rest/bug/$bug_id" => {'X-Bugzilla-API-Key' => $api_key})
+  ->status_is(200)->json_has('/bugs/0/id');
+
+my $bug_data = $t->tx->res->json->{bugs}->[0];
+my @matching_pr_attachments
+  = grep { ($_->{content_type} // '') eq 'text/x-github-pull-request' }
+  @{$bug_data->{attachments} // []};
+is(scalar @matching_pr_attachments, 1,
+  'Repeated delivery keeps only one PR attachment on the bug');
+
 # Create a second bug for testing attaching the same github pr but to a
 # different bug. For example if someone changes the bug ID in the title
 # of an existing pull request. The first attachment should be obsoleted
