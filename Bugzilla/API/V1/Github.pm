@@ -123,7 +123,8 @@ sub pull_request {
          FROM attachments
         WHERE mimetype = ?
           AND filename = ?
-          AND NOT isobsolete',
+          AND NOT isobsolete
+        FOR UPDATE',
       undef,
       'text/x-github-pull-request',
       "github-$repo_filename-$pr_number-url.txt"
