@@ -114,12 +114,34 @@ sub pull_request {
   eval {
     $dbh->bz_start_transaction;
 
-    # Serialize all PR-link writes for this bug to make opened-event handling
-    # idempotent under concurrent deliveries.
-    $dbh->selectrow_array(
-      'SELECT bug_id FROM bugs WHERE bug_id = ? FOR UPDATE',
+    # Lock all potentially-affected bugs in sorted order before we read/write
+    # attachments. This avoids deadlocks when two webhook deliveries move
+    # different PR attachments between the same pair of bugs in opposite
+    # directions.
+    my $candidate_bug_ids = $dbh->selectcol_arrayref(
+      'SELECT DISTINCT bug_id
+         FROM attachments
+        WHERE mimetype = ?
+          AND filename = ?
+          AND NOT isobsolete',
       undef,
-      $bug->id
+      'text/x-github-pull-request',
+      "github-$repo_filename-$pr_number-url.txt"
+    );
+
+    my %bug_ids_to_lock = map { $_ => 1 } @{$candidate_bug_ids // []};
+    $bug_ids_to_lock{$bug->id} = 1;
+    my @lock_bug_ids = sort { $a <=> $b } keys %bug_ids_to_lock;
+    my $lock_placeholders = join(', ', ('?') x @lock_bug_ids);
+
+    $dbh->selectcol_arrayref(
+      "SELECT bug_id
+         FROM bugs
+        WHERE bug_id IN ($lock_placeholders)
+        ORDER BY bug_id
+        FOR UPDATE",
+      undef,
+      @lock_bug_ids
     );
 
     my $existing_attachments = Bugzilla::Attachment->match({
