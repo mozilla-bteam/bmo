@@ -110,6 +110,16 @@ sub pull_request {
   Bugzilla->set_user($auto_user);
 
   my $dbh = Bugzilla->dbh;
+  my $pr_lock_name = _acquire_pr_lock($dbh, $repository, $pr_number);
+  if ($dbh->isa('Bugzilla::DB::Mysql') && !$pr_lock_name) {
+    return $self->render(
+      json => {
+        error   => 1,
+        message => 'Unable to acquire a lock for this pull request. Please retry.'
+      }
+    );
+  }
+
   my ($attachment, $duplicate);
   eval {
     $dbh->bz_start_transaction;
@@ -123,8 +133,7 @@ sub pull_request {
          FROM attachments
         WHERE mimetype = ?
           AND filename = ?
-          AND NOT isobsolete
-        FOR UPDATE',
+          AND NOT isobsolete',
       undef,
       'text/x-github-pull-request',
       "github-$repo_filename-$pr_number-url.txt"
@@ -227,8 +236,11 @@ sub pull_request {
   } or do {
     my $error = $@;
     $dbh->bz_rollback_transaction;
+    _release_pr_lock($dbh, $pr_lock_name);
     die $error;
   };
+
+  _release_pr_lock($dbh, $pr_lock_name);
 
   if ($duplicate) {
     return $self->render(json => {error => 1, message => $message});
@@ -236,6 +248,32 @@ sub pull_request {
 
   # Return new attachment id when successful
   return $self->render(json => {error => 0, id => $attachment->id});
+}
+
+sub _acquire_pr_lock {
+  my ($dbh, $repository, $pr_number) = @_;
+
+  # Named advisory locks are MySQL-specific. bmo uses MySQL in production.
+  return undef if !$dbh->isa('Bugzilla::DB::Mysql');
+
+  my $lock_name
+    = 'github-pr:'
+    . substr(hmac_sha256_hex("$repository#$pr_number", 'github_pr_lock'), 0, 54);
+
+  my ($locked) = $dbh->selectrow_array(
+    'SELECT GET_LOCK(?, ?)',
+    undef,
+    $lock_name,
+    30
+  );
+
+  return $locked ? $lock_name : undef;
+}
+
+sub _release_pr_lock {
+  my ($dbh, $lock_name) = @_;
+  return if !$lock_name;
+  $dbh->selectrow_array('SELECT RELEASE_LOCK(?)', undef, $lock_name);
 }
 
 sub push_comment {
