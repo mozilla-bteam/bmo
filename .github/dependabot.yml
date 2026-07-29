@@ -1,9 +1,10 @@
 version: 2
 updates:
-  # Third-party front-end libraries (see package.json). Dependabot opens PRs for
-  # security and version updates; run `npm run build` and commit the regenerated
-  # files under js/ before merging. Treat major bumps (jquery 4.x, mermaid 11.x,
-  # devbridge-autocomplete 2.x) as manual, tested reviews.
+  # Third-party front-end libraries (see package.json). The generated files are
+  # built from the lockfile at image build time and are not committed, so a
+  # lockfile-only PR is complete on its own and CI tests the upgraded libraries
+  # as-is. Treat major bumps (jquery 4.x, mermaid 11.x, devbridge-autocomplete
+  # 2.x) as manual, tested reviews.
   - package-ecosystem: "npm"
     directory: "/"
     schedule:

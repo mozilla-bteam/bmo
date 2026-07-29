@@ -29,6 +29,15 @@ __lbheartbeat__
 /skins/contrib/Dusk/admin.css
 /skins/contrib/Dusk/bug.css
 
-# Front-end build (see package.json / scripts/build-frontend.mjs).
-# Generated library files under js/ are committed; node_modules is not.
+# Front-end build (see package.json / scripts/build-frontend.mjs). These
+# third-party libraries — scripts, stylesheets, images and icon fonts — are
+# generated from package-lock.json at image build time, not committed. The only
+# vendored library left in the repository is js/jquery/plugins/bPopup/, which is
+# not published to npm.
 /node_modules
+/js/lib/
+/js/jquery/jquery-min.js
+/js/jquery/ui/
+/js/jquery/plugins/contextMenu/
+/js/jquery/plugins/datetimepicker/
+/js/jquery/plugins/devbridgeAutocomplete/
