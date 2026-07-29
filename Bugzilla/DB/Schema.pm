@@ -732,6 +732,44 @@ use constant ABSTRACT_SCHEMA => {
     ],
   },
 
+  flag_activity => {
+    FIELDS => [
+      id           => {TYPE => 'MEDIUMSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
+      flag_when    => {TYPE => 'DATETIME',     NOTNULL => 1},
+      type_id      => {
+        TYPE       => 'INT2',
+        NOTNULL    => 1,
+        REFERENCES => {TABLE => 'flagtypes', COLUMN => 'id', DELETE => 'CASCADE'},
+      },
+      flag_id      => {TYPE => 'INT3', NOTNULL => 1},
+      setter_id    => {
+        TYPE       => 'INT3',
+        NOTNULL    => 1,
+        REFERENCES => {TABLE => 'profiles', COLUMN => 'userid'},
+      },
+      requestee_id => {
+        TYPE       => 'INT3',
+        REFERENCES => {TABLE => 'profiles', COLUMN => 'userid'},
+      },
+      bug_id       => {
+        TYPE       => 'INT3',
+        NOTNULL    => 1,
+        REFERENCES => {TABLE => 'bugs', COLUMN => 'bug_id', DELETE => 'CASCADE'},
+      },
+      attachment_id => {
+        TYPE       => 'INT5',
+        REFERENCES => {TABLE => 'attachments', COLUMN => 'attach_id', DELETE => 'CASCADE'},
+      },
+      status => {TYPE => 'CHAR(1)', NOTNULL => 1},
+    ],
+    INDEXES => [
+      flag_activity_flag_id_idx     => ['flag_id'],
+      flag_activity_type_id_idx     => ['type_id'],
+      flag_activity_bug_id_idx      => ['bug_id'],
+      flag_activity_status_when_idx => ['status', 'flag_when'],
+    ],
+  },
+
   # "flagtypes" defines the types of flags that can be set.
   flagtypes => {
     FIELDS => [

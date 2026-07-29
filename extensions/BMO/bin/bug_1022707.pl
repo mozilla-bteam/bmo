@@ -37,7 +37,7 @@ print "About to fix $total flags\n";
 print "Press <enter> to start, or ^C to cancel...\n";
 readline;
 
-my $update_fsa_sql = "UPDATE flag_state_activity SET type_id = 4 WHERE "
+my $update_fsa_sql = "UPDATE flag_activity SET type_id = 4 WHERE "
   . $dbh->sql_in('flag_id', $flag_ids);
 my $update_flags_sql
   = "UPDATE flags SET type_id = 4 WHERE " . $dbh->sql_in('id', $flag_ids);
