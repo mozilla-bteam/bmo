@@ -5,19 +5,19 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-package Bugzilla::Extension::Review::FlagStateActivity;
+package Bugzilla::FlagActivity;
 
 use 5.10.1;
 use strict;
 use warnings;
 
-use Bugzilla::Error qw(ThrowUserError);
+use Bugzilla::Error;
 use Bugzilla::Util qw(trim datetime_from);
 use List::MoreUtils qw(none);
 
 use base qw( Bugzilla::Object );
 
-use constant DB_TABLE      => 'flag_state_activity';
+use constant DB_TABLE      => 'flag_activity';
 use constant LIST_ORDER    => 'id';
 use constant AUDIT_CREATES => 0;
 use constant AUDIT_UPDATES => 0;
@@ -34,7 +34,6 @@ use constant DB_COLUMNS => qw(
   attachment_id
   status
 );
-
 
 sub _check_param_required {
   my ($param) = @_;
@@ -59,10 +58,6 @@ sub _check_date {
 sub _check_status {
   my ($self, $status) = @_;
 
-  # - Make sure the status is valid.
-  # - Make sure the user didn't request the flag unless it's requestable.
-  #   If the flag existed and was requested before it became unrequestable,
-  #   leave it as is.
   if (none { $status eq $_ } qw( X + - ? )) {
     ThrowUserError('flag_status_invalid', {id => $self->id, status => $status});
   }
