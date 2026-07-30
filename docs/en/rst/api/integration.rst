@@ -52,7 +52,7 @@ A polling cycle should:
   before searching;
 * search from at least five minutes before the previous successful cycle's
   recorded time, unless the BMO team has confirmed a different overlap;
-* pass ``order=changeddate,bug_id``, choose a ``limit`` of 10,000 or less, and
+* pass ``order=bug_id``, choose a ``limit`` of 10,000 or less, and
   page with ``limit`` and ``offset`` until a page contains fewer than ``limit``
   bugs. The response does not indicate when more results are available;
 * collect the bug IDs from every page, then fetch and process every unique bug
