@@ -23,7 +23,6 @@ use Bugzilla::WebService::Constants;
 use Bugzilla::Util;
 use Bugzilla::Error::User;
 use Bugzilla::Error::Code;
-use Bugzilla::FlagDebug;
 
 use Carp;
 use Data::Dumper;
@@ -57,20 +56,8 @@ sub _throw_error {
   my $template = Bugzilla->template;
   my $message;
 
-  # TEMPORARY DEBUGGING - Bug 1806896. INFO rather than DEBUG so it survives
-  # the log level configured on the dev server.
-  my @frame     = caller 1;
-  my $called_by = ($frame[3] // 'main') . ' line ' . ($frame[2] // '?');
-  fdbg(
-    'Error._throw_error.enter',
-    name       => $name,
-    error      => $error,
-    in_eval    => (_in_eval() ? 1 : 0),
-    error_mode => Bugzilla->error_mode,
-    processing => ($Bugzilla::Template::is_processing ? 1 : 0),
-    called_by  => $called_by,
-  );
-
+  use Bugzilla::Logging;
+  DEBUG('HEY1');
   # There are some tests that throw and catch a lot of errors,
   # and calling $template->process over and over for those errors
   # is too slow. So instead, we just "die" with a dump of the arguments.
@@ -81,7 +68,7 @@ sub _throw_error {
       || ThrowTemplateError($template->error());
   }
 
-  fdbg('Error._throw_error.after_template', name => $name);
+  DEBUG('HEY2');
 
   # Let's call the hook first, so that extensions can override
   # or extend the default behavior, or add their own error codes.
@@ -89,7 +76,7 @@ sub _throw_error {
   Bugzilla::Hook::process('error_catch',
     {error => $error, vars => $vars, message => \$message});
 
-  fdbg('Error._throw_error.after_hook', name => $name);
+  DEBUG('HEY3');
 
   if ($Bugzilla::Template::is_processing) {
     my ($type) = $name =~ /^global\/(user|code)-error/;
@@ -208,14 +195,6 @@ sub ThrowTemplateError {
 
   # Make sure the transaction is rolled back (if supported).
   # $dbh->bz_rollback_transaction() if $dbh && $dbh->bz_in_transaction();
-
-  # TEMPORARY DEBUGGING - Bug 1806896. The rollback above is currently
-  # disabled, so reaching here mid-transaction leaves the connection holding
-  # InnoDB row locks. Any later request touching the same rows then blocks
-  # until innodb_lock_wait_timeout, which looks exactly like a UI hang.
-  fdbg('Error.ThrowTemplateError.enter',
-    in_transaction => ($dbh && $dbh->bz_in_transaction() ? 1 : 0),
-    err            => (ref $template_err) || $template_err);
 
   if (blessed($template_err) && $template_err->isa('Template::Exception')) {
     my $type = $template_err->type;

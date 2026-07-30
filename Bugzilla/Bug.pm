@@ -15,7 +15,6 @@ use Bugzilla::Attachment;
 use Bugzilla::Constants;
 use Bugzilla::Field;
 use Bugzilla::Flag;
-use Bugzilla::FlagDebug;
 use Bugzilla::FlagType;
 use Bugzilla::Hook;
 use Bugzilla::Keyword;
@@ -959,7 +958,6 @@ sub update {
   # inside this function.
   my $delta_ts = shift || $dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
 
-  fdbg('Bug.update.enter', bug_id => $self->id, delta_ts => $delta_ts);
   $dbh->bz_start_transaction();
 
   my ($changes, $old_bug) = $self->SUPER::update(@_);
@@ -1119,8 +1117,9 @@ sub update {
   }
 
   # Comments and comment tags
-  fdbg('Bug.update.comments',
-    count => scalar @{$self->{added_comments} || []});
+  use Bugzilla::Logging;
+  use Mojo::Util qw(dumper);
+  INFO(dumper $self->{added_comments});
 
   foreach my $comment (@{$self->{added_comments} || []}) {
 
@@ -1187,11 +1186,8 @@ sub update {
   delete $self->{_update_ref_bugs};
 
   # Flags
-  fdbg('Bug.update.before_update_flags', bug_id => $self->id);
   my ($removed, $added)
     = Bugzilla::Flag->update_flags($self, $old_bug, $delta_ts);
-  fdbg('Bug.update.after_update_flags',
-    bug_id => $self->id, removed => $removed, added => $added);
   if ($removed || $added) {
     $changes->{'flagtypes.name'} = [$removed, $added];
   }
@@ -1275,15 +1271,12 @@ sub update {
     delete $user->{bugs_ignored} if $bug_ignored_changed;
   }
 
-  fdbg('Bug.update.before_sync_fulltext', bug_id => $self->id);
   $self->_sync_fulltext(
     update_short_desc => $changes->{short_desc},
     update_comments   => $self->{added_comments} || $self->{comment_isprivate}
   );
 
-  fdbg('Bug.update.before_commit', bug_id => $self->id);
   $dbh->bz_commit_transaction();
-  fdbg('Bug.update.after_commit', bug_id => $self->id);
 
   # Remove obsolete internal variables.
   delete $self->{'_old_assigned_to'};
@@ -1307,8 +1300,6 @@ sub update {
   # Clear the inside of update flag
   delete $self->{_inside_bug_update};
 
-  fdbg('Bug.update.exit',
-    bug_id => $self->id, changed => join q{,}, sort keys %$changes);
   return $changes;
 }
 
