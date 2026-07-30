@@ -23,6 +23,34 @@ my $mfa_help_url
 
 # Enable TOTP for the admin user
 log_in($sel, $config, 'admin');
+
+my $dbh = Bugzilla->dbh;
+my ($admin_password_hash) = $dbh->selectrow_array(
+  'SELECT cryptpassword FROM profiles WHERE login_name = ?',
+  undef,
+  $config->{admin_user_login}
+);
+$dbh->do(
+  q{UPDATE profiles SET cryptpassword = '*' WHERE login_name = ?},
+  undef,
+  $config->{admin_user_login}
+);
+$sel->open_ok('/userprefs.cgi?tab=mfa');
+$sel->title_is('User Preferences');
+my $passwordless_mfa_help_url
+  = $sel->get_attribute('link=two-factor authentication user guide@href');
+$dbh->do(
+  'UPDATE profiles SET cryptpassword = ? WHERE login_name = ?',
+  undef,
+  $admin_password_hash,
+  $config->{admin_user_login}
+);
+is(
+  $passwordless_mfa_help_url,
+  $mfa_help_url,
+  'MFA help is available before setting a password'
+);
+
 $sel->open_ok('/userprefs.cgi?tab=mfa');
 $sel->title_is('User Preferences');
 is(
