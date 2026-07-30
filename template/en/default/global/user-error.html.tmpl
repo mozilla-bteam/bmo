@@ -1720,6 +1720,10 @@
   [% ELSIF error == "request_queue_group_invalid" %]
     The group field <em>[% group FILTER html %]</em> is invalid.
 
+  [% ELSIF error == "request_too_large" %]
+    [% title = "Request Too Large" %]
+    The request is too large.
+
   [% ELSIF error == "require_new_password" %]
     [% title = "New Password Needed" %]
     You cannot change your password without choosing a new one.
