@@ -68,8 +68,12 @@ $sel->click_ok('mfa-recovery');
 $sel->type_ok('mfa-password', $config->{admin_user_passwd});
 $sel->type_ok('code',         $auth->code);
 $sel->click_ok('update');
+$sel->is_element_present_ok('mfa-recovery-frame');
 is(
-  $sel->get_attribute('link=two-factor authentication user guide@href'),
+  $sel->get_attribute(
+    '//div[@id="mfa-container"][.//iframe[@id="mfa-recovery-frame"]]'
+      . '//a[normalize-space(text())="two-factor authentication user guide"]@href'
+  ),
   $mfa_help_url,
   'MFA help is available with recovery codes'
 );

@@ -32,6 +32,21 @@ Applications and scripts that use the BMO API should authenticate with an
 :ref:`API key <api-keys>` instead of your password. You can turn this preference
 off after verifying with your second factor, but doing so is not recommended.
 
+.. _required-two-factor-enrollment:
+
+Required 2FA Enrollment
+=======================
+
+If BMO displays a 2FA enrollment deadline, enable 2FA before the date shown.
+After that deadline, BMO restricts your account to the 2FA preferences page
+until enrollment is complete.
+
+Some accounts are required to use Duo. If an account is used for automation
+and Duo is not appropriate, `file a bug in the bugzilla.mozilla.org
+Administration component
+<https://bugzilla.mozilla.org/enter_bug.cgi?product=bugzilla.mozilla.org&component=Administration>`_
+with details about the bot and its requirements to request an exception.
+
 .. _choose-two-factor-method:
 
 Choose a Method
@@ -75,8 +90,9 @@ application, but the enrollment process is the same:
    QR code. Allow camera access if the application requests it.
 #. Point the device's camera at the QR code shown by BMO. The application should
    add a BMO entry and begin showing a new six-digit code every 30 seconds.
-#. If you cannot scan the QR code, use the option below it to display the secret,
-   then choose manual entry in your TOTP application and enter that secret.
+#. If you cannot scan the QR code, click :guilabel:`Show as text` above it to
+   display the secret, then choose manual entry in your TOTP application and
+   enter that secret.
 #. Enter the six-digit code shown by your TOTP application.
 #. Click :guilabel:`Submit Changes`.
 
@@ -150,6 +166,8 @@ after enabling TOTP.
 #. Click :guilabel:`Generate Printable Recovery Codes`.
 #. Enter your current password and either a current TOTP code or an unused
    recovery code.
+#. Click :guilabel:`Generate Printable Recovery Codes` again to submit the
+   form.
 #. Print the codes and store them in a secure offline location.
 
 .. figure:: ../../images/mfa-enabled.png
@@ -180,6 +198,8 @@ Service Desk`_ if none of those methods are available.
 Troubleshooting
 ===============
 
+.. _two-factor-totp-code-rejected:
+
 TOTP Code Is Rejected
 ---------------------
 
@@ -197,6 +217,8 @@ recovery code to :ref:`disable and re-enable TOTP
 codes: one to sign in and another to disable TOTP. Otherwise, contact the BMO
 administrators.
 
+.. _two-factor-duo-prompt-not-load:
+
 Duo Prompt Does Not Load
 ------------------------
 
@@ -206,6 +228,8 @@ that the Duo username configured in BMO belongs to your Mozilla account.
 
 If the prompt still does not load, or none of your enrolled Duo methods is
 available, contact `Mozilla Service Desk`_.
+
+.. _two-factor-no-method-available:
 
 No 2FA Method Is Available
 --------------------------
@@ -225,7 +249,8 @@ If you use TOTP and have recovery codes:
 #. Sign in with your password and one unused recovery code.
 #. Open the :guilabel:`Two-Factor Authentication` preferences tab.
 #. Click :guilabel:`Disable Two-factor Authentication`.
-#. Verify with another unused recovery code.
+#. Enter your current password and verify with another unused recovery code.
+#. Click :guilabel:`Submit Changes`.
 #. Enable 2FA again with your replacement device and generate a new set of
    recovery codes.
 
@@ -254,8 +279,12 @@ your current session active. You can also review and end sessions from BMO's
 `Sessions preferences
 <https://bugzilla.mozilla.org/userprefs.cgi?tab=sessions>`_.
 
+.. _two-factor-frequently-asked-questions:
+
 Frequently Asked Questions
 ==========================
+
+.. _two-factor-move-totp-new-device:
 
 Can I Move TOTP to a New Device?
 --------------------------------
@@ -266,6 +295,8 @@ removing the old entry. Otherwise, disable TOTP while the old device still
 works, enable it again with the new device, and generate new recovery codes.
 BMO does not display the original TOTP secret again after enrollment.
 
+.. _two-factor-store-totp-password-manager:
+
 Can I Store TOTP in My Password Manager?
 ----------------------------------------
 
@@ -274,6 +305,8 @@ second factor in the same security boundary. A separate TOTP application or
 device provides stronger protection if your password manager is compromised.
 Whichever approach you choose, keep recovery codes separately in a secure
 offline location.
+
+.. _two-factor-api-client-stopped-working:
 
 Why Did My API Client Stop Working?
 -----------------------------------

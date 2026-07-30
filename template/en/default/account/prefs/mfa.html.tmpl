@@ -245,18 +245,10 @@
       </p>
 
       <div id="mfa-totp-apps-popup" class="mfa-totp-popup" style="display:none">
-        Example TOTP Applications:<br>
-        <ul>
-          <li>Android and iOS:
-            <a href="https://support.google.com/accounts/answer/1066447" target="_blank" rel="noopener noreferrer">Google Authenticator</a>,
-            <a href="https://freeotp.github.io/" target="_blank" rel="noopener noreferrer">Red Hat FreeOTP</a>
-          </li>
-          <li>Windows Phone:
-            <a href="http://www.windowsphone.com/en-us/store/app/authenticator/021dd79f-0598-e011-986b-78e7d1fa76f8"
-                target="_blank rel="noopener noreferrer"">Authenticator</a>
-          </li>
-        </ul>
-        <a href="https://en.wikipedia.org/wiki/Time-based_One-time_Password_Algorithm#Client_implementations" target="_blank" rel="noopener noreferrer">
+        Example TOTP applications for Android and iOS:<br>
+        <a href="https://support.google.com/accounts/answer/1066447" target="_blank" rel="noopener noreferrer">Google Authenticator</a>,
+        <a href="https://freeotp.github.io/" target="_blank" rel="noopener noreferrer">Red Hat FreeOTP</a><br>
+        <a href="https://en.wikipedia.org/wiki/Comparison_of_OTP_applications" target="_blank" rel="noopener noreferrer">
           Other clients
         </a>
         <button type="button" class="mfa-totp-popup-close">Close</button>
@@ -322,6 +314,7 @@
 [% BLOCK help_blurb %]
   <p>
     <b>Need help with 2FA?</b>
-    Read the <a href="[% MFA_HOWTO FILTER html %]">two-factor authentication user guide</a>.
+    Read the <a href="[% MFA_HOWTO FILTER html %]"
+                target="_blank" rel="noopener noreferrer">two-factor authentication user guide</a>.
   </p>
 [% END %]
