@@ -43,6 +43,7 @@ use Scalar::Util qw(blessed);
 use Storable qw(dclone);
 
 use Bugzilla::FlagActivity;
+use Bugzilla::FlagDebug;
 use Bugzilla::FlagType;
 use Bugzilla::Hook;
 use Bugzilla::User;
@@ -489,7 +490,9 @@ sub create {
 
   $params->{creation_date} = $params->{modification_date} = $timestamp;
 
+  fdbg('Flag.create.before_super', type_id => $params->{type_id});
   $flag = $class->SUPER::create($params);
+  fdbg('Flag.create.after_super', flag_id => $flag->id);
 
   Bugzilla::FlagActivity->create({
     flag_when     => $timestamp,
@@ -502,6 +505,7 @@ sub create {
     attachment_id => $flag->attach_id,
   });
 
+  fdbg('Flag.create.exit', flag_id => $flag->id);
   return $flag;
 }
 
@@ -510,14 +514,19 @@ sub update {
   my $dbh       = Bugzilla->dbh;
   my $timestamp = shift || $dbh->selectrow_array('SELECT LOCALTIMESTAMP(0)');
 
+  fdbg('Flag.update.enter', flag_id => $self->id, timestamp => $timestamp);
   my $changes = $self->SUPER::update(@_);
+  fdbg('Flag.update.after_super',
+    flag_id => $self->id, changed => join q{,}, sort keys %$changes);
 
   if (scalar(keys %$changes)) {
     $dbh->do('UPDATE flags SET modification_date = ? WHERE id = ?',
       undef, ($timestamp, $self->id));
     $self->{'modification_date'}
       = format_time($timestamp, '%Y-%m-%d %T', Bugzilla->local_timezone);
+    fdbg('Flag.update.before_memcached_clear', flag_id => $self->id);
     Bugzilla->memcached->clear({table => 'flags', id => $self->id});
+    fdbg('Flag.update.after_memcached_clear', flag_id => $self->id);
 
     Bugzilla::FlagActivity->create({
       flag_when     => $timestamp,
@@ -532,9 +541,11 @@ sub update {
   }
 
   # BMO - provide a hook which passes the flag object
+  fdbg('Flag.update.before_hook_flag_updated', flag_id => $self->id);
   Bugzilla::Hook::process('flag_updated',
     {flag => $self, changes => $changes, timestamp => $timestamp});
 
+  fdbg('Flag.update.exit', flag_id => $self->id);
   return $changes;
 }
 
@@ -569,6 +580,16 @@ sub update_activity {
 sub update_flags {
   my ($class, $self, $old_self, $timestamp) = @_;
 
+  fdbg_watchdog_on('Flag.update_flags');
+  fdbg(
+    'Flag.update_flags.enter',
+    object    => ref $self,
+    object_id => (eval { $self->id } // 'n/a'),
+    timestamp => $timestamp,
+    new_count => scalar @{$self->flags},
+    old_count => scalar @{$old_self->flags},
+  );
+
   my @old_summaries = $class->snapshot($old_self->flags);
   my %old_flags = map { $_->id => $_ } @{$old_self->flags};
 
@@ -576,29 +597,39 @@ sub update_flags {
     if (!$new_flag->id) {
 
       # This is a new flag.
+      fdbg('Flag.update_flags.branch_create', type_id => $new_flag->type_id);
       my $flag = $class->create($new_flag, $timestamp);
       $new_flag->{id}                = $flag->id;
       $new_flag->{creation_date}     = format_time($timestamp, '%Y-%m-%d %H:%i:%s');
       $new_flag->{modification_date} = format_time($timestamp, '%Y-%m-%d %H:%i:%s');
+      fdbg('Flag.update_flags.before_notify_new', flag_id => $flag->id);
       $class->notify($new_flag, undef, $self, $timestamp);
+      fdbg('Flag.update_flags.after_notify_new', flag_id => $flag->id);
     }
     else {
+      fdbg('Flag.update_flags.branch_update', flag_id => $new_flag->id);
       my $changes = $new_flag->update($timestamp);
       if (scalar(keys %$changes)) {
+        fdbg('Flag.update_flags.before_notify_update', flag_id => $new_flag->id);
         $class->notify($new_flag, $old_flags{$new_flag->id}, $self, $timestamp);
+        fdbg('Flag.update_flags.after_notify_update', flag_id => $new_flag->id);
       }
       delete $old_flags{$new_flag->id};
     }
   }
 
   # These flags have been deleted.
+  fdbg('Flag.update_flags.delete_phase', count => scalar keys %old_flags);
   foreach my $old_flag (values %old_flags) {
+    fdbg('Flag.update_flags.branch_delete', flag_id => $old_flag->id);
     $class->notify(undef, $old_flag, $self, $timestamp);
+    fdbg('Flag.update_flags.after_notify_delete', flag_id => $old_flag->id);
 
     # BMO - provide a hook which passes the timestamp,
     # because that isn't passed to remove_from_db().
     Bugzilla::Hook::process('flag_deleted',
       {flag => $old_flag, timestamp => $timestamp});
+    fdbg('Flag.update_flags.after_hook_flag_deleted', flag_id => $old_flag->id);
 
     Bugzilla::FlagActivity->create({
       flag_when     => $timestamp,
@@ -611,7 +642,9 @@ sub update_flags {
       attachment_id => $old_flag->attach_id,
     });
 
+    fdbg('Flag.update_flags.before_remove_from_db', flag_id => $old_flag->id);
     $old_flag->remove_from_db();
+    fdbg('Flag.update_flags.after_remove_from_db', flag_id => $old_flag->id);
   }
 
   # If the bug has been moved into another product or component,
@@ -627,6 +660,10 @@ sub update_flags {
   my @new_summaries = $class->snapshot($self->flags);
   my @changes = $class->update_activity(\@old_summaries, \@new_summaries);
 
+  my $old_summary_text = join q{/}, @old_summaries;
+  my $new_summary_text = join q{/}, @new_summaries;
+  fdbg('Flag.update_flags.before_hook_end_of_update',
+    old => $old_summary_text, new => $new_summary_text);
   Bugzilla::Hook::process(
     'flag_end_of_update',
     {
@@ -636,6 +673,9 @@ sub update_flags {
       new_flags => \@new_summaries,
     }
   );
+
+  fdbg('Flag.update_flags.exit', changes => scalar @changes);
+  fdbg_watchdog_off();
   return @changes;
 }
 
@@ -733,6 +773,7 @@ sub force_retarget {
         attachment_id => $flag->attach_id,
       });
 
+      fdbg('Flag.force_retarget.before_remove_from_db', flag_id => $flag->id);
       $flag->remove_from_db();
     }
   }
@@ -1204,10 +1245,13 @@ sub notify {
 
     my $template = Bugzilla->template_inner($lang);
     my $message;
+    fdbg('Flag.notify.before_template', to => $to, lang => $lang);
     $template->process("request/email.txt.tmpl", $vars, \$message)
       || ThrowTemplateError($template->error());
 
+    fdbg('Flag.notify.before_MessageToMTA', to => $to);
     MessageToMTA($message);
+    fdbg('Flag.notify.after_MessageToMTA', to => $to);
   }
 }
 

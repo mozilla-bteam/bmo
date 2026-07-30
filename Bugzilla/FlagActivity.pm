@@ -12,6 +12,7 @@ use strict;
 use warnings;
 
 use Bugzilla::Error;
+use Bugzilla::FlagDebug;
 use Bugzilla::Util qw(trim datetime_from);
 use List::MoreUtils qw(none);
 
@@ -48,15 +49,24 @@ sub _check_param_required {
 sub _check_date {
   my ($invocant, $date) = @_;
 
+  fdbg('FlagActivity._check_date.enter', date => $date, ref => ref $date);
   $date = trim($date);
   datetime_from($date)
     or ThrowUserError('illegal_date',
     {date => $date, format => 'YYYY-MM-DD HH24:MI:SS'});
+  fdbg('FlagActivity._check_date.ok', date => $date);
   return $date;
 }
 
 sub _check_status {
   my ($self, $status) = @_;
+
+  # NOTE: $self is the class name during create(), so $self->id below would
+  # itself die with "Can't locate object method id" rather than throwing the
+  # intended user error. Log the input first so we can see whether we ever
+  # reach that path.
+  fdbg('FlagActivity._check_status.enter',
+    status => $status, invocant => (ref $self) || $self);
 
   if (none { $status eq $_ } qw( X + - ? )) {
     ThrowUserError('flag_status_invalid', {id => $self->id, status => $status});
@@ -72,6 +82,37 @@ use constant VALIDATORS => {
   bug_id    => _check_param_required('bug_id'),
   status    => \&_check_status,
 };
+
+# TEMPORARY DEBUGGING - Bug 1806896. Wraps Bugzilla::Object::create so we can
+# see the exact params going in, whether the INSERT ever returns, and any
+# exception that would otherwise be swallowed further up the stack.
+sub create {
+  my ($class, $params) = @_;
+
+  fdbg(
+    'FlagActivity.create.enter',
+    flag_when     => $params->{flag_when},
+    type_id       => $params->{type_id},
+    flag_id       => $params->{flag_id},
+    setter_id     => $params->{setter_id},
+    requestee_id  => $params->{requestee_id},
+    bug_id        => $params->{bug_id},
+    attachment_id => $params->{attachment_id},
+    status        => $params->{status},
+  );
+
+  my $object = eval { $class->SUPER::create($params) };
+  if (my $error = $@) {
+    my $ref_type = ref $error;
+    my $flat = $ref_type ? 'exception object: ' . $ref_type : $error;
+    $flat =~ s/\s*\n\s*/ | /g;
+    fdbg('FlagActivity.create.died', error => $flat);
+    die $error;
+  }
+
+  fdbg('FlagActivity.create.ok', id => ($object ? $object->id : undef));
+  return $object;
+}
 
 sub flag_when     { return $_[0]->{flag_when} }
 sub type_id       { return $_[0]->{type_id} }
