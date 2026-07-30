@@ -15,10 +15,26 @@ BEGIN {
 
 use Bugzilla::Test::MockLocalconfig (urlbase => 'http://bmo.test');
 use Bugzilla::Test::MockDB;
-use Bugzilla::Test::MockParams (maxattachmentsize => 10_240);
+use Bugzilla::Test::MockParams;
 
 use Test2::V0;
 use Test::Mojo;
+
+{
+  package TestRequest;
+
+  sub new {
+    my ($class, $message) = @_;
+    return bless {message => $message}, $class;
+  }
+
+  sub error {
+    my ($self) = @_;
+    return {message => $self->{message}};
+  }
+
+  sub is_limit_exceeded { return 1; }
+}
 
 my $boundary = 'bugzilla-request-limit';
 my $body = join(
@@ -37,26 +53,75 @@ my $body = join(
 );
 
 my $t = Test::Mojo->new('Bugzilla::App');
-$t->post_ok(
-  '/post_bug.cgi' => {
-    'Content-Length' => length($body),
-    'Content-Type'   => "multipart/form-data; boundary=$boundary",
-  } => $body
-)->status_is(413)
-  ->header_is('Content-Type' => 'text/plain; charset=UTF-8')
-  ->content_is("The request is too large. Attachments are limited to 10 MB.\n")
-  ->content_unlike(qr/bug_type/i);
+$t->ua->max_response_size(0);
 
-my $config = Bugzilla::Config->new;
-$config->set_param(maxattachmentsize => 2047);
-$config->update;
+$t->post_ok('/index.cgi')->status_isnt(413);
+
 $t->post_ok(
   '/post_bug.cgi' => {
     'Content-Length' => length($body),
     'Content-Type'   => "multipart/form-data; boundary=$boundary",
   } => $body
 )->status_is(413)
-  ->content_is(
-  "The request is too large. Attachments are limited to 2047 KB.\n");
+  ->header_like('Content-Type' => qr{^text/html\b})
+  ->content_like(qr{<h1>Request Too Large</h1>})
+  ->content_like(qr{The request is too large\.})
+  ->content_unlike(qr{<h1>Bug Type Required</h1>});
+
+$t->post_ok(
+  '/index.cgi' => {
+    'Content-Length' => length($body),
+    'Content-Type'   => "multipart/form-data; boundary=$boundary",
+  } => $body
+)->status_is(413)
+  ->content_like(qr{The request is too large\.});
+
+$t->post_ok(
+  '/rest/bug/1/attachment' => {
+    'Content-Length' => length($body),
+    'Content-Type'   => "multipart/form-data; boundary=$boundary",
+  } => $body
+)->status_is(413)
+  ->header_like('Content-Type' => qr{^application/json\b})
+  ->json_is('/error' => 1)
+  ->json_is('/code' => 32_000)
+  ->json_is('/message' => 'The request is too large.');
+
+$t->post_ok(
+  '/jsonrpc.cgi' => {
+    'Content-Length' => length($body),
+    'Content-Type'   => 'application/json',
+  } => $body
+)->status_is(413)
+  ->header_like('Content-Type' => qr{^application/json\b})
+  ->json_is('/result' => undef)
+  ->json_is('/error/code' => 32_000)
+  ->json_is('/error/message' => 'The request is too large.')
+  ->json_is('/id' => undef);
+
+$t->post_ok(
+  '/xmlrpc.cgi' => {
+    'Content-Length' => length($body),
+    'Content-Type'   => 'text/xml',
+  } => $body
+)->status_is(413)
+  ->header_like('Content-Type' => qr{^text/xml\b})
+  ->content_like(qr{<fault>})
+  ->content_like(qr{<name>faultCode</name><value><int>32000</int>})
+  ->content_like(
+  qr{<name>faultString</name><value><string>The request is too large\.</string>});
+
+ok(
+  Bugzilla::App::Controller::CGI::_is_message_size_exceeded(
+    TestRequest->new('Maximum message size exceeded')
+  ),
+  'message-size limit errors are rejected'
+);
+ok(
+  !Bugzilla::App::Controller::CGI::_is_message_size_exceeded(
+    TestRequest->new('Maximum header size exceeded')
+  ),
+  'other limit errors retain their existing behavior'
+);
 
 done_testing;

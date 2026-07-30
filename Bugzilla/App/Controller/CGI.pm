@@ -17,7 +17,15 @@ use Socket qw(AF_INET inet_aton);
 use Mojo::File qw(path);
 use English qw(-no_match_vars);
 use Bugzilla::App::Stdout;
-use Bugzilla::Constants qw(bz_locations USAGE_MODE_BROWSER);
+use Bugzilla::Constants qw(
+  bz_locations
+  ERROR_MODE_REST
+  USAGE_MODE_BROWSER
+  USAGE_MODE_REST
+);
+use Bugzilla::Logging;
+use Bugzilla::Util qw(trim xml_quote);
+use Bugzilla::WebService::Constants qw(ERROR_UNKNOWN_TRANSIENT);
 
 my %SEEN;
 
@@ -61,22 +69,10 @@ sub load_one {
   my $wrapper = sub {
     my ($c) = @_;
 
-    if ($c->req->is_limit_exceeded) {
-      my $message      = 'The request is too large.';
-      my $content_type = $c->req->headers->content_type // '';
-      if ($file eq 'post_bug.cgi'
-        && $content_type =~ m{^multipart/form-data\b}i)
-      {
-        my $max_size = Bugzilla->params->{maxattachmentsize};
-        if ($max_size) {
-          my $limit = "$max_size KB";
-          $limit = ($max_size / 1024) . ' MB' if $max_size % 1024 == 0;
-          $message .= " Attachments are limited to $limit.";
-        }
-      }
-
-      $c->res->headers->content_type('text/plain; charset=UTF-8');
-      return $c->render(text => "$message\n", status => 413);
+    if (_is_message_size_exceeded($c->req)) {
+      my $reason = $c->req->error->{message};
+      WARN("Rejected oversized request for $file: $reason");
+      return _render_request_too_large($c, $file);
     }
 
     Bugzilla->request_cache->{mojo_controller} = $c;
@@ -111,6 +107,79 @@ sub load_one {
   no strict 'refs';    ## no critic (strict)
   *{$name} = subname($name, $wrapper);
   return 1;
+}
+
+sub _is_message_size_exceeded {
+  my ($request) = @_;
+  my $error = $request->error;
+  return $request->is_limit_exceeded
+    && ref $error eq 'HASH'
+    && ($error->{message} // '') eq 'Maximum message size exceeded';
+}
+
+sub _render_request_too_large {
+  my ($c, $file) = @_;
+
+  if ($file eq 'rest.cgi') {
+    return $c->render(
+      json => {
+        error         => 1,
+        code          => ERROR_UNKNOWN_TRANSIENT,
+        message       => _request_too_large_message(),
+        documentation => 'https://bmo.readthedocs.io/en/latest/api/',
+      },
+      status => 413
+    );
+  }
+
+  if ($file eq 'jsonrpc.cgi') {
+    return $c->render(
+      json => {
+        result => undef,
+        error  => {
+          code    => ERROR_UNKNOWN_TRANSIENT,
+          message => _request_too_large_message(),
+        },
+        id => undef,
+      },
+      status => 413
+    );
+  }
+
+  if ($file eq 'xmlrpc.cgi') {
+    my $message = xml_quote(_request_too_large_message());
+    my $xml
+      = qq{<?xml version="1.0" encoding="UTF-8"?>\n}
+      . qq{<methodResponse><fault><value><struct>}
+      . qq{<member><name>faultString</name><value><string>$message</string></value></member>}
+      . qq{<member><name>faultCode</name><value><int>@{[ERROR_UNKNOWN_TRANSIENT]}</int></value></member>}
+      . qq{</struct></value></fault></methodResponse>\n};
+    $c->res->headers->content_type('text/xml; charset=UTF-8');
+    return $c->render(data => $xml, status => 413);
+  }
+
+  return $c->render(
+    handler  => 'bugzilla',
+    template => 'global/user-error',
+    format   => 'html',
+    error    => 'request_too_large',
+    status   => 413
+  );
+}
+
+sub _request_too_large_message {
+  my $request_cache = Bugzilla->request_cache;
+  local $request_cache->{usage_mode} = USAGE_MODE_REST;
+  local $request_cache->{error_mode} = ERROR_MODE_REST;
+
+  my $message;
+  my $template = Bugzilla->template;
+  $template->process(
+    'global/user-error.html.tmpl',
+    {error => 'request_too_large'},
+    \$message
+  ) || die $template->error();
+  return trim($message);
 }
 
 sub _ENV {
