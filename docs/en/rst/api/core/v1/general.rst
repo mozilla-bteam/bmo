@@ -54,8 +54,11 @@ The error contents look similar to:
 
 .. _rest-query-string-limit:
 
-BMO rejects request URLs around 8 KB with a ``414 URI Too Long`` response.
-Keep URLs conservatively below that size and split large queries into multiple
+BMO's front end rejects request URLs around 8 KB with a plain-text
+``414 URI Too Long`` response instead of the JSON error object described above.
+This limit accommodates roughly 1,000 bug IDs in the ``id`` parameter for
+``GET /rest/bug``, depending on the length of the IDs and other parameters.
+Keep URLs conservatively below the limit and split large queries into multiple
 requests.
 
 Common Data Types

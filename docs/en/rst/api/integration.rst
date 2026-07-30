@@ -15,7 +15,8 @@ compatibility layer performs additional request and response translation.
 
 Do not rely on scraped HTML, bug lists exported as CSV or XML, or undocumented
 endpoints when your integration requires a stable interface. Use documented
-REST API methods that are not marked experimental.
+REST API methods that are not marked experimental. See the :ref:`API overview
+<api-list>` for the other interfaces that Bugzilla provides.
 
 Use a dedicated bot account
 ---------------------------
@@ -34,9 +35,10 @@ Poll responsibly
 -----------------
 
 Do not poll BMO more frequently than once every five minutes. If an integration
-needs lower-latency updates, contact the BMO team in the
+needs lower-latency updates, use the :doc:`Webhooks API
+<../extensions/Webhooks/api/v1/index>`. Contact the BMO team in the
 `BMO Matrix channel <https://chat.mozilla.org/#/room/#bmo:mozilla.org>`_ to
-discuss webhooks or another event-driven approach.
+discuss requirements that the documented webhooks do not meet.
 
 Poll incrementally instead of repeating a full search. The
 ``last_change_time`` parameter to :ref:`rest_search_bugs` returns bugs modified
@@ -48,28 +50,35 @@ A polling cycle should:
 
 * obtain BMO's current ``db_time`` from :ref:`GET /rest/time <rest-time>`
   before searching;
-* search from before the previous successful cycle's recorded time by an
-  overlap that covers database replication lag and the API's one-second
-  timestamp precision;
-* process every result before saving the new ``db_time``; and
-* de-duplicate on bug ID and ``last_change_time`` so that the overlap is safe.
-
-Keep the polling response small with
-``include_fields=id,last_change_time`` and track each timestamp locally. If a
-bug's value has not changed since the integration last processed it, there is
-no need to fetch the full bug again. Fetch changed bugs in batches.
+* search from at least five minutes before the previous successful cycle's
+  recorded time, unless the BMO team has confirmed a different overlap;
+* pass ``order=changeddate,bug_id``, choose a ``limit`` of 10,000 or less, and
+  page with ``limit`` and ``offset`` until a page contains fewer than ``limit``
+  bugs. The response does not indicate when more results are available;
+* collect the bug IDs from every page, then fetch and process every unique bug
+  before saving the new ``db_time``; and
+* discard the de-duplication set after each cycle. If a bug appears in a later
+  cycle, fetch it again even when its ``last_change_time`` matches the value
+  previously processed, because multiple changes can occur within the API's
+  one-second timestamp precision.
 
 Minimize requests and responses
 -------------------------------
 
 Request only the fields the integration uses by setting
 :ref:`include_fields <rest-include-fields>`. This reduces response size and
-server work.
+server work. For polling searches, use
+``include_fields=id,last_change_time`` and fetch the full bugs after all pages
+have been collected.
 
 Combine requests when possible. For example, request multiple bug IDs in one
 call with ``GET /rest/bug?id=123,456`` instead of issuing one request per
-bug. Use ``limit`` and ``offset`` to page through large searches, and keep
-request URLs below the
+bug. This search silently omits bugs that do not exist or that the caller cannot
+see. Compare the returned IDs with the requested set and treat missing IDs as
+not visible, not as deleted.
+
+Whenever a search is paged with ``limit`` and ``offset``, pass a stable
+``order`` such as ``order=bug_id``. Keep request URLs below the
 :ref:`documented query-string size limit <rest-query-string-limit>`.
 
 Write searches that survive configuration changes
@@ -83,3 +92,7 @@ Similarly, do not enumerate every resolution when searching for bugs that were
 closed without being fixed. Use the custom-search parameters
 ``status=__closed__&f1=resolution&o1=notequals&v1=FIXED``. This allows new
 non-fixed resolutions to be introduced without changing the integration.
+
+When combining ``last_change_time`` with custom-search parameters, number the
+``f<n>`` charts contiguously starting with ``f1``. Gaps in the numbering can
+cause the generated change-time chart to replace an existing chart.
