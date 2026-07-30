@@ -28,6 +28,7 @@ use Bugzilla::Util qw(trim xml_quote);
 use Bugzilla::WebService::Constants qw(ERROR_UNKNOWN_TRANSIENT);
 
 my %SEEN;
+my $REQUEST_TOO_LARGE_ERROR = 'request_too_large';
 
 sub setup_routes {
   my ($class, $r) = @_;
@@ -162,7 +163,7 @@ sub _render_request_too_large {
     handler  => 'bugzilla',
     template => 'global/user-error',
     format   => 'html',
-    error    => 'request_too_large',
+    error    => $REQUEST_TOO_LARGE_ERROR,
     status   => 413
   );
 }
@@ -176,7 +177,7 @@ sub _request_too_large_message {
   my $template = Bugzilla->template;
   $template->process(
     'global/user-error.html.tmpl',
-    {error => 'request_too_large'},
+    {error => $REQUEST_TOO_LARGE_ERROR},
     \$message
   ) || die $template->error();
   return trim($message);
