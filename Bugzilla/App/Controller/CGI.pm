@@ -24,7 +24,7 @@ use Bugzilla::Constants qw(
 );
 use Bugzilla::Logging;
 use Bugzilla::Util qw(trim xml_quote);
-use Bugzilla::WebService::Constants qw(WS_ERROR_CODE);
+use Bugzilla::WebService::Constants qw(API_AUTH_HEADERS WS_ERROR_CODE);
 
 my %SEEN;
 use constant REQUEST_TOO_LARGE_ERROR => 'request_too_large';
@@ -121,7 +121,8 @@ sub _render_request_too_large {
   my ($c, $file) = @_;
   my $error_code = WS_ERROR_CODE->{REQUEST_TOO_LARGE_ERROR()};
 
-  if ($file eq 'rest.cgi') {
+  if (path($file)->basename eq 'rest.cgi') {
+    _set_rest_cors_headers($c);
     return $c->render(
       json => {
         error         => 1,
@@ -166,6 +167,20 @@ sub _render_request_too_large {
     error    => REQUEST_TOO_LARGE_ERROR,
     status   => 413
   );
+}
+
+sub _set_rest_cors_headers {
+  my ($c) = @_;
+  my @allowed_headers
+    = qw(accept content-type origin user-agent x-requested-with);
+  foreach my $header (keys %{API_AUTH_HEADERS()}) {
+    $header =~ tr/A-Z_/a-z\-/;
+    push @allowed_headers, $header;
+  }
+
+  $c->res->headers->header('Access-Control-Allow-Origin' => '*');
+  $c->res->headers->header(
+    'Access-Control-Allow-Headers' => join(', ', @allowed_headers));
 }
 
 sub _request_too_large_message {
