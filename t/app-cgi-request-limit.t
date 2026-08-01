@@ -110,6 +110,25 @@ $t->post_ok(
   } => $body
 )->status_is(413)
   ->header_like('Content-Type' => qr{^application/json\b})
+  ->header_is('Access-Control-Allow-Origin' => '*')
+  ->header_like(
+  'Access-Control-Allow-Headers' => qr{\bx-bugzilla-api-key\b}
+  )
+  ->json_is('/error' => 1)
+  ->json_is('/code' => 58)
+  ->json_is('/message' => 'The request is too large.');
+
+$t->post_ok(
+  '/bzapi/bug/1/attachment' => {
+    'Content-Length' => length($body),
+    'Content-Type'   => "multipart/form-data; boundary=$boundary",
+  } => $body
+)->status_is(413)
+  ->header_like('Content-Type' => qr{^application/json\b})
+  ->header_is('Access-Control-Allow-Origin' => '*')
+  ->header_like(
+  'Access-Control-Allow-Headers' => qr{\bx-bugzilla-api-key\b}
+  )
   ->json_is('/error' => 1)
   ->json_is('/code' => 58)
   ->json_is('/message' => 'The request is too large.');
