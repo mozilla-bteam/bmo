@@ -19,16 +19,15 @@ use English qw(-no_match_vars);
 use Bugzilla::App::Stdout;
 use Bugzilla::Constants qw(
   bz_locations
-  ERROR_MODE_REST
   USAGE_MODE_BROWSER
   USAGE_MODE_REST
 );
 use Bugzilla::Logging;
 use Bugzilla::Util qw(trim xml_quote);
-use Bugzilla::WebService::Constants qw(ERROR_UNKNOWN_TRANSIENT);
+use Bugzilla::WebService::Constants qw(WS_ERROR_CODE);
 
 my %SEEN;
-my $REQUEST_TOO_LARGE_ERROR = 'request_too_large';
+use constant REQUEST_TOO_LARGE_ERROR => 'request_too_large';
 
 sub setup_routes {
   my ($class, $r) = @_;
@@ -70,7 +69,7 @@ sub load_one {
   my $wrapper = sub {
     my ($c) = @_;
 
-    if (_is_message_size_exceeded($c->req)) {
+    if (_is_request_body_limit_exceeded($c->req)) {
       my $reason = $c->req->error->{message};
       WARN("Rejected oversized request for $file: $reason");
       return _render_request_too_large($c, $file);
@@ -110,22 +109,23 @@ sub load_one {
   return 1;
 }
 
-sub _is_message_size_exceeded {
+sub _is_request_body_limit_exceeded {
   my ($request) = @_;
   my $error = $request->error;
   return $request->is_limit_exceeded
     && ref $error eq 'HASH'
-    && ($error->{message} // '') eq 'Maximum message size exceeded';
+    && ($error->{message} // '') =~ /\AMaximum (?:message|buffer) size exceeded\z/;
 }
 
 sub _render_request_too_large {
   my ($c, $file) = @_;
+  my $error_code = WS_ERROR_CODE->{REQUEST_TOO_LARGE_ERROR()};
 
   if ($file eq 'rest.cgi') {
     return $c->render(
       json => {
         error         => 1,
-        code          => ERROR_UNKNOWN_TRANSIENT,
+        code          => $error_code,
         message       => _request_too_large_message(),
         documentation => 'https://bmo.readthedocs.io/en/latest/api/',
       },
@@ -138,7 +138,7 @@ sub _render_request_too_large {
       json => {
         result => undef,
         error  => {
-          code    => ERROR_UNKNOWN_TRANSIENT,
+          code    => $error_code,
           message => _request_too_large_message(),
         },
         id => undef,
@@ -153,7 +153,7 @@ sub _render_request_too_large {
       = qq{<?xml version="1.0" encoding="UTF-8"?>\n}
       . qq{<methodResponse><fault><value><struct>}
       . qq{<member><name>faultString</name><value><string>$message</string></value></member>}
-      . qq{<member><name>faultCode</name><value><int>@{[ERROR_UNKNOWN_TRANSIENT]}</int></value></member>}
+      . qq{<member><name>faultCode</name><value><int>$error_code</int></value></member>}
       . qq{</struct></value></fault></methodResponse>\n};
     $c->res->headers->content_type('text/xml; charset=UTF-8');
     return $c->render(data => $xml, status => 413);
@@ -163,21 +163,23 @@ sub _render_request_too_large {
     handler  => 'bugzilla',
     template => 'global/user-error',
     format   => 'html',
-    error    => $REQUEST_TOO_LARGE_ERROR,
+    error    => REQUEST_TOO_LARGE_ERROR,
     status   => 413
   );
 }
 
 sub _request_too_large_message {
   my $request_cache = Bugzilla->request_cache;
-  local $request_cache->{usage_mode} = USAGE_MODE_REST;
-  local $request_cache->{error_mode} = ERROR_MODE_REST;
+  # Render localized plain text without leaking REST modes into CGI dispatch.
+  local $request_cache->{usage_mode} = $request_cache->{usage_mode};
+  local $request_cache->{error_mode} = $request_cache->{error_mode};
+  Bugzilla->usage_mode(USAGE_MODE_REST);
 
   my $message;
   my $template = Bugzilla->template;
   $template->process(
     'global/user-error.html.tmpl',
-    {error => $REQUEST_TOO_LARGE_ERROR},
+    {error => REQUEST_TOO_LARGE_ERROR},
     \$message
   ) || die $template->error();
   return trim($message);
