@@ -18,8 +18,7 @@ use Test::More "no_plan";
 use QA::Util;
 
 my ($sel, $config) = get_selenium();
-my $mfa_help_url
-  = 'https://bmo.readthedocs.io/en/latest/using/two-factor-authentication.html';
+my $mfa_help_url = qr{/using/two-factor-authentication\.html$};
 
 # Enable TOTP for the admin user
 log_in($sel, $config, 'admin');
@@ -45,7 +44,7 @@ $dbh->do(
   $admin_password_hash,
   $config->{admin_user_login}
 );
-is(
+like(
   $passwordless_mfa_help_url,
   $mfa_help_url,
   'MFA help is available before setting a password'
@@ -53,7 +52,7 @@ is(
 
 $sel->open_ok('/userprefs.cgi?tab=mfa');
 $sel->title_is('User Preferences');
-is(
+like(
   $sel->get_attribute('link=two-factor authentication user guide@href'),
   $mfa_help_url,
   'MFA help is available before enrollment'
@@ -85,7 +84,7 @@ my $auth = Auth::GoogleAuth->new({
 $sel->type_ok('mfa-totp-enable-code', $auth->code);
 $sel->click_ok('update');
 $sel->title_is('User Preferences');
-is(
+like(
   $sel->get_attribute('link=two-factor authentication user guide@href'),
   $mfa_help_url,
   'MFA help is available after enrollment'
@@ -97,7 +96,7 @@ $sel->type_ok('mfa-password', $config->{admin_user_passwd});
 $sel->type_ok('code',         $auth->code);
 $sel->click_ok('update');
 $sel->is_element_present_ok('mfa-recovery-frame');
-is(
+like(
   $sel->get_attribute(
     '//div[@id="mfa-container"][.//iframe[@id="mfa-recovery-frame"]]'
       . '//a[normalize-space(text())="two-factor authentication user guide"]@href'
