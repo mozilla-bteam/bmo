@@ -70,6 +70,7 @@ use constant WS_ERROR_CODE => {
   number_too_small      => 55,
   illegal_date          => 56,
   illegal_date_pronoun  => 57,
+  request_too_large     => 58,
 
   # Bug errors usually occupy the 100-200 range.
   improper_bug_id_field_value => 100,
@@ -255,6 +256,7 @@ use constant STATUS_BAD_REQUEST      => 400;
 use constant STATUS_NOT_AUTHORIZED   => 401;
 use constant STATUS_NOT_FOUND        => 404;
 use constant STATUS_GONE             => 410;
+use constant STATUS_REQUEST_TOO_LARGE => 413;
 
 # The integer value is the error code above returned by
 # the related webvservice call. We choose the appropriate
@@ -263,6 +265,7 @@ use constant STATUS_GONE             => 410;
 sub REST_STATUS_CODE_MAP {
   my $status_code_map = {
     51       => STATUS_NOT_FOUND,
+    58       => STATUS_REQUEST_TOO_LARGE,
     101      => STATUS_NOT_FOUND,
     102      => STATUS_NOT_AUTHORIZED,
     106      => STATUS_NOT_AUTHORIZED,
