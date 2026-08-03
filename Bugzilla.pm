@@ -514,9 +514,6 @@ sub usage_mode {
     elsif ($newval == USAGE_MODE_CMDLINE) {
       $class->error_mode(ERROR_MODE_DIE);
     }
-    elsif ($newval == USAGE_MODE_XMLRPC) {
-      $class->error_mode(ERROR_MODE_DIE_SOAP_FAULT);
-    }
     elsif ($newval == USAGE_MODE_JSON) {
       $class->error_mode(ERROR_MODE_JSON_RPC);
     }
@@ -606,9 +603,6 @@ sub log_user_request {
 
   if ($script_name =~ /rest\.cgi/) {
     $server = $script_name =~ /BzAPI/ ? "bzapi" : "rest";
-  }
-  elsif ($script_name =~ /xmlrpc\.cgi/) {
-    $server = "xmlrpc";
   }
   elsif ($script_name =~ /jsonrpc\.cgi/) {
     $server = "jsonrpc";
@@ -1053,8 +1047,7 @@ specify this argument, all fields will be returned.
 
 =item C<error_mode>
 
-Call either C<Bugzilla->error_mode(Bugzilla::Constants::ERROR_MODE_DIE)>
-or C<Bugzilla->error_mode(Bugzilla::Constants::ERROR_MODE_DIE_SOAP_FAULT)> to
+Call C<Bugzilla->error_mode(Bugzilla::Constants::ERROR_MODE_DIE)> to
 change this flag's default of C<Bugzilla::Constants::ERROR_MODE_WEBPAGE> and to
 indicate that errors should be passed to error mode specific error handlers
 rather than being sent to a browser and finished with an exit().
@@ -1070,8 +1063,7 @@ usage mode changes.
 
 =item C<usage_mode>
 
-Call either C<Bugzilla->usage_mode(Bugzilla::Constants::USAGE_MODE_CMDLINE)>
-or C<Bugzilla->usage_mode(Bugzilla::Constants::USAGE_MODE_XMLRPC)> near the
+Call C<Bugzilla->usage_mode(Bugzilla::Constants::USAGE_MODE_CMDLINE)> near the
 beginning of your script to change this flag's default of
 C<Bugzilla::Constants::USAGE_MODE_BROWSER> and to indicate that Bugzilla is
 being called in a non-interactive manner.
