@@ -19,7 +19,7 @@ use Bugzilla::Error;
 use Bugzilla::Hook;
 use Bugzilla::Util qw(html_quote disable_utf8 enable_utf8);
 use Bugzilla::WebService::Constants;
-use Bugzilla::WebService::Util qw(taint_data fix_credentials);
+use Bugzilla::WebService::Util qw(fix_credentials set_rest_cors_headers taint_data);
 
 # Load resource modules
 use Bugzilla::WebService::Server::REST::Resources::Bug;
@@ -141,18 +141,7 @@ sub response {
   Bugzilla::Hook::process('webservice_rest_response',
     {rpc => $self, result => \$result, response => $response});
 
-  # Access Control
-  my @allowed_headers
-    = qw(accept content-type origin user-agent x-requested-with);
-  foreach my $header (keys %{API_AUTH_HEADERS()}) {
-
-    # We want to lowercase and replace _ with -
-    my $translated_header = $header;
-    $translated_header =~ tr/A-Z_/a-z\-/;
-    push(@allowed_headers, $translated_header);
-  }
-  $response->header("Access-Control-Allow-Origin", "*");
-  $response->header("Access-Control-Allow-Headers", join(', ', @allowed_headers));
+  set_rest_cors_headers($response);
 
   # ETag support
   my $etag = $self->bz_etag;

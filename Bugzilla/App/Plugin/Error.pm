@@ -28,7 +28,8 @@ sub register {
 }
 
 sub _render_error {
-  my ($type, $c, $error, $vars) = @_;
+  my ($type, $c, $error, $vars, $options) = @_;
+  $options ||= {};
 
   # If values are defined in the stash, use those instead
   my $stash = $c->stash;
@@ -49,7 +50,7 @@ sub _render_error {
   if (Bugzilla->usage_mode == USAGE_MODE_MOJO) {
     $logfunc->("webpage error: $error");
 
-    if ($c->app->mode eq 'development') {
+    if ($c->app->mode eq 'development' && !exists $options->{status}) {
       use Bugzilla::Logging;
       my $class = $type ? 'Bugzilla::Error::' . ucfirst($type) : 'Mojo::Exception';
       my $e     = $class->new($error)->trace(2);
@@ -63,8 +64,8 @@ sub _render_error {
         template => "global/$type-error",
         format   => 'html',
         error    => $error,
-        status   => 200,
-        %{$vars}
+        %{$vars},
+        status => $options->{status} // $vars->{status} // 200
       );
       return 0;
     }

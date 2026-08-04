@@ -112,7 +112,13 @@ $t->post_ok(
   ->header_like('Content-Type' => qr{^application/json\b})
   ->header_is('Access-Control-Allow-Origin' => '*')
   ->header_like(
-  'Access-Control-Allow-Headers' => qr{\bx-bugzilla-api-key\b}
+    'Access-Control-Allow-Headers' => qr{\bauthorization\b}
+  )
+  ->header_like(
+    'Access-Control-Allow-Headers' => qr{\bx-bugzilla-api-key\b}
+  )
+  ->header_like(
+    'Access-Control-Allow-Headers' => qr{\bx-bugzilla-login\b}
   )
   ->json_is('/error' => 1)
   ->json_is('/code' => 58)
@@ -127,7 +133,13 @@ $t->post_ok(
   ->header_like('Content-Type' => qr{^application/json\b})
   ->header_is('Access-Control-Allow-Origin' => '*')
   ->header_like(
-  'Access-Control-Allow-Headers' => qr{\bx-bugzilla-api-key\b}
+    'Access-Control-Allow-Headers' => qr{\bauthorization\b}
+  )
+  ->header_like(
+    'Access-Control-Allow-Headers' => qr{\bx-bugzilla-api-key\b}
+  )
+  ->header_like(
+    'Access-Control-Allow-Headers' => qr{\bx-bugzilla-login\b}
   )
   ->json_is('/error' => 1)
   ->json_is('/code' => 58)

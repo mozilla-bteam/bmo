@@ -37,7 +37,22 @@ our @EXPORT_OK = qw(
   translate
   params_to_objects
   fix_credentials
+  set_rest_cors_headers
 );
+
+sub set_rest_cors_headers {
+  my ($headers) = @_;
+  my @allowed_headers
+    = qw(accept authorization content-type origin user-agent x-requested-with);
+  foreach my $header (sort keys %{API_AUTH_HEADERS()}) {
+    $header =~ tr/A-Z_/a-z\-/;
+    push @allowed_headers, $header;
+  }
+
+  $headers->header('Access-Control-Allow-Origin' => '*');
+  $headers->header(
+    'Access-Control-Allow-Headers' => join(', ', @allowed_headers));
+}
 
 sub extract_flags {
   my ($flags, $bug, $attachment) = @_;

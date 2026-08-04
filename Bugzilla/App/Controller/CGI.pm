@@ -20,11 +20,14 @@ use Bugzilla::App::Stdout;
 use Bugzilla::Constants qw(
   bz_locations
   USAGE_MODE_BROWSER
+  USAGE_MODE_MOJO
+  USAGE_MODE_MOJO_REST
   USAGE_MODE_REST
 );
 use Bugzilla::Logging;
 use Bugzilla::Util qw(trim xml_quote);
-use Bugzilla::WebService::Constants qw(API_AUTH_HEADERS WS_ERROR_CODE);
+use Bugzilla::WebService::Constants qw(WS_ERROR_CODE);
+use Bugzilla::WebService::Util qw(set_rest_cors_headers);
 
 my %SEEN;
 use constant REQUEST_TOO_LARGE_ERROR => 'request_too_large';
@@ -122,16 +125,9 @@ sub _render_request_too_large {
   my $error_code = WS_ERROR_CODE->{REQUEST_TOO_LARGE_ERROR()};
 
   if (path($file)->basename eq 'rest.cgi') {
-    _set_rest_cors_headers($c);
-    return $c->render(
-      json => {
-        error         => 1,
-        code          => $error_code,
-        message       => _request_too_large_message(),
-        documentation => 'https://bmo.readthedocs.io/en/latest/api/',
-      },
-      status => 413
-    );
+    set_rest_cors_headers($c->res->headers);
+    Bugzilla->usage_mode(USAGE_MODE_MOJO_REST);
+    return $c->user_error(REQUEST_TOO_LARGE_ERROR);
   }
 
   if ($file eq 'jsonrpc.cgi') {
@@ -160,27 +156,8 @@ sub _render_request_too_large {
     return $c->render(data => $xml, status => 413);
   }
 
-  return $c->render(
-    handler  => 'bugzilla',
-    template => 'global/user-error',
-    format   => 'html',
-    error    => REQUEST_TOO_LARGE_ERROR,
-    status   => 413
-  );
-}
-
-sub _set_rest_cors_headers {
-  my ($c) = @_;
-  my @allowed_headers
-    = qw(accept content-type origin user-agent x-requested-with);
-  foreach my $header (keys %{API_AUTH_HEADERS()}) {
-    $header =~ tr/A-Z_/a-z\-/;
-    push @allowed_headers, $header;
-  }
-
-  $c->res->headers->header('Access-Control-Allow-Origin' => '*');
-  $c->res->headers->header(
-    'Access-Control-Allow-Headers' => join(', ', @allowed_headers));
+  Bugzilla->usage_mode(USAGE_MODE_MOJO);
+  return $c->user_error(REQUEST_TOO_LARGE_ERROR, {}, {status => 413});
 }
 
 sub _request_too_large_message {
