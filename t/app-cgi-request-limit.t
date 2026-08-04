@@ -157,18 +157,6 @@ $t->post_ok(
   ->json_is('/error/message' => 'The request is too large.')
   ->json_is('/id' => undef);
 
-$t->post_ok(
-  '/xmlrpc.cgi' => {
-    'Content-Length' => length($body),
-    'Content-Type'   => 'text/xml',
-  } => $body
-)->status_is(413)
-  ->header_like('Content-Type' => qr{^text/xml\b})
-  ->content_like(qr{<fault>})
-  ->content_like(qr{<name>faultCode</name><value><int>58</int>})
-  ->content_like(
-  qr{<name>faultString</name><value><string>The request is too large\.</string>});
-
 ok(
   Bugzilla::App::Controller::CGI::_is_request_body_limit_exceeded(
     TestRequest->new('Maximum message size exceeded')

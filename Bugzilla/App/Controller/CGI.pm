@@ -25,7 +25,7 @@ use Bugzilla::Constants qw(
   USAGE_MODE_REST
 );
 use Bugzilla::Logging;
-use Bugzilla::Util qw(trim xml_quote);
+use Bugzilla::Util qw(trim);
 use Bugzilla::WebService::Constants qw(WS_ERROR_CODE);
 use Bugzilla::WebService::Util qw(set_rest_cors_headers);
 
@@ -142,18 +142,6 @@ sub _render_request_too_large {
       },
       status => 413
     );
-  }
-
-  if ($file eq 'xmlrpc.cgi') {
-    my $message = xml_quote(_request_too_large_message());
-    my $xml
-      = qq{<?xml version="1.0" encoding="UTF-8"?>\n}
-      . qq{<methodResponse><fault><value><struct>}
-      . qq{<member><name>faultString</name><value><string>$message</string></value></member>}
-      . qq{<member><name>faultCode</name><value><int>$error_code</int></value></member>}
-      . qq{</struct></value></fault></methodResponse>\n};
-    $c->res->headers->content_type('text/xml; charset=UTF-8');
-    return $c->render(data => $xml, status => 413);
   }
 
   Bugzilla->usage_mode(USAGE_MODE_MOJO);
