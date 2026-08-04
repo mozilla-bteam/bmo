@@ -45,9 +45,9 @@ discuss requirements that the documented webhooks do not meet.
 Authenticate polling and batch-read requests. BMO applies per-IP rate limits to
 anonymous reads. The request that reaches a limit can return a JSON HTTP 400
 rate-limit error, while subsequent requests from the blocked IP can return an
-HTML HTTP 429 response. When either response occurs, honor ``Retry-After`` when
-present and retry with exponential backoff and jitter. Apply the same backoff to
-transient 5xx responses.
+HTML HTTP 429 response. When either response occurs, retry with exponential
+backoff and jitter. BMO does not currently send a ``Retry-After`` header. Apply
+the same backoff to transient 5xx responses.
 
 Poll incrementally instead of repeating a full search. The
 ``last_change_time`` parameter to :ref:`rest_search_bugs` returns bugs modified
@@ -60,9 +60,8 @@ A polling cycle should:
 * obtain BMO's current ``db_time`` from :ref:`GET /rest/time <rest-time>`
   before searching;
 * search from at least five minutes before the previous successful cycle's
-  recorded time. This conservative default was established in the
-  `BMO maintainer review for bug 1573509
-  <https://github.com/mozilla-bteam/bmo/pull/2686#pullrequestreview-4802226765>`_;
+  recorded time to provide headroom for replica lag and one-second timestamp
+  precision;
 * pass ``order=bug_id`` and choose an explicit page size below BMO's current
   10,000-result search cap, such as ``limit=1000``. BMO silently lowers limits
   above the cap, so never use a larger requested value as the termination
@@ -88,20 +87,17 @@ have been collected.
 
 Combine requests when possible. For example, request multiple bug IDs in one
 call with ``GET /rest/bug?id=123,456`` instead of issuing one request per
-bug. Keep each batch below both BMO's query-string limit and the search result
-cap. This search silently omits bugs that do not exist or that the caller cannot
-see, and requests above the result cap may also omit IDs because the results
-were truncated. For batches within these limits, compare the returned IDs with
-the requested set and treat missing IDs as not visible, not as deleted.
-In contrast, ``GET /rest/bug/<id>`` returns an explicit error for a missing or
-invisible bug unless ``permissive=1`` is supplied.
+bug. Keep each batch below both :ref:`BMO's request-target size limit
+<rest-query-string-limit>` and the search result cap. This search silently
+omits bugs that do not exist or that the caller cannot see, and requests above
+the result cap may also omit IDs because the results were truncated. For
+batches within these limits, compare the returned IDs with the requested set
+and treat missing IDs as not visible, not as deleted. In contrast,
+``GET /rest/bug/<id>`` returns an explicit error for a missing or invisible
+bug.
 
 Whenever a search is paged with ``limit`` and ``offset``, pass a stable
-``order`` such as ``order=bug_id``. Keep request URLs below the
-:ref:`server's query-string size limit <rest-query-string-limit>`. BMO's front
-end currently rejects request URLs around 8 KB with a plain-text
-``414 URI Too Long`` response. This accommodates roughly 1,000 bug IDs in the
-``id`` parameter, depending on the length of the IDs and other parameters.
+``order`` such as ``order=bug_id``.
 
 Write searches that survive configuration changes
 --------------------------------------------------
