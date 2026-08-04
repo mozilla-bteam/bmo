@@ -604,9 +604,6 @@ sub log_user_request {
   if ($script_name =~ /rest\.cgi/) {
     $server = "rest";
   }
-  elsif ($script_name =~ /jsonrpc\.cgi/) {
-    $server = "jsonrpc";
-  }
 
   my @params = (
     $user_id, remote_ip(), $user_agent, $request_url, $method,
