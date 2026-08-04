@@ -10,6 +10,9 @@ will soon be removed. Which one to use? Short answer: the
 should be used for all new integrations, but keep an eye out for version 2,
 coming soon.
 
+For BMO-specific operational guidance, see :ref:`Integration Best Practices
+<integration-best-practices>`.
+
 The APIs currently available are as follows:
 
 Ad-Hoc APIs
