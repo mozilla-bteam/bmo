@@ -67,7 +67,6 @@ This is the standard API for external programs that want to interact
 with Bugzilla. It provides various methods in various modules.
 
 You can interact with this API via
-L<XML-RPC|Bugzilla::WebService::Server::XMLRPC>,
 L<JSON-RPC|Bugzilla::WebService::Server::JSONRPC> or
 L<REST|Bugzilla::WebService::Server::REST>.
 
@@ -403,8 +402,6 @@ objects.
 =head2 Server Types
 
 =over
-
-=item L<Bugzilla::WebService::Server::XMLRPC>
 
 =item L<Bugzilla::WebService::Server::JSONRPC>
 

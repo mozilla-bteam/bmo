@@ -104,8 +104,7 @@ sub _throw_error {
   elsif (Bugzilla->error_mode == ERROR_MODE_DIE) {
     die "$message\n";
   }
-  elsif (Bugzilla->error_mode == ERROR_MODE_DIE_SOAP_FAULT
-    || Bugzilla->error_mode == ERROR_MODE_JSON_RPC
+  elsif (Bugzilla->error_mode == ERROR_MODE_JSON_RPC
     || Bugzilla->error_mode == ERROR_MODE_REST)
   {
     # Clone the hash so we aren't modifying the constant.
@@ -117,11 +116,7 @@ sub _throw_error {
       $code = ERROR_UNKNOWN_TRANSIENT if $name =~ /user/i;
     }
 
-    if (Bugzilla->error_mode == ERROR_MODE_DIE_SOAP_FAULT) {
-      $logfunc->("XML-RPC error: $error ($code)");
-      die SOAP::Fault->faultcode($code)->faultstring($message);
-    }
-    else {
+    {
       my $server = Bugzilla->_json_server;
 
       my $status_code = 0;
@@ -264,24 +259,17 @@ sub ThrowErrorPage {
     die("error: $message");
   }
 
-  if ( Bugzilla->error_mode == ERROR_MODE_DIE_SOAP_FAULT
-    || Bugzilla->error_mode == ERROR_MODE_JSON_RPC)
-  {
-    my $code = ERROR_UNKNOWN_TRANSIENT;
-    if (Bugzilla->error_mode == ERROR_MODE_DIE_SOAP_FAULT) {
-      die SOAP::Fault->faultcode($code)->faultstring($message);
-    }
-    else {
-      my $server = Bugzilla->_json_server;
-      $server->raise_error(
-        code    => 100000 + $code,
-        message => $message,
-        id      => $server->{_bz_request_id},
-        version => $server->version
-      );
-      die if _in_eval();
-      $server->response($server->error_response_header);
-    }
+  if (Bugzilla->error_mode == ERROR_MODE_JSON_RPC) {
+    my $code   = ERROR_UNKNOWN_TRANSIENT;
+    my $server = Bugzilla->_json_server;
+    $server->raise_error(
+      code    => 100000 + $code,
+      message => $message,
+      id      => $server->{_bz_request_id},
+      version => $server->version
+    );
+    die if _in_eval();
+    $server->response($server->error_response_header);
   }
   else {
     my $cgi      = Bugzilla->cgi;

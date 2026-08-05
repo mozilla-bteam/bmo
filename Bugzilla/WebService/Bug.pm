@@ -706,12 +706,7 @@ sub search {
 
   # BMO if the caller only wants the count, that's all we need to return
   if ($params->{count_only}) {
-    if (Bugzilla->usage_mode == USAGE_MODE_XMLRPC) {
-      return $data;
-    }
-    else {
-      return {bug_count => $self->type('int', $data)};
-    }
+    return {bug_count => $self->type('int', $data)};
   }
 
   if (!scalar @$data) {
@@ -724,10 +719,6 @@ sub search {
     = map { $_->id => $_ } @{Bugzilla::Bug->new_from_list(\@bug_ids)};
   my @bugs = map { $bug_objects{$_} } @bug_ids;
   @bugs = map { $self->_bug_to_hash($_, $params) } @bugs;
-
-  # BzAPI
-  Bugzilla->request_cache->{bzapi_search_bugs}
-    = [map { $bug_objects{$_} } @bug_ids];
 
   return {bugs => \@bugs};
 }
@@ -2047,7 +2038,7 @@ or get information about bugs that have already been filed.
 See L<Bugzilla::WebService> for a description of how parameters are passed,
 and what B<STABLE>, B<UNSTABLE>, and B<EXPERIMENTAL> mean.
 
-Although the data input and output is the same for JSON-RPC, XML-RPC and REST,
+Although the data input and output is the same for JSON-RPC and REST,
 the directions for how to access the data via REST is noted in each method
 where applicable.
 

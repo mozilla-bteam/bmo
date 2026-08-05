@@ -387,8 +387,7 @@ sub _find_resource {
   }
 
   Bugzilla::Hook::process('webservice_rest_resources',
-    {rpc => $self, resources => $resources})
-    if Bugzilla::request_cache->{bzapi};
+    {rpc => $self, resources => $resources});
 
   # Use the resources hash from each module loaded earlier to determine
   # which handler to use based on a regex match of the CGI path.
@@ -521,10 +520,6 @@ are specific to REST. For a general overview of the Bugzilla WebServices,
 see L<Bugzilla::WebService>. The L<Bugzilla::WebService::Server::REST>
 module is a sub-class of L<Bugzilla::WebService::Server::JSONRPC> so any
 method documentation not found here can be viewed in it's POD.
-
-Please note that I<everything> about this REST interface is
-B<EXPERIMENTAL>. If you want a fully stable API, please use the
-C<Bugzilla::WebService::Server::XMLRPC|XML-RPC> interface.
 
 =head1 CONNECTING
 

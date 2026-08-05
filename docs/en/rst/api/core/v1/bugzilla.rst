@@ -93,6 +93,8 @@ name      type    description
 timezone  string  The timezone offset as a string in (+/-)XXXX (RFC 2822) format.
 ========  ======  ===============================================================
 
+.. _rest-time:
+
 Time
 ----
 

@@ -17,9 +17,17 @@ use Socket qw(AF_INET inet_aton);
 use Mojo::File qw(path);
 use English qw(-no_match_vars);
 use Bugzilla::App::Stdout;
-use Bugzilla::Constants qw(bz_locations USAGE_MODE_BROWSER);
+use Bugzilla::Constants qw(
+  bz_locations
+  USAGE_MODE_BROWSER
+  USAGE_MODE_REST
+);
+use Bugzilla::Logging;
+use Bugzilla::Util qw(trim xml_quote);
+use Bugzilla::WebService::Constants qw(API_AUTH_HEADERS WS_ERROR_CODE);
 
 my %SEEN;
+use constant REQUEST_TOO_LARGE_ERROR => 'request_too_large';
 
 sub setup_routes {
   my ($class, $r) = @_;
@@ -60,6 +68,13 @@ sub load_one {
   my $inner = quote_sub $inner_name, $content, {}, \%options;
   my $wrapper = sub {
     my ($c) = @_;
+
+    if (_is_request_body_limit_exceeded($c->req)) {
+      my $reason = $c->req->error->{message};
+      WARN("Rejected oversized request for $file: $reason");
+      return _render_request_too_large($c, $file);
+    }
+
     Bugzilla->request_cache->{mojo_controller} = $c;
     my $stdin = $c->_STDIN;
     local %ENV                         = $c->_ENV($file);
@@ -92,6 +107,97 @@ sub load_one {
   no strict 'refs';    ## no critic (strict)
   *{$name} = subname($name, $wrapper);
   return 1;
+}
+
+sub _is_request_body_limit_exceeded {
+  my ($request) = @_;
+  my $error = $request->error;
+  return $request->is_limit_exceeded
+    && ref $error eq 'HASH'
+    && ($error->{message} // '') =~ /\AMaximum (?:message|buffer) size exceeded\z/;
+}
+
+sub _render_request_too_large {
+  my ($c, $file) = @_;
+  my $error_code = WS_ERROR_CODE->{REQUEST_TOO_LARGE_ERROR()};
+
+  if (path($file)->basename eq 'rest.cgi') {
+    _set_rest_cors_headers($c);
+    return $c->render(
+      json => {
+        error         => 1,
+        code          => $error_code,
+        message       => _request_too_large_message(),
+        documentation => 'https://bmo.readthedocs.io/en/latest/api/',
+      },
+      status => 413
+    );
+  }
+
+  if ($file eq 'jsonrpc.cgi') {
+    return $c->render(
+      json => {
+        result => undef,
+        error  => {
+          code    => $error_code,
+          message => _request_too_large_message(),
+        },
+        id => undef,
+      },
+      status => 413
+    );
+  }
+
+  if ($file eq 'xmlrpc.cgi') {
+    my $message = xml_quote(_request_too_large_message());
+    my $xml
+      = qq{<?xml version="1.0" encoding="UTF-8"?>\n}
+      . qq{<methodResponse><fault><value><struct>}
+      . qq{<member><name>faultString</name><value><string>$message</string></value></member>}
+      . qq{<member><name>faultCode</name><value><int>$error_code</int></value></member>}
+      . qq{</struct></value></fault></methodResponse>\n};
+    $c->res->headers->content_type('text/xml; charset=UTF-8');
+    return $c->render(data => $xml, status => 413);
+  }
+
+  return $c->render(
+    handler  => 'bugzilla',
+    template => 'global/user-error',
+    format   => 'html',
+    error    => REQUEST_TOO_LARGE_ERROR,
+    status   => 413
+  );
+}
+
+sub _set_rest_cors_headers {
+  my ($c) = @_;
+  my @allowed_headers
+    = qw(accept content-type origin user-agent x-requested-with);
+  foreach my $header (keys %{API_AUTH_HEADERS()}) {
+    $header =~ tr/A-Z_/a-z\-/;
+    push @allowed_headers, $header;
+  }
+
+  $c->res->headers->header('Access-Control-Allow-Origin' => '*');
+  $c->res->headers->header(
+    'Access-Control-Allow-Headers' => join(', ', @allowed_headers));
+}
+
+sub _request_too_large_message {
+  my $request_cache = Bugzilla->request_cache;
+  # Render localized plain text without leaking REST modes into CGI dispatch.
+  local $request_cache->{usage_mode} = $request_cache->{usage_mode};
+  local $request_cache->{error_mode} = $request_cache->{error_mode};
+  Bugzilla->usage_mode(USAGE_MODE_REST);
+
+  my $message;
+  my $template = Bugzilla->template;
+  $template->process(
+    'global/user-error.html.tmpl',
+    {error => REQUEST_TOO_LARGE_ERROR},
+    \$message
+  ) || die $template->error();
+  return trim($message);
 }
 
 sub _ENV {

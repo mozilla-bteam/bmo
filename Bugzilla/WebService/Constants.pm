@@ -29,7 +29,6 @@ our @EXPORT = qw(
   ERROR_UNKNOWN_FATAL
   ERROR_UNKNOWN_TRANSIENT
 
-  XMLRPC_CONTENT_TYPE_WHITELIST
   REST_CONTENT_TYPE_WHITELIST
 
   WS_DISPATCH
@@ -71,6 +70,7 @@ use constant WS_ERROR_CODE => {
   number_too_small      => 55,
   illegal_date          => 56,
   illegal_date_pronoun  => 57,
+  request_too_large     => 58,
 
   # Bug errors usually occupy the 100-200 range.
   improper_bug_id_field_value => 100,
@@ -237,11 +237,9 @@ use constant WS_ERROR_CODE => {
 
   # Errors thrown by the WebService itself. The ones that are negative
   # conform to http://xmlrpc-epi.sourceforge.net/specs/rfc.fault_codes.php
-  xmlrpc_invalid_value          => -32600,
   unknown_method                => -32601,
   json_rpc_post_only            => 32610,
   json_rpc_invalid_callback     => 32611,
-  xmlrpc_illegal_content_type   => 32612,
   json_rpc_illegal_content_type => 32613,
   rest_invalid_resource         => 32614,
 };
@@ -258,6 +256,7 @@ use constant STATUS_BAD_REQUEST      => 400;
 use constant STATUS_NOT_AUTHORIZED   => 401;
 use constant STATUS_NOT_FOUND        => 404;
 use constant STATUS_GONE             => 410;
+use constant STATUS_REQUEST_TOO_LARGE => 413;
 
 # The integer value is the error code above returned by
 # the related webvservice call. We choose the appropriate
@@ -266,6 +265,7 @@ use constant STATUS_GONE             => 410;
 sub REST_STATUS_CODE_MAP {
   my $status_code_map = {
     51       => STATUS_NOT_FOUND,
+    58       => STATUS_REQUEST_TOO_LARGE,
     101      => STATUS_NOT_FOUND,
     102      => STATUS_NOT_AUTHORIZED,
     106      => STATUS_NOT_AUTHORIZED,
@@ -297,11 +297,6 @@ use constant ERROR_UNKNOWN_FATAL     => -32000;
 use constant ERROR_UNKNOWN_TRANSIENT => 32000;
 
 use constant ERROR_GENERAL => 999;
-
-use constant XMLRPC_CONTENT_TYPE_WHITELIST => qw(
-  text/xml
-  application/xml
-);
 
 # The first content type specified is used as the default.
 use constant REST_CONTENT_TYPE_WHITELIST => qw(
