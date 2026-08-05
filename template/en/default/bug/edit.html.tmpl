@@ -33,7 +33,7 @@
 [% IF Param('comment_taggers_group') %]
   [% IF user.can_tag_comments %]
     <div id="bz_ctag_div" class="bz_default_hidden">
-      <a href="javascript:void(0)" onclick="Bugzilla.CommentTagging.hideInput()">x</a>
+      <a href="#" id="bz_ctag_hide_input" role="button">x</a>
       <span>
         <input id="bz_ctag_add" size="10" placeholder="add tag"
               maxlength="[% constants.MAX_COMMENT_TAG_LENGTH FILTER html %]">
@@ -44,9 +44,19 @@
       &nbsp;
     </div>
     <div id="bz_ctag_error" class="bz_default_hidden">
-      <a href="javascript:void(0)" onclick="Bugzilla.CommentTagging.hideError()">x</a>
+      <a href="#" id="bz_ctag_hide_error" role="button">x</a>
       <span id="bz_ctag_error_msg"></span>
     </div>
+    <script [% script_nonce FILTER none %]>
+      document.getElementById('bz_ctag_hide_input').addEventListener('click', function (e) {
+        e.preventDefault();
+        Bugzilla.CommentTagging.hideInput();
+      });
+      document.getElementById('bz_ctag_hide_error').addEventListener('click', function (e) {
+        e.preventDefault();
+        Bugzilla.CommentTagging.hideError();
+      });
+    </script>
   [% END %]
   [% IF user.id %]
     <script [% script_nonce FILTER none %]>
@@ -399,8 +409,14 @@
           [% END %]
         [% END %]
         [% IF bug.user.canedit || bug.user.isreporter %]
-          (<a href="#add_comment"
-              onclick="window.setTimeout(function() { document.getElementById('bug_status').focus(); }, 10)">edit</a>)
+          (<a href="#add_comment" id="bug_status_edit">edit</a>)
+          <script [% script_nonce FILTER none %]>
+            document.getElementById('bug_status_edit').addEventListener('click', function () {
+              window.setTimeout(function () {
+                document.getElementById('bug_status').focus();
+              }, 10);
+            });
+          </script>
         [% END %]
       </span>
     </td>
@@ -521,7 +537,7 @@
             <input type="checkbox" id="set_default_assignee" name="set_default_assignee" value="1">
             <label id="set_default_assignee_label" for="set_default_assignee">Reset Assignee to default</label>
           </div>
-          <script>
+          <script [% script_nonce FILTER none %]>
            hideEditableField('bz_assignee_edit_container',
                              'bz_assignee_input',
                              'bz_assignee_edit_action',
@@ -571,7 +587,7 @@
             <input type="checkbox" id="set_default_qa_contact" name="set_default_qa_contact" value="1">
             <label for="set_default_qa_contact" id="set_default_qa_contact_label">Reset QA Contact to default</label>
           </div>
-          <script>
+          <script [% script_nonce FILTER none %]>
             hideEditableField('bz_qa_contact_edit_container',
                               'bz_qa_contact_input',
                               'bz_qa_contact_edit_action',
@@ -657,7 +673,7 @@
         [% END %]
       </span>
       [% IF bug.check_can_change_field("bug_file_loc", 0, 1) %]
-        <script>
+        <script [% script_nonce FILTER none %]>
           hideEditableField('bz_url_edit_container',
                             'bz_url_input_area',
                             'bz_url_edit_action',
@@ -945,7 +961,7 @@
           [% END %]
         </div>
         [% IF user.id || bug.cc.size %]
-          <script>
+          <script [% script_nonce FILTER none %]>
             hideEditableField( 'cc_edit_area_showhide_container',
                                'cc_edit_area',
                                'cc_edit_area_showhide',
@@ -1118,7 +1134,7 @@
             class="edit_me bz_default_hidden">
         (<a href="#" id="[% field.name FILTER html %]_edit_action">edit</a>)
       </span>
-      <script>
+      <script [% script_nonce FILTER none %]>
         hideEditableField('[% field.name FILTER js %]_edit_container',
                           '[% field.name FILTER js %]_input_area',
                           '[% field.name FILTER js %]_edit_action',
@@ -1173,14 +1189,19 @@
       <td>
         [% PROCESS formattimeunit time_unit=bug.actual_time %] +
         <input name="work_time" id="work_time"
-               value="0" size="3" maxlength="6"
-               onchange="adjustRemainingTime();">
+               value="0" size="3" maxlength="6">
       </td>
       <td>
         <input name="remaining_time" id="remaining_time"
                value="[% PROCESS formattimeunit
                                  time_unit=bug.remaining_time %]"
-               size="6" maxlength="6" onchange="updateRemainingTime();">
+               size="6" maxlength="6">
+        <script [% script_nonce FILTER none %]>
+          document.getElementById('work_time')
+            .addEventListener('change', adjustRemainingTime);
+          document.getElementById('remaining_time')
+            .addEventListener('change', updateRemainingTime);
+        </script>
       </td>
       <td>
         [% PROCESS calculatepercentage act=bug.actual_time
@@ -1283,16 +1304,20 @@
 
 [% BLOCK summon_comment_box %]
 <div id="comment_top_hat">
+  <p id="wave_wand">
+    <a href="#add_comment" id="summon_comment_box"><i>Summon comment box</i></a>
+  </p>
   <script [% script_nonce FILTER none %]>
     function summonCommentBox() {
         var commentbox = document.getElementById('add_comment');
         document.getElementById('comment_top_hat').appendChild(commentbox);
         document.getElementById('wave_wand').style.display = 'none';
     }
+    document.getElementById('summon_comment_box').addEventListener('click', function (e) {
+      e.preventDefault();
+      summonCommentBox();
+    });
   </script>
-  <p id="wave_wand">
-    <a href="javascript:summonCommentBox()"><i>Summon comment box</i></a>
-  </p>
 </div>
 [% END %]
 

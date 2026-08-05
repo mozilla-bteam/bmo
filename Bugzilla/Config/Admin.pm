@@ -79,6 +79,10 @@ sub default_rate_limit_rules {
     cancel_token     => [5,  60],
     api_key_mismatch => [5,  60],
     mfa_mismatch     => [5,  60],
+
+    # Browsers can emit a burst of genuine CSP violation reports for a single
+    # pageview, so this is deliberately looser than the page limits above.
+    csp_report => [100, 60],
   });
 }
 
@@ -112,6 +116,11 @@ sub update_rate_limit_rules {
   $val->{get_attachments} = [75, 60];
   $val->{get_comments}    = [75, 60];
   $val->{webpage_errors}  = [75, 60];
+
+  # Seed the rate for the CSP violation collector on installs whose stored
+  # param predates it. Only set when missing, so an admin who has retuned it
+  # from editparams.cgi keeps their value.
+  $val->{csp_report} //= [100, 60];
   return encode_json($val);
 }
 

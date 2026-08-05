@@ -98,8 +98,22 @@ sub register {
       my $stash = $c->stash;
       if (%add_params || !$stash->{Bugzilla_csp}) {
         my %params = DEFAULT_CSP();
-        delete $params{report_only} if %add_params && !$add_params{report_only};
-        delete $params{report_only} if !$c->isa('Bugzilla::App::Controller::CGI');
+        delete $params{report_only}
+          if exists $add_params{report_only} && !$add_params{report_only};
+
+        # Native Mojo routes always enforce CSP. Legacy CGI scripts stay in
+        # report-only mode during the enforcement rollout, except for scripts
+        # that have been cleaned up and explicitly allowlisted in
+        # CSP_ENFORCE_CGI. Note that a caller can also force enforcement for an
+        # individual request by passing report_only => 0 to this helper, which
+        # is honoured above regardless of the CGI allowlist.
+        if ($c->isa('Bugzilla::App::Controller::CGI')) {
+          my $action = $c->stash->{action} // '';
+          delete $params{report_only} if CSP_ENFORCE_CGI()->{$action};
+        }
+        else {
+          delete $params{report_only};
+        }
         foreach my $key (keys %add_params) {
           if (defined $add_params{$key}) {
             $params{$key} = $add_params{$key};

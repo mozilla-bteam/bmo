@@ -228,8 +228,7 @@ TUI_hide_default('expert_fields');
 </script>
 
 <form name="Create" id="Create" method="post" action="[% basepath FILTER none %]post_bug.cgi"
-      class="enter_bug_form" enctype="multipart/form-data"
-      onsubmit="return validateEnterBug(this)">
+      class="enter_bug_form" enctype="multipart/form-data">
 <input type="hidden" name="filed_via" value="standard_form">
 <input type="hidden" name="product" value="[% product.name FILTER html %]">
 <input type="hidden" name="token" value="[% token FILTER html %]">
@@ -278,7 +277,7 @@ TUI_hide_default('expert_fields');
       desc_url = component_desc_url
     %]
     <td id="field_container_component">
-      <select name="component" id="component" onchange="set_assign_to();"
+      <select name="component" id="component"
               aria-description="[% help_html.component FILTER txt FILTER collapse FILTER html %]"
               size="7" aria-required="true" class="required">
         [%# Build the lists of assignees and QA contacts if "usemenuforusers" is enabled. %]
@@ -375,13 +374,21 @@ TUI_hide_default('expert_fields');
         <div class="comment">
           Update the <i>platform</i> field if this [% terms.bug %] is applicable to specific platforms.<br>
           <span id="rep_hw_os">
-            (<a href="javascript:void(0)" role="button" aria-controls="rep_platform op_sys"
-                onclick="$('#rep_platform').val('[% rep_platform FILTER js FILTER html %]');
-                         $('#op_sys').val('[% rep_op_sys FILTER js FILTER html %]')">use my platform</a>)
-            (<a href="javascript:void(0)" role="button" aria-controls="rep_platform op_sys"
-                onclick="$('#rep_platform').val('All');
-                         $('#op_sys').val('All')">applies to all platforms</a>)
+            (<a href="#" id="use_my_platform" role="button" aria-controls="rep_platform op_sys">use my platform</a>)
+            (<a href="#" id="applies_to_all" role="button" aria-controls="rep_platform op_sys">applies to all platforms</a>)
           </span>
+          <script [% script_nonce FILTER none %]>
+            document.getElementById('use_my_platform').addEventListener('click', function (e) {
+              e.preventDefault();
+              document.getElementById('rep_platform').value = '[% rep_platform FILTER js %]';
+              document.getElementById('op_sys').value = '[% rep_op_sys FILTER js %]';
+            });
+            document.getElementById('applies_to_all').addEventListener('click', function (e) {
+              e.preventDefault();
+              document.getElementById('rep_platform').value = 'All';
+              document.getElementById('op_sys').value = 'All';
+            });
+          </script>
         </div>
         [% needs_extra_tr = 0 %]
       [% END %]
@@ -440,9 +447,8 @@ TUI_hide_default('expert_fields');
       %]
       [% UNLESS assigned_to_disabled %]
         <span id="take_bug">
-          <button title="Assign to yourself"
-                  type="button" class="minor" aria-controls="assigned_to"
-                  onclick="return take_bug('[% user.login FILTER js %]')">Take</button>
+          <button title="Assign to yourself" id="take_bug_btn"
+                  type="button" class="minor" aria-controls="assigned_to">Take</button>
         </span>
       [% END %]
       <noscript>(Leave blank to assign to component's default assignee)</noscript>
@@ -807,9 +813,13 @@ TUI_hide_default('expert_fields');
     <td colspan="3">
       <input type="submit" id="commit" value="Submit [% terms.Bug %]">
       &nbsp;&nbsp;&nbsp;&nbsp;
-      <input type="submit" name="maketemplate" id="maketemplate" class="secondary"
+      [%# This carried a second class="expert_fields" attribute historically,
+        # which HTML parsers discard, so the button has always been visible.
+        # Keep it that way here; hiding it behind expert fields is a UI change
+        # unrelated to CSP. %]
+      <input type="submit" name="maketemplate" id="maketemplate"
              value="Remember values as bookmarkable template"
-             onclick="bz_no_validate_enter_bug=true" class="expert_fields">
+             class="secondary">
     </td>
   </tr>
 </tbody>
@@ -823,6 +833,37 @@ TUI_hide_default('expert_fields');
   </table>
   <input type="hidden" name="form_name" value="enter_bug">
 </form>
+
+<script [% script_nonce FILTER none %]>
+  (function () {
+    var createForm = document.getElementById('Create');
+    if (createForm) {
+      createForm.addEventListener('submit', function (e) {
+        if (!validateEnterBug(this)) {
+          e.preventDefault();
+        }
+      });
+    }
+    var componentSelect = document.getElementById('component');
+    if (componentSelect) {
+      componentSelect.addEventListener('change', function () {
+        set_assign_to();
+      });
+    }
+    var takeBugBtn = document.getElementById('take_bug_btn');
+    if (takeBugBtn) {
+      takeBugBtn.addEventListener('click', function () {
+        take_bug('[% user.login FILTER js %]');
+      });
+    }
+    var makeTemplate = document.getElementById('maketemplate');
+    if (makeTemplate) {
+      makeTemplate.addEventListener('click', function () {
+        window.bz_no_validate_enter_bug = true;
+      });
+    }
+  })();
+</script>
 
 [%# Links or content with more information about the bug being created. %]
 [% Hook.process("end") %]
