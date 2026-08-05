@@ -66,7 +66,12 @@ if (!$cgi->param('id') && $single) {
 if ($format->{format} && $format->{format} eq 'modal') {
   my $bug_id = $cgi->param('id');
   detaint_natural($bug_id);
-  $C->content_security_policy(SHOW_BUG_MODAL_CSP($bug_id));
+
+  # The modal bug view is the only show_bug.cgi format that is clean of CSP
+  # violations, so it enforces while the rest of the legacy CGI surface stays
+  # report-only during the enforcement rollout. This cannot go through
+  # CSP_ENFORCE_CGI, which is keyed on the script rather than the format.
+  $C->content_security_policy(SHOW_BUG_MODAL_CSP($bug_id), report_only => 0);
 }
 
 
