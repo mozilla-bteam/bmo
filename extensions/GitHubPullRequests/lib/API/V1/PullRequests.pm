@@ -115,14 +115,36 @@ sub _fetch_pull_request {
     sortkey   => int($pr_number),
   };
 
-  # Return a cached summary if we have a fresh one.
-  my $cache_key = "github_pr." . $url;
-  my $cached = Bugzilla->memcached->get_data({key => $cache_key});
-  return $cached if defined $cached;
+  my $reviews_url = $api_url . '/reviews?per_page=' . GITHUB_REVIEWS_PER_PAGE;
 
+  # Look up the cached wrapper. A new key prefix (.v2.) is used so that any
+  # pre-existing entries from the old bare-$pr_data format are ignored and
+  # simply expire on their own - no migration or shape-sniffing needed.
+  my $cache_key = "github_pr.v2." . $url;
+  my $cached = Bugzilla->memcached->get_data({key => $cache_key});
+
+  # Fresh hit: still inside the freshness window, so serve without any call.
+  if (defined $cached && ref($cached) eq 'HASH') {
+    return $cached->{pr_data}
+      if defined $cached->{fresh_until} && time() < $cached->{fresh_until};
+  }
+
+  # Stale hit with etags: revalidate with conditional requests. 304 responses
+  # are free (GitHub does not count them against the rate limit), so an
+  # unchanged PR costs nothing beyond the round trip.
+  if ( defined $cached
+    && ref($cached) eq 'HASH'
+    && ref($cached->{pr_data}) eq 'HASH'
+    && ($cached->{pr_etag} || $cached->{reviews_etag}))
+  {
+    return _revalidate_pull_request($ua, $cache_key, $base, $api_url, $cached);
+  }
+
+  # Miss (or an entry without etags, e.g. a cached inaccessible result): do a
+  # full fetch.
   my $pr_response = _github_get($ua, $api_url);
   unless ($pr_response->{ok}) {
-    WARN("GitHub: failed to fetch PR $url: " . $pr_response->{errmsg});
+    _warn_fetch_failure($url, $pr_response);
     return _cache_inaccessible($cache_key, $base);
   }
 
@@ -134,6 +156,95 @@ sub _fetch_pull_request {
     WARN("GitHub: unexpected response shape for PR $url");
     return _cache_inaccessible($cache_key, $base);
   }
+
+  my $reviews_response = _github_get($ua, $reviews_url);
+  my @reviews;
+  if ($reviews_response->{ok}) {
+    @reviews = _summarize_reviews($reviews_response->{data});
+  }
+  else {
+    _warn_fetch_failure("$url reviews", $reviews_response);
+  }
+
+  my $pr_data = {%$base, _pr_summary_fields($pr), reviews => \@reviews};
+
+  _store_wrapper($cache_key, {
+    pr_data      => $pr_data,
+    pr_etag      => $pr_response->{etag},
+    reviews_etag => $reviews_response->{ok} ? $reviews_response->{etag} : undef,
+  });
+
+  return $pr_data;
+}
+
+# Revalidate a stale-but-cached PR using conditional requests. On a 304 we
+# reuse the cached fields; on a 200 we recompute from the fresh body. An error
+# on the PR endpoint is fatal (falls back to inaccessible); a reviews error is
+# non-fatal and yields empty reviews, matching the full-fetch path.
+sub _revalidate_pull_request {
+  my ($ua, $cache_key, $base, $api_url, $cached) = @_;
+
+  my $reviews_url = $api_url . '/reviews?per_page=' . GITHUB_REVIEWS_PER_PAGE;
+  my $old_data    = $cached->{pr_data};
+
+  # PR endpoint.
+  my $pr_response = _github_get($ua, $api_url, $cached->{pr_etag});
+  unless ($pr_response->{ok}) {
+    _warn_fetch_failure($old_data->{url}, $pr_response);
+    return _cache_inaccessible($cache_key, $base);
+  }
+
+  my ($pr_fields, $pr_etag);
+  if ($pr_response->{not_modified}) {
+
+    # Unchanged: reuse cached base fields and keep the existing etag.
+    $pr_fields = {
+      title        => $old_data->{title},
+      state        => $old_data->{state},
+      author       => $old_data->{author},
+      labels       => $old_data->{labels},
+      inaccessible => 0,
+    };
+    $pr_etag = $cached->{pr_etag};
+  }
+  else {
+    my $pr = $pr_response->{data};
+    unless (ref($pr) eq 'HASH') {
+      WARN("GitHub: unexpected response shape for PR " . $old_data->{url});
+      return _cache_inaccessible($cache_key, $base);
+    }
+    $pr_fields = {_pr_summary_fields($pr)};
+    $pr_etag   = $pr_response->{etag};
+  }
+
+  # Reviews endpoint.
+  my $reviews_response = _github_get($ua, $reviews_url, $cached->{reviews_etag});
+  my ($reviews, $reviews_etag);
+  if (!$reviews_response->{ok}) {
+    _warn_fetch_failure($old_data->{url} . ' reviews', $reviews_response);
+    $reviews      = [];
+    $reviews_etag = undef;
+  }
+  elsif ($reviews_response->{not_modified}) {
+    $reviews      = $old_data->{reviews} // [];
+    $reviews_etag = $cached->{reviews_etag};
+  }
+  else {
+    $reviews      = [_summarize_reviews($reviews_response->{data})];
+    $reviews_etag = $reviews_response->{etag};
+  }
+
+  my $pr_data = {%$base, %$pr_fields, reviews => $reviews};
+
+  _store_wrapper($cache_key,
+    {pr_data => $pr_data, pr_etag => $pr_etag, reviews_etag => $reviews_etag});
+
+  return $pr_data;
+}
+
+# Derive the servable summary fields (title/state/author/labels) from a PR body.
+sub _pr_summary_fields {
+  my ($pr) = @_;
 
   my $state;
   if ($pr->{draft}) {
@@ -149,38 +260,59 @@ sub _fetch_pull_request {
     $state = 'open';
   }
 
-  my @labels = map { $_->{name} } @{$pr->{labels} // []};
-
-  my $reviews_response
-    = _github_get($ua, $api_url . '/reviews?per_page=' . GITHUB_REVIEWS_PER_PAGE);
-  my @reviews;
-  if ($reviews_response->{ok}) {
-    @reviews = _summarize_reviews($reviews_response->{data});
-  }
-
-  my $pr_data = {
-    %$base,
+  return (
     title        => $pr->{title},
     state        => $state,
     author       => ref($pr->{user}) eq 'HASH' ? $pr->{user}{login} : undef,
-    reviews      => \@reviews,
-    labels       => \@labels,
+    labels       => [map { $_->{name} } @{$pr->{labels} // []}],
     inaccessible => 0,
-  };
+  );
+}
 
-  Bugzilla->memcached->set_data(
-    {key => $cache_key, value => $pr_data, expires_in => GITHUB_CACHE_SECONDS});
+# Store the versioned cache wrapper. The freshness window (GITHUB_CACHE_SECONDS)
+# is tracked in-band via fresh_until, while the hard memcached TTL is the much
+# longer GITHUB_REVALIDATE_SECONDS so the etags outlive the freshness window and
+# remain available for conditional revalidation.
+sub _store_wrapper {
+  my ($cache_key, $wrapper) = @_;
 
-  return $pr_data;
+  $wrapper->{fresh_until} = time() + GITHUB_CACHE_SECONDS;
+  Bugzilla->memcached->set_data({
+    key        => $cache_key,
+    value      => $wrapper,
+    expires_in => GITHUB_REVALIDATE_SECONDS,
+  });
+}
+
+# Classify a fetch failure and log it distinctly so a globally-misconfigured
+# token (401/403 across many repos) is unmistakable and doesn't look like an
+# ordinary private/deleted PR (404).
+sub _warn_fetch_failure {
+  my ($what, $response) = @_;
+
+  my $status = $response->{status} // 0;
+  if ($status == 401 || $status == 403) {
+    WARN("GitHub: auth/permission failure ($status) for $what"
+        . " - check github_api_token scope/validity");
+  }
+  elsif ($status == 404) {
+    WARN("GitHub: PR not found or private ($status): $what");
+  }
+  else {
+    WARN("GitHub: failed to fetch $what: " . $response->{errmsg});
+  }
 }
 
 sub _cache_inaccessible {
   my ($cache_key, $base) = @_;
 
   my $error_data = {%$base, inaccessible => 1};
+
+  # Inaccessible entries carry no etags and use the shorter error TTL so we
+  # recover quickly once the PR becomes reachable again.
   Bugzilla->memcached->set_data({
     key        => $cache_key,
-    value      => $error_data,
+    value      => {pr_data => $error_data, fresh_until => time() + GITHUB_ERROR_CACHE_SECONDS},
     expires_in => GITHUB_ERROR_CACHE_SECONDS,
   });
 
@@ -188,24 +320,44 @@ sub _cache_inaccessible {
 }
 
 sub _github_get {
-  my ($ua, $url) = @_;
+  my ($ua, $url, $etag) = @_;
 
-  my $response = $ua->get(
-    $url,
+  my @headers = (
     'Accept'               => 'application/vnd.github+json',
     'X-GitHub-Api-Version' => '2022-11-28',
   );
+  push @headers, ('If-None-Match' => $etag) if defined $etag;
+
+  my $response = $ua->get($url, @headers);
+
+  # LWP treats 304 as non-success, but for a conditional request it means the
+  # cached copy is still valid. GitHub echoes the ETag on a 304, so carry it
+  # through to keep the stored value current.
+  if ($response->code == 304) {
+    return {
+      ok           => 1,
+      not_modified => 1,
+      status       => 304,
+      etag         => $response->header('ETag'),
+    };
+  }
 
   unless ($response->is_success) {
-    return {ok => 0, errmsg => $response->status_line};
+    return {ok => 0, status => $response->code, errmsg => $response->status_line};
   }
 
   my $data = eval { decode_json($response->decoded_content) };
   if ($@) {
-    return {ok => 0, errmsg => "JSON parse error: $@"};
+    return {ok => 0, status => $response->code, errmsg => "JSON parse error: $@"};
   }
 
-  return {ok => 1, data => $data};
+  return {
+    ok           => 1,
+    not_modified => 0,
+    status       => $response->code,
+    etag         => $response->header('ETag'),
+    data         => $data,
+  };
 }
 
 sub _summarize_reviews {
