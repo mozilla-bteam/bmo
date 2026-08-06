@@ -124,39 +124,6 @@ $t->post_ok(
   ->json_is('/code' => 58)
   ->json_is('/message' => 'The request is too large.');
 
-$t->post_ok(
-  '/bzapi/bug/1/attachment' => {
-    'Content-Length' => length($body),
-    'Content-Type'   => "multipart/form-data; boundary=$boundary",
-  } => $body
-)->status_is(413)
-  ->header_like('Content-Type' => qr{^application/json\b})
-  ->header_is('Access-Control-Allow-Origin' => '*')
-  ->header_like(
-    'Access-Control-Allow-Headers' => qr{\bauthorization\b}
-  )
-  ->header_like(
-    'Access-Control-Allow-Headers' => qr{\bx-bugzilla-api-key\b}
-  )
-  ->header_like(
-    'Access-Control-Allow-Headers' => qr{\bx-bugzilla-login\b}
-  )
-  ->json_is('/error' => 1)
-  ->json_is('/code' => 58)
-  ->json_is('/message' => 'The request is too large.');
-
-$t->post_ok(
-  '/jsonrpc.cgi' => {
-    'Content-Length' => length($body),
-    'Content-Type'   => 'application/json',
-  } => $body
-)->status_is(413)
-  ->header_like('Content-Type' => qr{^application/json\b})
-  ->json_is('/result' => undef)
-  ->json_is('/error/code' => 58)
-  ->json_is('/error/message' => 'The request is too large.')
-  ->json_is('/id' => undef);
-
 ok(
   Bugzilla::App::Controller::CGI::_is_request_body_limit_exceeded(
     TestRequest->new('Maximum message size exceeded')

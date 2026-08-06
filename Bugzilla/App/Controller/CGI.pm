@@ -22,11 +22,8 @@ use Bugzilla::Constants qw(
   USAGE_MODE_BROWSER
   USAGE_MODE_MOJO
   USAGE_MODE_MOJO_REST
-  USAGE_MODE_REST
 );
 use Bugzilla::Logging;
-use Bugzilla::Util qw(trim);
-use Bugzilla::WebService::Constants qw(WS_ERROR_CODE);
 use Bugzilla::WebService::Util qw(set_rest_cors_headers);
 
 my %SEEN;
@@ -122,7 +119,6 @@ sub _is_request_body_limit_exceeded {
 
 sub _render_request_too_large {
   my ($c, $file) = @_;
-  my $error_code = WS_ERROR_CODE->{REQUEST_TOO_LARGE_ERROR()};
 
   if (path($file)->basename eq 'rest.cgi') {
     set_rest_cors_headers($c->res->headers);
@@ -130,39 +126,8 @@ sub _render_request_too_large {
     return $c->user_error(REQUEST_TOO_LARGE_ERROR);
   }
 
-  if ($file eq 'jsonrpc.cgi') {
-    return $c->render(
-      json => {
-        result => undef,
-        error  => {
-          code    => $error_code,
-          message => _request_too_large_message(),
-        },
-        id => undef,
-      },
-      status => 413
-    );
-  }
-
   Bugzilla->usage_mode(USAGE_MODE_MOJO);
   return $c->user_error(REQUEST_TOO_LARGE_ERROR, {}, {status => 413});
-}
-
-sub _request_too_large_message {
-  my $request_cache = Bugzilla->request_cache;
-  # Render localized plain text without leaking REST modes into CGI dispatch.
-  local $request_cache->{usage_mode} = $request_cache->{usage_mode};
-  local $request_cache->{error_mode} = $request_cache->{error_mode};
-  Bugzilla->usage_mode(USAGE_MODE_REST);
-
-  my $message;
-  my $template = Bugzilla->template;
-  $template->process(
-    'global/user-error.html.tmpl',
-    {error => REQUEST_TOO_LARGE_ERROR},
-    \$message
-  ) || die $template->error();
-  return trim($message);
 }
 
 sub _ENV {

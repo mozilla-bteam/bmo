@@ -34,7 +34,7 @@ sub setup_routes {
   $r->under(
     '/api' => sub {
       my ($c) = @_;
-      set_rest_cors_headers($c->res->headers);
+      _insert_rest_headers($c);
       Bugzilla->usage_mode(USAGE_MODE_REST);
     }
   )->get('/user/profile')->to('V1::User#user_profile');
@@ -43,14 +43,14 @@ sub setup_routes {
   $r->under(
     '/latest' => sub {
       my ($c) = @_;
-      set_rest_cors_headers($c->res->headers);
+      _insert_rest_headers($c);
       Bugzilla->usage_mode(USAGE_MODE_REST);
     }
   )->get('/configuration')->to('V1::Configuration#configuration');
   $r->under(
     '/bzapi' => sub {
       my ($c) = @_;
-      set_rest_cors_headers($c->res->headers);
+      _insert_rest_headers($c);
       Bugzilla->usage_mode(USAGE_MODE_REST);
     }
   )->get('/configuration')->to('V1::Configuration#configuration');
@@ -59,7 +59,7 @@ sub setup_routes {
   my $rest_routes = $r->under(
     '/rest' => sub {
       my ($c) = @_;
-      set_rest_cors_headers($c->res->headers);
+      _insert_rest_headers($c);
       Bugzilla->usage_mode(USAGE_MODE_REST);
     }
   );
@@ -102,6 +102,13 @@ sub _load_api_module {
   catch {
     WARN("$module could not be loaded: $_");
   };
+}
+
+sub _insert_rest_headers {
+  my ($c) = @_;
+  my @allowed_headers
+    = qw(accept authorization content-type origin user-agent x-bugzilla-api-key x-requested-with);
+  set_rest_cors_headers($c->res->headers, \@allowed_headers);
 }
 
 1;
