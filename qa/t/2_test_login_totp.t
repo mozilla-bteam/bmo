@@ -39,13 +39,18 @@ try {
   );
   $sel->open_ok('/userprefs.cgi?tab=mfa');
   $sel->title_is('User Preferences');
-  $sel->is_element_present_ok(
-    '//input[@id="mfa-action"][@data-nopassword="true"]',
-    undef,
+  ok(
+    $sel->is_element_present(
+      '//input[@id="mfa-action"][@data-nopassword="true"]'
+    ),
     'Passwordless MFA preferences are displayed'
   );
   $passwordless_mfa_help_url
     = $sel->get_attribute('link=two-factor authentication user guide@href');
+}
+catch {
+  fail('Passwordless MFA preferences could not be verified');
+  diag($_);
 }
 finally {
   $dbh->do(
