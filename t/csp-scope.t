@@ -70,9 +70,7 @@ sub is_document {
 
 # Every listed type must actually be treated as one, which is what ties the
 # constant to the predicate: an entry carrying a parameter or odd casing would
-# be dead weight in the list and silently never match. image/svg+xml is the
-# entry worth noting -- SVG can carry script and attachment.cgi serves it
-# inline, so it needs a policy even though it is not HTML.
+# be dead weight in the list and silently never match.
 ok(is_document($_), "$_ is a document") for CSP_DOCUMENT_TYPES;
 
 # A content type arrives with parameters attached and in whatever case the CGI
@@ -81,15 +79,30 @@ ok(is_document('text/html; charset=UTF-8'), 'parameters are ignored');
 ok(is_document('TEXT/HTML'),                'comparison is case-insensitive');
 ok(is_document(' text/html '),              'whitespace is ignored');
 
+# The XML family, matched on the "+xml" suffix rather than enumerated. Browsers
+# parse these as documents and an <?xml-stylesheet?> PI can run XSLT that
+# produces scripted HTML, so they need a policy as much as text/html does.
+# These are reachable: buglist.cgi serves ctype=rdf and ctype=atom, show_bug.cgi
+# serves ctype=xml, and attachment.cgi displays XML and SVG inline.
+ok(is_document('application/xhtml+xml'), 'xhtml is a document');
+ok(is_document('image/svg+xml'),         'svg is a document');
+ok(is_document('application/rdf+xml'),   'rdf (buglist ctype=rdf) is a document');
+ok(is_document('application/atom+xml'), 'atom (buglist ctype=atom) is a document');
+ok(is_document('application/rss+xml'),  'rss is a document');
+
 ok(!is_document('application/json'), 'json is not a document');
-ok(!is_document('text/xml'),         'xml (xml.cgi) is not a document');
 ok(!is_document('text/plain'),       'plain text is not a document');
 ok(!is_document('application/octet-stream'), 'downloads are not documents');
 ok(!is_document(undef), 'a response with no content type is not a document');
 
+# A DTD is not rendered as a document, and it does not end in "+xml", so the
+# suffix rule leaves it alone. Named because contenttypes maps ctype=dtd to it.
+ok(!is_document('application/xml-dtd'), 'a dtd is not a document');
+
 # Matching the type as a whole rather than by prefix or substring.
 ok(!is_document('application/json+html'), 'a type ending in html misses');
 ok(!is_document('text/htmlish'),          'a longer type misses');
+ok(!is_document('application/xml+json'),  'xml elsewhere in the type misses');
 
 # Content type alone is not enough: Mojo stamps text/html on a rendered response
 # even when there is no body, so a bodiless status has to be excluded on status.
@@ -98,11 +111,16 @@ ok(!is_document('text/html', 304), 'a 304 is not a document');
 
 # End to end. A native /rest route: JSON, and the route that would otherwise
 # enforce.
-has_no_csp($t->get_ok('/rest/config/component_teams'), 'native REST route');
+#
+# The status assertions here are load-bearing: a REST error body is JSON too, so
+# without them a 401 or a 500 would still pass and the case would quietly stop
+# covering the payload path it was written for.
+has_no_csp($t->get_ok('/rest/config/component_teams')->status_is(200),
+  'native REST route');
 
 # The version endpoint is a static file served as JSON, so it exercises the
 # static branch of dispatch rather than the renderer.
-has_no_csp($t->get_ok('/__version__'), 'static JSON');
+has_no_csp($t->get_ok('/__version__')->status_is(200), 'static JSON');
 
 # The CSP collector itself. It renders data => '' with status 204, which Mojo
 # labels text/html, so this is the case that the status check above catches.
@@ -116,7 +134,8 @@ has_no_csp(
 # point of the report-only soak. index.cgi is the legacy CGI stack, whose
 # headers reach the Mojo response by a different path (Bugzilla::CGI::header
 # parses them in) than a rendered response.
-$t->get_ok('/home')->header_exists(REPORT_ONLY)->header_exists_not(ENFORCE);
+$t->get_ok('/home')->status_is(200)->header_exists(REPORT_ONLY)
+  ->header_exists_not(ENFORCE);
 my $headers = $t->tx->res->headers;
 like(
   $headers->header(REPORT_ONLY),

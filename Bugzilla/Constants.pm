@@ -28,6 +28,7 @@ use Memoize;
   SHOW_BUG_MODAL_CSP
   CSP_ENFORCE_CGI
   CSP_DOCUMENT_TYPES
+  CSP_DOCUMENT_TYPE_RE
 
   bz_locations
 
@@ -907,8 +908,29 @@ sub CSP_ENFORCE_CGI {
 #
 # Compared against the type alone, with any parameters (charset, boundary)
 # stripped first, so entries here must not carry any.
+#
+# See also %_SAFE_INLINE_TYPES / is_executable_content_type in
+# Bugzilla::Attachment, the other list in the tree answering roughly "what does
+# a browser render as a scriptable document". The two are deliberately
+# asymmetric rather than accidentally divergent, because they fail in opposite
+# directions: Attachment's is deny-by-default (a type it does not recognise is
+# assumed executable and forced to download, so over-listing there costs
+# safety), while this one is allow-by-enumeration (a type not listed here is
+# served without a header, so over-listing here costs only bytes). Keep them
+# consistent about what is scriptable; do not expect the memberships to match.
 use constant CSP_DOCUMENT_TYPES =>
-  ('text/html', 'application/xhtml+xml', 'image/svg+xml');
+  ('text/html', 'text/xml', 'application/xml');
+
+# Every "+xml" type is a document too, matched by shape rather than added to
+# the list above one at a time. Browsers parse them as documents, and an
+# <?xml-stylesheet?> processing instruction can turn any of them into scripted
+# HTML through XSLT -- which is why Bugzilla::Attachment treats the whole XML
+# family as executable. One rule covers application/xhtml+xml, image/svg+xml
+# (attachment.cgi serves SVG inline), application/rdf+xml (buglist.cgi
+# ctype=rdf), application/atom+xml (ctype=atom) and any XML attachment
+# displayed inline. REST is unaffected: REST_CONTENT_TYPE_WHITELIST in
+# Bugzilla::WebService::Constants is JSON and JavaScript only.
+use constant CSP_DOCUMENT_TYPE_RE => qr{\+xml\z};
 
 
 # This makes us not re-compute all the bz_locations data every time it's

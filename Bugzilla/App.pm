@@ -226,7 +226,11 @@ sub _response_is_document {
   # or renderer happened to use.
   my ($type) = split /;/, $res->headers->content_type // '';
   $type = lc trim($type // '');
-  return any { $_ eq $type } CSP_DOCUMENT_TYPES;
+  return 1 if any { $_ eq $type } CSP_DOCUMENT_TYPES;
+
+  # The XML family is matched by shape rather than enumerated, so RDF and Atom
+  # feeds, XHTML, inline SVG and XML attachments are all one rule.
+  return $type =~ CSP_DOCUMENT_TYPE_RE ? 1 : 0;
 }
 
 sub setup_routes {
