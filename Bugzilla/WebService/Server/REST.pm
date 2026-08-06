@@ -24,7 +24,6 @@ use Bugzilla::WebService::Util qw(taint_data fix_credentials);
 # Load resource modules
 use Bugzilla::WebService::Server::REST::Resources::Bug;
 use Bugzilla::WebService::Server::REST::Resources::Bugzilla;
-use Bugzilla::WebService::Server::REST::Resources::Classification;
 use Bugzilla::WebService::Server::REST::Resources::Group;
 use Bugzilla::WebService::Server::REST::Resources::Product;
 use Bugzilla::WebService::Server::REST::Resources::User;
