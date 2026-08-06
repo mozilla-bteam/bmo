@@ -298,10 +298,7 @@ sub i_am_cgi {
 
 sub i_am_webservice {
   my $usage_mode = Bugzilla->usage_mode;
-  return
-       $usage_mode == USAGE_MODE_XMLRPC
-    || $usage_mode == USAGE_MODE_JSON
-    || $usage_mode == USAGE_MODE_REST;
+  return $usage_mode == USAGE_MODE_JSON || $usage_mode == USAGE_MODE_REST;
 }
 
 sub is_webserver_group {
@@ -329,8 +326,8 @@ sub is_webserver_group {
 }
 
 # This exists as a separate function from Bugzilla::CGI::redirect_to_https
-# because we don't want to create a CGI object during XML-RPC calls
-# (doing so can mess up XML-RPC).
+# because we don't want to create a CGI object during WebService calls
+# (doing so can mess up the response).
 sub do_ssl_redirect_if_required {
   return if !i_am_cgi();
   my $uri = URI->new(Bugzilla->localconfig->urlbase);
@@ -1255,7 +1252,7 @@ in a command-line script.
 =item C<i_am_webservice()>
 
 Tells you whether or not the current usage mode is WebServices related
-such as JSON-RPC or XML-RPC.
+such as JSON-RPC or REST.
 
 =item C<is_webserver_group()>
 

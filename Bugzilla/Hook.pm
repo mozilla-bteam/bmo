@@ -1684,7 +1684,7 @@ Params:
 
 A hashref where you can specify the names of your modules and which Perl
 module handles the functions for that module. (This is actually sent to
-L<SOAP::Lite/dispatch_with>. You can see how that's used in F<xmlrpc.cgi>.)
+the WebService server's C<dispatch> method.)
 
 The Perl module name will most likely start with C<Bugzilla::Extension::Foo::>
 (where "Foo" is the name of your extension).
@@ -1757,7 +1757,7 @@ they have been obtained from the URL or body of the request.
 
 =item C<rpc>
 
-The current JSON-RPC, XML-RPC, or REST object.
+The current JSON-RPC or REST object.
 
 =back
 
@@ -1778,7 +1778,7 @@ which code handler to use based on a regex match of the CGI path.
 
 =item C<rpc>
 
-The current JSON-RPC, XML-RPC, or REST object.
+The current JSON-RPC or REST object.
 
 =back
 
@@ -1802,7 +1802,7 @@ A reference to a hash that contains the result data.
 
 =item C<rpc>
 
-The current JSON-RPC, XML-RPC, or REST object.
+The current JSON-RPC or REST object.
 
 =back
 

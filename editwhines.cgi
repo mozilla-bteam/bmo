@@ -123,8 +123,11 @@ if ($cgi->param('update')) {
       }
       else {
         # check the subject, body and mailifnobugs for changes
-        my $subject = ($cgi->param("event_${eventid}_subject") or '');
-        my $body    = ($cgi->param("event_${eventid}_body")    or '');
+        # The subject is rendered into the Subject: header of the whine mail,
+        # so control characters (CR/LF in particular) must never be stored:
+        # they would allow arbitrary email headers to be injected.
+        my $subject = clean_text($cgi->param("event_${eventid}_subject") || '');
+        my $body    = ($cgi->param("event_${eventid}_body")              or '');
         my $mailifnobugs = $cgi->param("event_${eventid}_mailifnobugs") ? 1 : 0;
 
         if ( ($subject ne $events->{$eventid}->subject)

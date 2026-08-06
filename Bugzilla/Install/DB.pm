@@ -844,6 +844,9 @@ sub update_table_definitions {
   # Bug 1949556 - dkl@mozilla.com
   $dbh->bz_add_index('audit_log', 'audit_log_object_id_idx', ['object_id']);
 
+  # Bug 1806896 - xavier.lhour@gmail.com
+  _migrate_flag_state_activity();
+
   ################################################################
   # New --TABLE-- changes should go *** A B O V E *** this point #
   ################################################################
@@ -4508,6 +4511,31 @@ sub _migrate_profiles_modification_ts {
 
   $dbh->bz_alter_column('profiles', 'modification_ts',
     {TYPE => 'DATETIME', NOTNULL => 1});
+}
+
+sub _migrate_flag_state_activity {
+  my $dbh = Bugzilla->dbh;
+
+  return unless $dbh->bz_table_info('flag_state_activity');
+
+  # Always copy, even if flag_activity already has rows: if a prior
+  # checksetup run created flag_activity but died before reaching this
+  # migration, live traffic can write new rows via Bugzilla::Flag in the
+  # meantime, and skipping here would orphan flag_state_activity forever.
+  #
+  # Copy rows into the already-indexed core flag_activity table instead of
+  # renaming flag_state_activity over it, which would discard its indexes.
+  # id is not carried over: nothing references flag_activity.id externally.
+  $dbh->do(
+    'INSERT INTO flag_activity
+       (flag_when, type_id, flag_id, setter_id, requestee_id, bug_id,
+        attachment_id, status)
+     SELECT flag_when, type_id, flag_id, setter_id, requestee_id, bug_id,
+            attachment_id, status
+       FROM flag_state_activity'
+  );
+
+  $dbh->bz_drop_table('flag_state_activity');
 }
 
 1;
