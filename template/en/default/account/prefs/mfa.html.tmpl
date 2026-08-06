@@ -6,7 +6,7 @@
   # defined by the Mozilla Public License, v. 2.0.
   #%]
 
-[% SET MFA_HOWTO = "https://wiki.mozilla.org/BMO/UserGuide/Two-Factor_Authentication" %]
+[% SET MFA_HOWTO = docs_urlbase _ "using/two-factor-authentication.html" %]
 [% tab_footer = BLOCK %]
   <form action="[% basepath FILTER none %]token.cgi" method="post" id="forgot-form">
     <input type="hidden" name="loginname" value="[% user.login FILTER html %]">
@@ -39,6 +39,7 @@
     To do this on your account please click on "Reset Password";
     this will email you instructions to start the password reset process.
   </p>
+  [% INCLUDE help_blurb %]
   [% RETURN %]
 [% END %]
 
@@ -50,6 +51,7 @@
       Here are your recovery codes.
     </p>
 
+    [% INCLUDE help_blurb %]
     [% INCLUDE recovery_blurb %]
     <iframe id="mfa-recovery-frame" tabindex="-1"
             src="[% basepath FILTER none %]userprefs.cgi?tab=mfa&frame=recovery&t=[% mfa_recovery_token FILTER uri %]">
@@ -59,12 +61,8 @@
     [% IF user.mfa != 'Duo' && user.in_duo_required_group && !user.in_duo_excluded_group %]
       <p class="mfa-warning-msg">
         You are in a group requiring Duo Security for two-factor authentication. You must
-        first disabled your current two-factor authentication and then select Duo Security
+        first disable your current two-factor authentication and then select Duo Security
         before continuing to use [% terms.Bugzilla %].
-      </p>
-      <p>
-        <b>Need help setting up 2FA?</b>
-        You may want to <a href="[% MFA_HOWTO FILTER html %]">read these comprehensive instructions</a>.
       </p>
     [% END %]
     <p>
@@ -74,6 +72,7 @@
         [% CASE "Duo" %]Duo Security
       [% END %]</b>.
     </p>
+    [% INCLUDE help_blurb %]
     <input type="hidden" name="mfa_action" id="mfa-action" value="disable">
 
     <div class="mfa-buttons">
@@ -172,15 +171,12 @@
           before continuing to use [% terms.Bugzilla %].
         [% END %]
       </p>
-      <p>
-        <b>Need help setting up 2FA?</b>
-        You may want to <a href="[% MFA_HOWTO FILTER html %]">read these comprehensive instructions</a>.
-      </p>
     [% ELSE %]
       <p>
         Two-factor authentication is currently <b>disabled</b>.
       </p>
     [% END %]
+    [% INCLUDE help_blurb %]
     <input type="hidden" name="mfa_action" id="mfa-action" value="enable">
     <input type="hidden" name="mfa" id="mfa">
 
@@ -249,18 +245,10 @@
       </p>
 
       <div id="mfa-totp-apps-popup" class="mfa-totp-popup" style="display:none">
-        Example TOTP Applications:<br>
-        <ul>
-          <li>Android and iOS:
-            <a href="https://support.google.com/accounts/answer/1066447" target="_blank" rel="noopener noreferrer">Google Authenticator</a>,
-            <a href="https://freeotp.github.io/" target="_blank" rel="noopener noreferrer">Red Hat FreeOTP</a>
-          </li>
-          <li>Windows Phone:
-            <a href="http://www.windowsphone.com/en-us/store/app/authenticator/021dd79f-0598-e011-986b-78e7d1fa76f8"
-                target="_blank rel="noopener noreferrer"">Authenticator</a>
-          </li>
-        </ul>
-        <a href="https://en.wikipedia.org/wiki/Time-based_One-time_Password_Algorithm#Client_implementations" target="_blank" rel="noopener noreferrer">
+        Example TOTP applications for Android and iOS:<br>
+        <a href="https://support.google.com/accounts/answer/1066447" target="_blank" rel="noopener noreferrer">Google Authenticator</a>,
+        <a href="https://freeotp.github.io/" target="_blank" rel="noopener noreferrer">Red Hat FreeOTP</a><br>
+        <a href="https://en.wikipedia.org/wiki/Comparison_of_OTP_applications" target="_blank" rel="noopener noreferrer">
           Other clients
         </a>
         <button type="button" class="mfa-totp-popup-close">Close</button>
@@ -321,4 +309,12 @@
     <li>If in doubt, generate and print new recovery codes</li>
     <li><b>Do not store these codes electronically</b></li>
   </ul>
+[% END %]
+
+[% BLOCK help_blurb %]
+  <p>
+    <b>Need help with 2FA?</b>
+    Read the <a href="[% MFA_HOWTO FILTER html %]"
+                target="_blank" rel="noopener noreferrer">two-factor authentication user guide</a>.
+  </p>
 [% END %]
