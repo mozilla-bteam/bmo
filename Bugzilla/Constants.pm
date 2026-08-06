@@ -27,6 +27,7 @@ use Memoize;
   DEFAULT_CSP
   SHOW_BUG_MODAL_CSP
   CSP_ENFORCE_CGI
+  CSP_DOCUMENT_TYPES
 
   bz_locations
 
@@ -896,6 +897,18 @@ sub CSP_ENFORCE_CGI {
     # e.g. enter_bug_cgi => 1,  (only once verified clean)
   };
 }
+
+# Content types a browser renders as a document, and therefore the only ones a
+# Content-Security-Policy has any effect on. Everything else -- REST payloads,
+# attachment downloads, bodiless responses -- is served without a policy: no
+# client applies one and none can report a violation, so the header would be
+# read by nobody. Consulted by Bugzilla::App's after_dispatch hook, which is
+# where the header is added.
+#
+# Compared against the type alone, with any parameters (charset, boundary)
+# stripped first, so entries here must not carry any.
+use constant CSP_DOCUMENT_TYPES =>
+  ('text/html', 'application/xhtml+xml', 'image/svg+xml');
 
 
 # This makes us not re-compute all the bz_locations data every time it's
