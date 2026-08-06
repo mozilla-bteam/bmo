@@ -54,6 +54,11 @@ sub get_param_list {
     },
     {name => 'github_pr_linking_enabled',  type => 'b', default => 0},
     {name => 'github_pr_signature_secret', type => 't', default => ''},
+    {
+      name    => 'attachment_hide_content_types',
+      type    => 't',
+      default => 'text/x-phabricator-request text/x-github-pull-request',
+    },
   );
   return @param_list;
 }

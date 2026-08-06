@@ -77,5 +77,13 @@
 
   google_storage_service_account =>
     "Google Cloud Storage Service Account",
+
+  attachment_hide_content_types =>
+    "A comma- or whitespace-separated list of MIME types that should be hidden"
+    _ " by default in the bug modal attachments list. Attachments matching these"
+    _ " types will not appear in the attachments table unless the user clicks the"
+    _ " <em>Show External</em> button. This is useful for content types such as"
+    _ " <tt>text/x-phabricator-request</tt> and <tt>text/x-github-pull-request</tt>"
+    _ " that are already displayed in a dedicated section above the attachments list.",
   }
 %]
