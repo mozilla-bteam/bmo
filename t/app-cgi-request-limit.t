@@ -28,8 +28,11 @@ use Test::Mojo;
   package TestRequest;
 
   sub new {
-    my ($class, $message) = @_;
-    return bless {message => $message}, $class;
+    my ($class, $message, $is_limit_exceeded) = @_;
+    return bless {
+      message           => $message,
+      is_limit_exceeded => $is_limit_exceeded // 1
+    }, $class;
   }
 
   sub error {
@@ -37,7 +40,10 @@ use Test::Mojo;
     return {message => $self->{message}};
   }
 
-  sub is_limit_exceeded { return 1; }
+  sub is_limit_exceeded {
+    my ($self) = @_;
+    return $self->{is_limit_exceeded};
+  }
 }
 
 my $boundary = 'bugzilla-request-limit';
@@ -124,23 +130,37 @@ $t->post_ok(
   ->json_is('/code' => 58)
   ->json_is('/message' => 'The request is too large.');
 
+for my $reason (
+  'Maximum message size exceeded',
+  'Maximum buffer size exceeded',
+  'Maximum header size exceeded',
+  'Maximum start-line size exceeded',
+  'A future Mojolicious limit error'
+) {
+  ok(
+    Bugzilla::App::Controller::CGI::_is_request_limit_exceeded(
+      TestRequest->new($reason)
+    ),
+    "$reason is rejected"
+  );
+}
+
 ok(
-  Bugzilla::App::Controller::CGI::_is_request_body_limit_exceeded(
-    TestRequest->new('Maximum message size exceeded')
+  !Bugzilla::App::Controller::CGI::_is_request_limit_exceeded(
+    TestRequest->new('Unrelated parser error', 0)
   ),
-  'message-size limit errors are rejected'
+  'non-limit parser errors retain their existing behavior'
 );
-ok(
-  Bugzilla::App::Controller::CGI::_is_request_body_limit_exceeded(
-    TestRequest->new('Maximum buffer size exceeded')
-  ),
-  'buffer-size limit errors are rejected'
+
+$t->app->routes->get('/_test/status-error')->to(
+  cb => sub {
+    my ($c) = @_;
+    Bugzilla->usage_mode(Bugzilla::Constants::USAGE_MODE_MOJO);
+    return $c->user_error('request_too_large', {}, {status => 413});
+  }
 );
-ok(
-  !Bugzilla::App::Controller::CGI::_is_request_body_limit_exceeded(
-    TestRequest->new('Maximum header size exceeded')
-  ),
-  'other limit errors retain their existing behavior'
-);
+$t->get_ok('/_test/status-error')
+  ->status_is(500)
+  ->content_like(qr{<title>Server Error \(development mode\)</title>});
 
 done_testing;

@@ -69,7 +69,7 @@ sub load_one {
   my $wrapper = sub {
     my ($c) = @_;
 
-    if (_is_request_body_limit_exceeded($c->req)) {
+    if (_is_request_limit_exceeded($c->req)) {
       my $reason = $c->req->error->{message};
       WARN("Rejected oversized request for $file: $reason");
       return _render_request_too_large($c, $file);
@@ -109,12 +109,9 @@ sub load_one {
   return 1;
 }
 
-sub _is_request_body_limit_exceeded {
+sub _is_request_limit_exceeded {
   my ($request) = @_;
-  my $error = $request->error;
-  return $request->is_limit_exceeded
-    && ref $error eq 'HASH'
-    && ($error->{message} // '') =~ /\AMaximum (?:message|buffer) size exceeded\z/;
+  return $request->is_limit_exceeded;
 }
 
 sub _render_request_too_large {
@@ -127,7 +124,11 @@ sub _render_request_too_large {
   }
 
   Bugzilla->usage_mode(USAGE_MODE_MOJO);
-  return $c->user_error(REQUEST_TOO_LARGE_ERROR, {}, {status => 413});
+  return $c->user_error(
+    REQUEST_TOO_LARGE_ERROR,
+    {},
+    {status => 413, skip_exception_page => 1}
+  );
 }
 
 sub _ENV {

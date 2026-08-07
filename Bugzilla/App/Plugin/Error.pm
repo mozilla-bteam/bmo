@@ -50,7 +50,7 @@ sub _render_error {
   if (Bugzilla->usage_mode == USAGE_MODE_MOJO) {
     $logfunc->("webpage error: $error");
 
-    if ($c->app->mode eq 'development' && !exists $options->{status}) {
+    if ($c->app->mode eq 'development' && !$options->{skip_exception_page}) {
       use Bugzilla::Logging;
       my $class = $type ? 'Bugzilla::Error::' . ucfirst($type) : 'Mojo::Exception';
       my $e     = $class->new($error)->trace(2);
