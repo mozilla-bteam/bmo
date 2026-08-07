@@ -1,0 +1,23 @@
+version: 2
+updates:
+  # Third-party front-end libraries (see package.json). The generated files are
+  # built from the lockfile at image build time and are not committed, so a
+  # lockfile-only PR is complete on its own and CI tests the upgraded libraries
+  # as-is. Treat major bumps (jquery 4.x, mermaid 11.x, devbridge-autocomplete
+  # 2.x) as manual, tested reviews.
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "frontend"
+
+  # Keep the GitHub Actions used by CI patched too.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"

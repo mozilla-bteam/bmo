@@ -66,6 +66,11 @@ You can run the following command:
 The Mojolicious morbo development server, used by the web container, will notice any code changes and
 restart itself.
 
+The third-party front-end libraries (jQuery, Prism, mermaid, and so on) are not committed to the
+repository. They are generated at image build time, so they exist in the container but not in your
+checkout, and the ``rsync`` above leaves them alone. See `Front-end Libraries`_ for how to add or
+upgrade one.
+
 If you are using Visual Studio Code, these ``docker compose`` commands will come in handy as the
 editor's `tasks`_ that can be found under the Terminal menu. The update command is assigned to the
 default build task so it can be executed by simply hitting Ctrl+Shift+B on Windows/Linux or
@@ -321,6 +326,72 @@ and changing the mail_delivery_method to 'Test'. With this option, all mail will
 .. code-block:: bash
 
   docker compose run bmo.test cat /app/data/mailer.testfile
+
+Front-end Libraries
+-------------------
+
+The third-party front-end libraries BMO serves — their scripts, stylesheets, images and icon fonts —
+are generated from the versions pinned in ``package.json`` and ``package-lock.json``. None of the
+generated files are committed: the ``assets`` stage in the ``Dockerfile`` runs
+``scripts/build-frontend.mjs`` and the result is copied over ``/app/js`` in the image. Node exists
+only in that stage, so the runtime image stays Node-free.
+
+This means a Dependabot pull request that bumps a library is complete on its own — there is nothing
+to regenerate and commit, and CI tests the upgraded library as-is. Because a library's stylesheet is
+generated from the same package as its script, the two cannot drift apart, so review upgrades for
+visual changes as well as behavioural ones. Treat major bumps (jquery 4.x, mermaid 11.x,
+devbridge-autocomplete 2.x) as manual, tested reviews.
+
+To add a new library:
+
+1. Add it to ``dependencies`` in ``package.json``, pinned to an exact version, then run
+   ``npm install`` to update ``package-lock.json``.
+
+2. Add an entry to ``TARGETS`` in ``scripts/build-frontend.mjs`` mapping the path BMO serves it from
+   (relative to ``js/``) to the file inside ``node_modules``. The mapping is explicit because the
+   names BMO serves do not always match the names upstream ships, and because only the files BMO
+   actually needs belong in the image:
+
+   .. code-block:: javascript
+
+     'lib/newlib.min.js': 'newlib/dist/newlib.min.js',
+     'lib/newlib.css': 'newlib/dist/newlib.min.css',
+
+   A library whose stylesheet references images or fonts by relative URL needs those too. Copy the
+   whole directory by adding it to ``TARGET_DIRS`` instead, so the assets land next to the
+   stylesheet that references them — this is how contextMenu's icon font and jQuery UI's images are
+   handled:
+
+   .. code-block:: javascript
+
+     'jquery/plugins/contextMenu/font': 'jquery-contextmenu/dist/font',
+
+3. If the library lands in a directory that also holds committed files, add the generated paths to
+   ``.gitignore``. Adding to an existing generated directory such as ``js/lib/`` needs no change,
+   since the whole directory is already ignored.
+
+4. Load it from the template that needs it, the same as any other asset:
+
+   .. code-block:: text
+
+     [% javascript_urls.push('js/lib/newlib.min.js') %]
+     [% style_urls.push('js/lib/newlib.css') %]
+
+jQuery plugins are a special case. ``template/en/default/global/header.html.tmpl`` builds their
+paths by convention from the name pushed onto the ``jquery`` array::
+
+  js/jquery/plugins/<name>/<name>-min.js
+
+So a plugin's ``TARGETS`` entry has to follow that layout, and templates load it with
+``[% jquery.push('name') %]`` rather than a literal path. ``js/jquery/plugins/bPopup/`` is the one
+library still vendored in the repository, because it is not published to npm.
+
+To rebuild after changing any of this, rebuild the image. If you want the generated files in your
+working tree — to serve BMO from a checkout directly, for instance — run:
+
+.. code-block:: bash
+
+  npm ci && npm run build
 
 Technical Details
 -----------------
