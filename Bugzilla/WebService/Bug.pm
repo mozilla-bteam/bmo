@@ -356,6 +356,7 @@ sub comments {
     my $comments
       = $bug->comments({order => 'oldest_to_newest', after => $params->{new_since}
       });
+    $self->_preload_comment_edit_info($comments);
     my @result;
     foreach my $comment (@$comments) {
       next if $comment->is_private && !$user->is_insider;
@@ -380,6 +381,8 @@ sub comments {
     # Now make sure that we can see all the associated bugs.
     my %got_bug_ids = map { $_->bug_id => 1 } @$comment_data;
     Bugzilla::Bug->check($_) foreach (keys %got_bug_ids);
+
+    $self->_preload_comment_edit_info($comment_data);
 
     foreach my $comment (@$comment_data) {
       if ($comment->is_private && !$user->is_insider) {
@@ -411,6 +414,43 @@ sub render_comment {
   return {html => $html};
 }
 
+# Helper for Bug.comments and Bug.get. Fetches the revision metadata (number of
+# edits and the timestamp of the most recent edit) for a set of comments using a
+# single query, and stashes it on each comment object for _translate_comment.
+#
+# The data is only exposed to users who are allowed to edit other people's
+# comments; everyone else gets no edit_count/last_change_time keys at all.
+# Revisions hidden by an edit-comments admin are only counted for admins.
+sub _preload_comment_edit_info {
+  my ($self, $comments) = @_;
+  my $user = Bugzilla->user;
+
+  return unless @$comments;
+
+  # can_edit_comments is injected by the EditComments extension; without it
+  # there is no longdescs_activity table to query.
+  return unless $user->can('can_edit_comments') && $user->can_edit_comments;
+
+  my $dbh = Bugzilla->dbh;
+  my @ids = map { $_->id } @$comments;
+
+  # Admins can see hidden revisions, so they are counted for them only.
+  my $hidden_clause = $user->is_edit_comments_admin ? '' : 'AND is_hidden = 0';
+
+  my $rows = $dbh->selectall_hashref(
+    'SELECT comment_id, COUNT(*) AS edit_count,
+            MAX(change_when) AS last_change_time
+       FROM longdescs_activity
+      WHERE ' . $dbh->sql_in('comment_id', \@ids) . " $hidden_clause
+   GROUP BY comment_id", 'comment_id'
+  );
+
+  foreach my $comment (@$comments) {
+    $comment->{edit_info} = $rows->{$comment->id}
+      || {edit_count => 0, last_change_time => undef};
+  }
+}
+
 # Helper for Bug.comments
 sub _translate_comment {
   my ($self, $comment, $filters, $types, $prefix) = @_;
@@ -429,6 +469,13 @@ sub _translate_comment {
     attachment_id => $self->type('int',      $attach_id),
     count         => $self->type('int',      $comment->count),
   };
+
+  # Only set by _preload_comment_edit_info when the user may edit others' comments
+  if (my $edit_info = $comment->{edit_info}) {
+    $comment_hash->{edit_count} = $self->type('int', $edit_info->{edit_count});
+    $comment_hash->{last_change_time}
+      = $self->type('dateTime', $edit_info->{last_change_time});
+  }
 
   if (Bugzilla->params->{use_comment_reactions}) {
     $comment_hash->{reactions} = {};
@@ -1600,6 +1647,7 @@ sub _bug_to_hash {
     my @result;
     my $comments
       = $bug->comments({order => 'oldest_to_newest', after => $params->{new_since}});
+    $self->_preload_comment_edit_info($comments);
     foreach my $comment (@$comments) {
       next if $comment->is_private && !$user->is_insider;
       push(@result,
@@ -2782,6 +2830,23 @@ may be deprecated and removed in a future release.
 C<boolean> True if this comment is private (only visible to a certain
 group called the "insidergroup"), False otherwise.
 
+=item edit_count
+
+C<int> The number of times this comment has been edited. C<0> if the comment
+has never been edited.
+
+This key is only present for users who are allowed to edit other people's
+comments. Revisions that have been hidden by an edit-comments admin are only
+counted for members of the edit-comments admins group.
+
+=item last_change_time
+
+C<dateTime> The time (in Bugzilla's timezone) of the most recent edit to this
+comment, or null if the comment has never been edited.
+
+This key is only present for users who are allowed to edit other people's
+comments, and follows the same rules as C<edit_count> for hidden revisions.
+
 =back
 
 =item B<Errors>
@@ -2823,6 +2888,8 @@ C<creator>.
 =item REST API call added in Bugzilla B<5.0>.
 
 =item C<raw_text> was added in Bugzilla B<6.0>.
+
+=item C<edit_count> and C<last_change_time> were added in Bugzilla B<6.0>.
 
 =back
 
