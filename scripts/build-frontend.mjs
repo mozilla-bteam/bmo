@@ -19,7 +19,7 @@
 // repository as-is. bpopup is not published to npm and remains vendored under
 // js/jquery/plugins/bPopup/.
 
-import { readFileSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -109,11 +109,23 @@ for (const [dest, source] of Object.entries(TARGETS)) {
   write(dest, typeof source === 'function' ? source() : readFileSync(join(nm, source)));
 }
 
-for (const [destDir, srcRel] of Object.entries(TARGET_DIRS)) {
-  const src = join(nm, srcRel);
-  for (const entry of readdirSync(src, { withFileTypes: true })) {
-    if (entry.isFile()) {
-      write(`${destDir}/${entry.name}`, readFileSync(join(src, entry.name)));
+// Recurse, so that a library keeping its assets in subdirectories is copied
+// whole rather than silently arriving half-empty with broken URLs in its
+// stylesheet. Symlinks are resolved to whatever they point at.
+function copyDir(destDir, srcDir) {
+  for (const entry of readdirSync(srcDir, { withFileTypes: true })) {
+    const from = join(srcDir, entry.name);
+    const node = entry.isSymbolicLink() ? statSync(from) : entry;
+    if (node.isDirectory()) {
+      copyDir(`${destDir}/${entry.name}`, from);
+    } else if (node.isFile()) {
+      write(`${destDir}/${entry.name}`, readFileSync(from));
+    } else {
+      throw new Error(`${from} is neither a file nor a directory`);
     }
   }
+}
+
+for (const [destDir, srcRel] of Object.entries(TARGET_DIRS)) {
+  copyDir(destDir, join(nm, srcRel));
 }
