@@ -341,6 +341,7 @@ sub comments {
   }
 
   my %bugs;
+  my @bug_comments;
   foreach my $bug_id (@$bug_ids) {
     my $bug;
 
@@ -356,7 +357,15 @@ sub comments {
     my $comments
       = $bug->comments({order => 'oldest_to_newest', after => $params->{new_since}
       });
-    $self->_preload_comment_edit_info($comments);
+    push(@bug_comments, [$bug, $comments]);
+  }
+
+  # Preload every requested bug's comments in one query, otherwise a bulk
+  # request would run one aggregation query per bug.
+  $self->_preload_comment_edit_info([map { @{$_->[1]} } @bug_comments]);
+
+  foreach my $bug_comment (@bug_comments) {
+    my ($bug, $comments) = @$bug_comment;
     my @result;
     foreach my $comment (@$comments) {
       next if $comment->is_private && !$user->is_insider;
@@ -414,25 +423,30 @@ sub render_comment {
   return {html => $html};
 }
 
-# Helper for Bug.comments and Bug.get. Fetches the revision metadata (number of
-# edits and the timestamp of the most recent edit) for a set of comments using a
-# single query, and stashes it on each comment object for _translate_comment.
+# Helper for every method that returns comments. Fetches the revision metadata
+# (number of edits and the timestamp of the most recent edit) for a set of
+# comments using a single query, and stashes it on each comment object for
+# _translate_comment.
 #
 # The data is only exposed to users who are allowed to edit other people's
 # comments; everyone else gets no edit_count/last_change_time keys at all.
 # Revisions hidden by an edit-comments admin are only counted for admins.
+#
+# Comments that were already preloaded are skipped, so callers that batch every
+# comment of a request up front turn the later per-bug calls into no-ops.
 sub _preload_comment_edit_info {
   my ($self, $comments) = @_;
   my $user = Bugzilla->user;
-
-  return unless @$comments;
 
   # can_edit_comments is injected by the EditComments extension; without it
   # there is no longdescs_activity table to query.
   return unless $user->can('can_edit_comments') && $user->can_edit_comments;
 
+  my @todo = grep { !exists $_->{edit_info} } @$comments;
+  return unless @todo;
+
   my $dbh = Bugzilla->dbh;
-  my @ids = map { $_->id } @$comments;
+  my @ids = map { $_->id } @todo;
 
   # Admins can see hidden revisions, so they are counted for them only.
   my $hidden_clause = $user->is_edit_comments_admin ? '' : 'AND is_hidden = 0';
@@ -445,10 +459,20 @@ sub _preload_comment_edit_info {
    GROUP BY comment_id", 'comment_id'
   );
 
-  foreach my $comment (@$comments) {
+  foreach my $comment (@todo) {
     $comment->{edit_info} = $rows->{$comment->id}
       || {edit_count => 0, last_change_time => undef};
   }
+}
+
+# Batch-preloads the comment edit info for every bug about to be passed through
+# _bug_to_hash(), so that a multi-bug request runs one aggregation query rather
+# than one per bug.
+sub _preload_bugs_comment_edit_info {
+  my ($self, $bugs, $params) = @_;
+
+  return unless filter_wants $params, 'comments', ['extra'];
+  $self->_preload_comment_edit_info([map { @{$_->comments} } @$bugs]);
 }
 
 # Helper for Bug.comments
@@ -528,8 +552,10 @@ sub get {
       $bug = Bugzilla::Bug->check($bug_id);
     }
     push(@bugs, $bug);
-    push(@hashes, $self->_bug_to_hash($bug, $params));
   }
+
+  $self->_preload_bugs_comment_edit_info(\@bugs, $params);
+  @hashes = map { $self->_bug_to_hash($_, $params) } @bugs;
 
   # Set the ETag before inserting the update tokens
   # since the tokens will always be unique even if
@@ -759,6 +785,7 @@ sub search {
   my %bug_objects
     = map { $_->id => $_ } @{Bugzilla::Bug->new_from_list(\@bug_ids)};
   my @bugs = map { $bug_objects{$_} } @bug_ids;
+  $self->_preload_bugs_comment_edit_info(\@bugs, $params);
   @bugs = map { $self->_bug_to_hash($_, $params) } @bugs;
 
   return {bugs => \@bugs};
@@ -812,6 +839,7 @@ sub possible_duplicates {
     @$possible_dupes = grep { $_->id != $params->{id} } @$possible_dupes;
   }
 
+  $self->_preload_bugs_comment_edit_info($possible_dupes, $params);
   my @hashes = map { $self->_bug_to_hash($_, $params) } @$possible_dupes;
   $self->_add_update_tokens($params, $possible_dupes, \@hashes);
   return {bugs => \@hashes};

@@ -6,11 +6,12 @@
 # This Source Code Form is "Incompatible With Secondary Licenses", as
 # defined by the Mozilla Public License, v. 2.0.
 
-##############################################################
+###############################################################
 # Test for the edit_count and last_change_time comment fields #
 # GET /rest/bug/<id>/comment                                  #
 # GET /rest/bug/comment/<comment_id>                          #
-##############################################################
+# GET /rest/bug/<id>?include_fields=comments                  #
+###############################################################
 
 use 5.10.1;
 use strict;
@@ -137,5 +138,37 @@ $bug_comments = (values %{$t->tx->res->json->{bugs}})[0]{comments};
 $found        = first { $_->{id} == $edited_id } @$bug_comments;
 ok(!exists $found->{edit_count},
   'bug-level route omits edit_count for unprivileged users');
+
+##############################################
+# GET /rest/bug/<id>?include_fields=comments #
+##############################################
+
+# Bug.get renders comments through _bug_to_hash(), which is a third code path.
+sub get_bug_comments {
+  my ($api_key) = @_;
+  $t->get_ok(
+    $url . 'rest/bug/public_bug?include_fields=comments' => api_headers($api_key))
+    ->status_is(200);
+  return $t->tx->res->json->{bugs}[0]{comments};
+}
+
+$bug_comments = get_bug_comments($editbugs_key);
+$found        = first { $_->{id} == $edited_id } @$bug_comments;
+ok($found, 'found the edited comment via Bug.get');
+is($found->{edit_count}, 2, 'Bug.get reports the same edit_count');
+like($found->{last_change_time},
+  DATETIME_REGEX, 'Bug.get reports last_change_time');
+
+$found = first { $_->{id} == $unedited_id } @$bug_comments;
+is($found->{edit_count}, 0, 'Bug.get reports an edit_count of 0 when unedited');
+is($found->{last_change_time},
+  undef, 'Bug.get reports a null last_change_time when unedited');
+
+$bug_comments = get_bug_comments($unprivileged_key);
+$found        = first { $_->{id} == $edited_id } @$bug_comments;
+ok(!exists $found->{edit_count},
+  'Bug.get omits edit_count for unprivileged users');
+ok(!exists $found->{last_change_time},
+  'Bug.get omits last_change_time for unprivileged users');
 
 done_testing();
