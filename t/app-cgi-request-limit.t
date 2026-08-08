@@ -24,28 +24,6 @@ use Bugzilla::Test::MockParams;
 use Test2::V0;
 use Test::Mojo;
 
-{
-  package TestRequest;
-
-  sub new {
-    my ($class, $message, $is_limit_exceeded) = @_;
-    return bless {
-      message           => $message,
-      is_limit_exceeded => $is_limit_exceeded // 1
-    }, $class;
-  }
-
-  sub error {
-    my ($self) = @_;
-    return {message => $self->{message}};
-  }
-
-  sub is_limit_exceeded {
-    my ($self) = @_;
-    return $self->{is_limit_exceeded};
-  }
-}
-
 my $boundary = 'bugzilla-request-limit';
 my $body = join(
   "\r\n",
@@ -130,27 +108,31 @@ $t->post_ok(
   ->json_is('/code' => 58)
   ->json_is('/message' => 'The request is too large.');
 
-for my $reason (
-  'Maximum message size exceeded',
-  'Maximum buffer size exceeded',
-  'Maximum header size exceeded',
-  'Maximum start-line size exceeded',
-  'A future Mojolicious limit error'
-) {
-  ok(
-    Bugzilla::App::Controller::CGI::_is_request_limit_exceeded(
-      TestRequest->new($reason)
-    ),
-    "$reason is rejected"
-  );
-}
+$t->post_ok(
+  '/rest/component/Test' => {
+    'Content-Length' => 2,
+    'Content-Type'   => 'application/json',
+  } => '{}'
+)->status_is(401)
+  ->json_is('/code' => 410);
 
-ok(
-  !Bugzilla::App::Controller::CGI::_is_request_limit_exceeded(
-    TestRequest->new('Unrelated parser error', 0)
-  ),
-  'non-limit parser errors retain their existing behavior'
-);
+$t->post_ok(
+  '/rest/component/Test' => {
+    'Content-Length' => length($body),
+    'Content-Type'   => 'application/json',
+  } => $body
+)->status_is(413)
+  ->header_like('Content-Type' => qr{^application/json\b})
+  ->header_is('Access-Control-Allow-Origin' => '*')
+  ->header_like(
+    'Access-Control-Allow-Headers' => qr{\bauthorization\b}
+  )
+  ->header_unlike(
+    'Access-Control-Allow-Headers' => qr{\bx-bugzilla-login\b}
+  )
+  ->json_is('/error' => 1)
+  ->json_is('/code' => 58)
+  ->json_is('/message' => 'The request is too large.');
 
 $t->app->routes->get('/_test/status-error')->to(
   cb => sub {

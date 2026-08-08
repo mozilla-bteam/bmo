@@ -69,7 +69,7 @@ sub load_one {
   my $wrapper = sub {
     my ($c) = @_;
 
-    if (_is_request_limit_exceeded($c->req)) {
+    if ($c->req->is_limit_exceeded) {
       my $reason = $c->req->error->{message};
       WARN("Rejected oversized request for $file: $reason");
       return _render_request_too_large($c, $file);
@@ -107,11 +107,6 @@ sub load_one {
   no strict 'refs';    ## no critic (strict)
   *{$name} = subname($name, $wrapper);
   return 1;
-}
-
-sub _is_request_limit_exceeded {
-  my ($request) = @_;
-  return $request->is_limit_exceeded;
 }
 
 sub _render_request_too_large {
