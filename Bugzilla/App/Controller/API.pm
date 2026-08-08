@@ -17,8 +17,10 @@ use Try::Tiny;
 
 use Bugzilla::Constants;
 use Bugzilla::Logging;
+use Bugzilla::WebService::Util qw(set_rest_cors_headers);
 
 use constant SUPPORTED_VERSIONS => qw(V1);
+use constant REQUEST_TOO_LARGE_ERROR => 'request_too_large';
 
 sub setup_routes {
   my ($class, $r) = @_;
@@ -30,38 +32,17 @@ sub setup_routes {
   $r->namespaces($namespaces);
 
   # Backwards compat with /api/user/profile which Phabricator requires
-  $r->under(
-    '/api' => sub {
-      my ($c) = @_;
-      _insert_rest_headers($c);
-      Bugzilla->usage_mode(USAGE_MODE_REST);
-    }
-  )->get('/user/profile')->to('V1::User#user_profile');
+  $r->under('/api' => \&_prepare_rest_request)
+    ->get('/user/profile')->to('V1::User#user_profile');
 
   # Other backwards compat routes
-  $r->under(
-    '/latest' => sub {
-      my ($c) = @_;
-      _insert_rest_headers($c);
-      Bugzilla->usage_mode(USAGE_MODE_REST);
-    }
-  )->get('/configuration')->to('V1::Configuration#configuration');
-  $r->under(
-    '/bzapi' => sub {
-      my ($c) = @_;
-      _insert_rest_headers($c);
-      Bugzilla->usage_mode(USAGE_MODE_REST);
-    }
-  )->get('/configuration')->to('V1::Configuration#configuration');
+  $r->under('/latest' => \&_prepare_rest_request)
+    ->get('/configuration')->to('V1::Configuration#configuration');
+  $r->under('/bzapi' => \&_prepare_rest_request)
+    ->get('/configuration')->to('V1::Configuration#configuration');
 
   # Set the usage mode for all routes under /rest
-  my $rest_routes = $r->under(
-    '/rest' => sub {
-      my ($c) = @_;
-      _insert_rest_headers($c);
-      Bugzilla->usage_mode(USAGE_MODE_REST);
-    }
-  );
+  my $rest_routes = $r->under('/rest' => \&_prepare_rest_request);
 
   # Standard API support
   foreach my $version (SUPPORTED_VERSIONS) {
@@ -89,6 +70,21 @@ sub setup_routes {
   }
 }
 
+sub _prepare_rest_request {
+  my ($c) = @_;
+  _insert_rest_headers($c);
+
+  if ($c->req->is_limit_exceeded) {
+    my $reason = $c->req->error->{message};
+    WARN("Rejected oversized request for native REST API: $reason");
+    Bugzilla->usage_mode(USAGE_MODE_MOJO_REST);
+    return $c->user_error(REQUEST_TOO_LARGE_ERROR);
+  }
+
+  Bugzilla->usage_mode(USAGE_MODE_REST);
+  return 1;
+}
+
 sub _load_api_module {
   my ($routes, $module) = @_;
   try {
@@ -105,15 +101,9 @@ sub _load_api_module {
 
 sub _insert_rest_headers {
   my ($c) = @_;
-
-  # Access Control
   my @allowed_headers
     = qw(accept authorization content-type origin user-agent x-bugzilla-api-key x-requested-with);
-  $c->res->headers->header('Access-Control-Allow-Origin' => '*');
-  $c->res->headers->header(
-    'Access-Control-Allow-Headers' => join ', ',
-    @allowed_headers
-  );
+  set_rest_cors_headers($c->res->headers, \@allowed_headers);
 }
 
 1;

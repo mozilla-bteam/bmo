@@ -17,9 +17,17 @@ use Socket qw(AF_INET inet_aton);
 use Mojo::File qw(path);
 use English qw(-no_match_vars);
 use Bugzilla::App::Stdout;
-use Bugzilla::Constants qw(bz_locations USAGE_MODE_BROWSER);
+use Bugzilla::Constants qw(
+  bz_locations
+  USAGE_MODE_BROWSER
+  USAGE_MODE_MOJO
+  USAGE_MODE_MOJO_REST
+);
+use Bugzilla::Logging;
+use Bugzilla::WebService::Util qw(set_rest_cors_headers);
 
 my %SEEN;
+use constant REQUEST_TOO_LARGE_ERROR => 'request_too_large';
 
 sub setup_routes {
   my ($class, $r) = @_;
@@ -60,6 +68,13 @@ sub load_one {
   my $inner = quote_sub $inner_name, $content, {}, \%options;
   my $wrapper = sub {
     my ($c) = @_;
+
+    if ($c->req->is_limit_exceeded) {
+      my $reason = $c->req->error->{message};
+      WARN("Rejected oversized request for $file: $reason");
+      return _render_request_too_large($c, $file);
+    }
+
     Bugzilla->request_cache->{mojo_controller} = $c;
     my $stdin = $c->_STDIN;
     local %ENV                         = $c->_ENV($file);
@@ -92,6 +107,23 @@ sub load_one {
   no strict 'refs';    ## no critic (strict)
   *{$name} = subname($name, $wrapper);
   return 1;
+}
+
+sub _render_request_too_large {
+  my ($c, $file) = @_;
+
+  if (path($file)->basename eq 'rest.cgi') {
+    set_rest_cors_headers($c->res->headers);
+    Bugzilla->usage_mode(USAGE_MODE_MOJO_REST);
+    return $c->user_error(REQUEST_TOO_LARGE_ERROR);
+  }
+
+  Bugzilla->usage_mode(USAGE_MODE_MOJO);
+  return $c->user_error(
+    REQUEST_TOO_LARGE_ERROR,
+    {},
+    {status => 413, skip_exception_page => 1}
+  );
 }
 
 sub _ENV {
