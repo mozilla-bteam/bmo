@@ -26,6 +26,30 @@
       <base href="[% urlbase FILTER html %]">
     </head>
     <body>
+      [% IF flag_events.size %]
+      <ul>
+      [% FOREACH event = flag_events %]
+        <li>
+        [% IF event.action == 'requested' %]
+          [% IF event.type.name == 'needinfo' %]
+            [% INCLUDE global/user.html.tmpl user = to_user, who = event.setter %]
+            needs more information from you to work on this [% terms.bug %].
+            Please answer any open questions or provide the requested details in a comment below.
+          [% ELSE %]
+            [% INCLUDE global/user.html.tmpl user = to_user, who = event.setter %]
+            has requested [% event.type.name FILTER html %][% " for attachment ${event.attachment_id}" IF event.attachment_id %]
+            from you on this [% terms.bug %].
+          [% END %]
+        [% ELSIF event.action == 'answered' %]
+          Your request for [% event.type.name FILTER html %][% " on attachment ${event.attachment_id}" IF event.attachment_id %]
+          has been [% event.status == '+' ? 'granted' : 'denied' %] by
+          [% INCLUDE global/user.html.tmpl user = to_user, who = event.setter %].
+        [% END %]
+        </li>
+      [% END %]
+      </ul>
+      <hr>
+      [% END %]
       [% PROCESS generate_diffs %]
       <p>
       [% SET comment_anchor = '' %]
