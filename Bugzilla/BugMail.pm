@@ -793,13 +793,20 @@ sub _get_flag_mail_events {
         action        => 'requested',
         type          => Bugzilla::FlagType->new({id => $row->{type_id}, cache => 1}),
         attachment_id => $row->{attachment_id},
-        requestee_id  => $row->{requestee_id},
-        setter        => $user_cache->{$row->{setter_id}},
+        attachment    => $row->{attachment_id}
+        ? Bugzilla::Attachment->new({id => $row->{attachment_id}, cache => 1})
+        : undef,
+        requestee_id => $row->{requestee_id},
+        setter       => $user_cache->{$row->{setter_id}},
         };
     }
-    elsif ($row->{status} eq '+' || $row->{status} eq '-') {
+    elsif ($row->{status} eq '+' || $row->{status} eq '-' || $row->{status} eq 'X') {
 
-      # flags.setter_id gets overwritten to whoever granted/denied the
+      # 'X' is a flag cleared without +/- (e.g. needinfo auto-cleared when
+      # the requestee replies) -- notify.() treated that the same as an
+      # explicit answer, so we do too.
+      #
+      # flags.setter_id gets overwritten to whoever granted/denied/cleared the
       # flag, so the requester has to be found by looking back at this
       # flag's most recent '?' activity row.
       my ($requester_id) = $dbh->selectrow_array(
@@ -815,9 +822,12 @@ sub _get_flag_mail_events {
         action        => 'answered',
         type          => Bugzilla::FlagType->new({id => $row->{type_id}, cache => 1}),
         attachment_id => $row->{attachment_id},
-        requester_id  => $requester_id,
-        status        => $row->{status},
-        setter        => $user_cache->{$row->{setter_id}},
+        attachment    => $row->{attachment_id}
+        ? Bugzilla::Attachment->new({id => $row->{attachment_id}, cache => 1})
+        : undef,
+        requester_id => $requester_id,
+        status       => $row->{status},
+        setter       => $user_cache->{$row->{setter_id}},
         };
     }
   }
