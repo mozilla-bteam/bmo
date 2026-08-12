@@ -36,13 +36,13 @@
             needs more information from you to work on this [% terms.bug %].
           [% ELSE %]
             [% INCLUDE global/user.html.tmpl user = to_user, who = event.setter %]
-            has requested [% event.type.name FILTER html %][% " for attachment ${event.attachment_id}" IF event.attachment_id %]
+            has requested [% event.type.name FILTER html %][% " for attachment ${event.attachment_id}" FILTER none IF event.attachment_id %]
             from you on this [% terms.bug %].
           [% END %]
         [% ELSIF event.action == 'answered' %]
           [% status_word = event.status == '+' ? 'granted' : event.status == '-' ? 'denied' : 'cleared' %]
-          Your request for [% event.type.name FILTER html %][% " on attachment ${event.attachment_id}" IF event.attachment_id %]
-          has been [% status_word %] by
+          Your request for [% event.type.name FILTER html %][% " on attachment ${event.attachment_id}" FILTER none IF event.attachment_id %]
+          has been [% status_word FILTER html %] by
           [% INCLUDE global/user.html.tmpl user = to_user, who = event.setter %].
         [% END %]
         [% Hook.process('flag_event', 'email/bugmail.html.tmpl') %]
