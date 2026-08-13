@@ -12,12 +12,13 @@ use Mojo::Base qw( Mojolicious::Controller );
 
 use Bugzilla::Classification;
 use Bugzilla::Constants;
+use Bugzilla::WebService::Util qw(filter);
 
 sub setup_routes {
   my ($class, $r) = @_;
   my $class_routes = $r->under(
     '/classification' => sub { Bugzilla->usage_mode(USAGE_MODE_MOJO_REST); });
-  $class_routes->get('/:id_or_name')->to('V1::Classification#get');
+  $class_routes->get('/#id_or_name')->to('V1::Classification#get');
 }
 
 sub get {
@@ -35,42 +36,57 @@ sub get {
   my $classification = Bugzilla::Classification->check(
     $id_or_name =~ /^\d+$/ ? {id => $id_or_name} : $id_or_name);
 
+  my $params = $self->req->params->to_hash;
+  for my $field (qw(include_fields exclude_fields)) {
+    $params->{$field} = [split(/[\s,]+/, $params->{$field})]
+      if exists $params->{$field} && !ref $params->{$field};
+  }
+
   my @classifications;
   if ($user->in_group('editclassifications')
     || grep { $_->id == $classification->id }
     @{$user->get_selectable_classifications})
   {
-    @classifications = ($self->_classification_to_hash($classification, $user));
+    @classifications
+      = ($self->_classification_to_hash($classification, $user, $params));
   }
 
   return $self->render(json => {classifications => \@classifications});
 }
 
 sub _classification_to_hash {
-  my ($self, $classification, $user) = @_;
+  my ($self, $classification, $user, $params) = @_;
 
   my $products
     = $user->in_group('editclassifications')
     ? $classification->products
     : $user->get_selectable_products($classification->id);
 
-  return {
-    id          => $classification->id,
-    name        => $classification->name,
-    description => $classification->description,
-    sort_key    => $classification->sortkey,
-    products    => [map { $self->_product_to_hash($_) } @$products],
-  };
+  return filter(
+    $params,
+    {
+      id          => 0 + $classification->id,
+      name        => $classification->name,
+      description => $classification->description,
+      sort_key    => 0 + $classification->sortkey,
+      products => [map { $self->_product_to_hash($_, $params) } @$products],
+    }
+  );
 }
 
 sub _product_to_hash {
-  my ($self, $product) = @_;
+  my ($self, $product, $params) = @_;
 
-  return {
-    id          => $product->id,
-    name        => $product->name,
-    description => $product->description,
-  };
+  return filter(
+    $params,
+    {
+      id          => 0 + $product->id,
+      name        => $product->name,
+      description => $product->description,
+    },
+    undef,
+    'products'
+  );
 }
 
 1;
