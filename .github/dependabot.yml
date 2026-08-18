@@ -3,21 +3,44 @@ updates:
   # Third-party front-end libraries (see package.json). The generated files are
   # built from the lockfile at image build time and are not committed, so a
   # lockfile-only PR is complete on its own and CI tests the upgraded libraries
-  # as-is. Treat major bumps (jquery 4.x, mermaid 11.x, devbridge-autocomplete
-  # 2.x) as manual, tested reviews.
+  # as-is.
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 10
+    # Skip releases younger than a week so we don't chase a version that gets
+    # yanked or immediately patched.
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 99
+    commit-message:
+      prefix: "Bug 2064523 - "
     labels:
       - "dependencies"
       - "frontend"
+    ignore:
+      # Dependabot does not respect the caret ranges in package.json -- for a
+      # major release it rewrites `^3.7.1` to `^4.0.0`. Major bumps of these
+      # libraries need hand testing against the client, so suppress them here
+      # and do them as deliberate, standalone bugs: jquery 4.x, mermaid 11.x,
+      # devbridge-autocomplete 2.x. Security updates are unaffected --
+      # `update-types` only gates version updates.
+      - dependency-name: "jquery"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "mermaid"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "devbridge-autocomplete"
+        update-types:
+          - "version-update:semver-major"
 
   # Keep the GitHub Actions used by CI patched too.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    commit-message:
+      prefix: "Bug 2064523 - "
     labels:
       - "dependencies"
