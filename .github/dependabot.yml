@@ -25,7 +25,13 @@ updates:
       # and do them as deliberate, standalone bugs: jquery 4.x, mermaid 11.x,
       # devbridge-autocomplete 2.x. Security updates are unaffected --
       # `update-types` only gates version updates.
-      - dependency-name: "*"
+      - dependency-name: "jquery"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "mermaid"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "devbridge-autocomplete"
         update-types:
           - "version-update:semver-major"
 
