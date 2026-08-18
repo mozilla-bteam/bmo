@@ -49,7 +49,7 @@ jobs:
       - uses: docker/setup-buildx-action@v4
       - id: gcp-auth
         name: Google authentication
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@v3
         with:
           token_format: "access_token"
           service_account: artifact-writer@${{ env.GCP_PROJECT_ID }}.iam.gserviceaccount.com
