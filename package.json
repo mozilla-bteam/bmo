@@ -16,7 +16,7 @@
     "jquery-contextmenu": "2.2.4",
     "jquery-datetimepicker": "2.5.21",
     "jquery-ui-dist": "1.13.2",
-    "mermaid": "10.9.1",
+    "mermaid": "10.9.8",
     "prismjs": "1.30.0"
   }
 }
