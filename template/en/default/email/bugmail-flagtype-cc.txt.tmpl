@@ -14,6 +14,8 @@
   # throughout and has no path to a raw address. Revisit if this needs to
   # carry more than a one-line-per-event summary (diffs, comments, HTML). %]
 
+[% PROCESS global/variables.none.tmpl %]
+
 From: [% Param('mailfrom') %]
 To: [% to %]
 Subject: [[% terms.Bug %] [%+ bug.id %]] [% bug.short_desc %]
@@ -27,6 +29,9 @@ X-Bugzilla-Type: request
 [% IF event.action == 'requested' %]
 [%+ event.setter.identity %] requested [% event.type.name %][% " for attachment ${event.attachment_id}" IF event.attachment_id %].
 [% ELSIF event.action == 'answered' %]
-[%+ event.setter.identity %] [% event.status == '+' ? 'granted' : 'denied' %] [% event.type.name %][% " for attachment ${event.attachment_id}" IF event.attachment_id %].
+[% status_word = event.status == '+' ? 'granted' : event.status == '-' ? 'denied' : 'cleared' %]
+[%+ event.setter.identity %] [% status_word %] [% event.type.name %][% " for attachment ${event.attachment_id}" IF event.attachment_id %].
 [% END %]
 [% END %]
+
+@@body-headers@@
