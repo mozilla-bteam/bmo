@@ -268,6 +268,17 @@ sub Send {
     # Mark these people as having the role of the person they are watching
     foreach my $watch (@$userwatchers) {
       while (my ($role, $bits) = each %{$recipients{$watch->[1]}}) {
+
+        # Flag roles are addressed to a specific person (someone asked
+        # them, or they asked and got answered) -- watching that person's
+        # other bug activity isn't the same thing, and without this the
+        # watcher got a content-free mail (empty reason line, no flag
+        # section, since the per-recipient flag_events filter only
+        # matches the actual requestee/requester's own user id).
+        next
+          if $role == REL_FLAG_REQUESTEE
+          || $role == REL_FLAG_REQUESTER
+          || $role == REL_FLAG_TYPE_CC;
         $recipients{$watch->[0]}->{$role} |= BIT_WATCHING if $bits & BIT_DIRECT;
       }
       push(@{$watching{$watch->[0]}}, $watch->[1]);
