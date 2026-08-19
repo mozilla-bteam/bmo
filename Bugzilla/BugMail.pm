@@ -211,11 +211,25 @@ sub Send {
     : _get_flag_mail_events($bug, $start, $end, \%user_cache);
 
   foreach my $event (@flag_events) {
+    # notify() used to skip addressees who couldn't see a private
+    # attachment; match that here so a non-insider doesn't get added as a
+    # recipient purely to be told about a flag on an attachment they can't
+    # see (and can't be shown to them in the mail body either).
+    my $attachment_private = $event->{attachment} && $event->{attachment}->isprivate;
+
     if ($event->{action} eq 'requested') {
-      $recipients{$event->{requestee_id}}->{+REL_FLAG_REQUESTEE} = BIT_DIRECT;
+      my $requestee_id = $event->{requestee_id};
+      my $requestee
+        = $user_cache{$requestee_id} ||= Bugzilla::User->new({id => $requestee_id, cache => 1});
+      $recipients{$requestee_id}->{+REL_FLAG_REQUESTEE} = BIT_DIRECT
+        if !$attachment_private || ($requestee && $requestee->is_insider);
     }
     elsif ($event->{action} eq 'answered') {
-      $recipients{$event->{requester_id}}->{+REL_FLAG_REQUESTER} = BIT_DIRECT;
+      my $requester_id = $event->{requester_id};
+      my $requester
+        = $user_cache{$requester_id} ||= Bugzilla::User->new({id => $requester_id, cache => 1});
+      $recipients{$requester_id}->{+REL_FLAG_REQUESTER} = BIT_DIRECT
+        if !$attachment_private || ($requester && $requester->is_insider);
     }
   }
 
@@ -376,12 +390,17 @@ sub Send {
 
         # Flag events relevant to this recipient: they were asked, or they
         # asked and someone else answered (no need to tell people about
-        # their own actions).
+        # their own actions). A recipient who isn't an insider doesn't get
+        # told about a flag on a private attachment even if they qualify
+        # for the mail some other way (e.g. they're on the CC list).
         my @user_flag_events = grep {
-          ($_->{action} eq 'requested' && $_->{requestee_id} == $user_id)
+          (!$_->{attachment} || !$_->{attachment}->isprivate || $user->is_insider)
+            && (
+            ($_->{action} eq 'requested' && $_->{requestee_id} == $user_id)
             || ($_->{action} eq 'answered'
-            && $_->{requester_id} == $user_id
-            && $_->{setter}->id != $user_id)
+              && $_->{requester_id} == $user_id
+              && $_->{setter}->id != $user_id)
+            )
         } @flag_events;
 
         my $sent_mail = sendMail({
