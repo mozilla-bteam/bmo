@@ -82,40 +82,57 @@ and the value is the comment. (The format of comments is described below.)
 
 A "comment" as described above is a object that contains the following items:
 
-=============  ========  ========================================================
-name           type      description
-=============  ========  ========================================================
-id             int       The globally unique ID for the comment.
-bug_id         int       The ID of the bug that this comment is on.
-attachment_id  int       If the comment was made on an attachment, this will be
-                         the ID of that attachment. Otherwise it will be null.
-count          int       The number of the comment local to the bug. The
-                         Description is 0, comments start with 1.
-text           string    The body of the comment, including any special text
-                         (such as "this bug was marked as a duplicate of...").
-raw_text       string    The body of the comment without any special additional
-                         text.
-creator        string    The login name of the comment's author.
-time           datetime  The time (in Bugzilla's timezone) that the comment was
-                         added.
-creation_time  datetime  This is exactly same as the ``time`` key. Use this
-                         field instead of ``time`` for consistency with other
-                         methods including :ref:`rest_single_bug` and
-                         :ref:`rest_attachments`.
+================  ========  =====================================================
+name              type      description
+================  ========  =====================================================
+id                int       The globally unique ID for the comment.
+bug_id            int       The ID of the bug that this comment is on.
+attachment_id     int       If the comment was made on an attachment, this will
+                            be the ID of that attachment. Otherwise it will be
+                            null.
+count             int       The number of the comment local to the bug. The
+                            Description is 0, comments start with 1.
+text              string    The body of the comment, including any special text
+                            (such as "this bug was marked as a duplicate of...").
+raw_text          string    The body of the comment without any special
+                            additional text.
+creator           string    The login name of the comment's author.
+time              datetime  The time (in Bugzilla's timezone) that the comment
+                            was added.
+creation_time     datetime  This is exactly same as the ``time`` key. Use this
+                            field instead of ``time`` for consistency with other
+                            methods including :ref:`rest_single_bug` and
+                            :ref:`rest_attachments`.
 
-                         For compatibility, ``time`` is still usable. However,
-                         please note that ``time`` may be deprecated and removed
-                         in a future release.
+                            For compatibility, ``time`` is still usable.
+                            However, please note that ``time`` may be deprecated
+                            and removed in a future release.
 
-is_private     boolean   ``true`` if this comment is private (only visible to a
-                         certain group called the "insidergroup"), ``false``
-                         otherwise.
-is_markdown    boolean   ``true`` if this comment is markdown. ``false`` if this
-                         comment is plaintext.
-reactions      object    An object containing reacted emoji names and
-                         corresponding counts. To retrieve reacted users, use
-                         :ref:`rest_get_comment_reactions`.
-=============  ========  ========================================================
+is_private        boolean   ``true`` if this comment is private (only visible to
+                            a certain group called the "insidergroup"),
+                            ``false`` otherwise.
+is_markdown       boolean   ``true`` if this comment is markdown. ``false`` if
+                            this comment is plaintext.
+edit_count        int       The number of times this comment has been edited.
+                            ``0`` if the comment has never been edited.
+
+                            Only present for users who are allowed to edit other
+                            people's comments. Revisions hidden by an
+                            edit-comments admin are only counted for members of
+                            the edit-comments admins group.
+
+last_change_time  datetime  The time (in Bugzilla's timezone) of the most recent
+                            edit to this comment, or null if the comment has
+                            never been edited.
+
+                            Only present for users who are allowed to edit other
+                            people's comments, and follows the same rules as
+                            ``edit_count`` for hidden revisions.
+
+reactions         object    An object containing reacted emoji names and
+                            corresponding counts. To retrieve reacted users, use
+                            :ref:`rest_get_comment_reactions`.
+================  ========  =====================================================
 
 **Errors**
 
