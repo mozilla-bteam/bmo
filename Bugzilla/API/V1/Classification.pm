@@ -19,6 +19,16 @@ sub setup_routes {
   my $class_routes = $r->under(
     '/classification' => sub { Bugzilla->usage_mode(USAGE_MODE_MOJO_REST); });
   $class_routes->get('/#id_or_name')->to('V1::Classification#get');
+  $class_routes->options('/#id_or_name')->to('V1::Classification#options');
+}
+
+sub options {
+  my ($self) = @_;
+
+  $self->res->headers->header('Allow'                        => 'GET');
+  $self->res->headers->header('Access-Control-Allow-Methods' => 'GET');
+
+  return $self->rendered(200);
 }
 
 sub get {
