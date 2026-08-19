@@ -872,11 +872,12 @@ sub _get_flag_type_cc {
     my $cc_list = $event->{type}->cc_list;
     next unless $cc_list;
 
+    # Reuse the attachment already loaded by _get_flag_mail_events rather
+    # than re-fetching: flag_activity is a historical log, so the
+    # attachment it points at can have since been deleted, and re-fetching
+    # by id would return undef and die on ->isprivate.
     my $attachment_is_private
-      = $event->{attachment_id}
-      ? Bugzilla::Attachment->new({id => $event->{attachment_id}, cache => 1})
-      ->isprivate
-      : 0;
+      = $event->{attachment} ? $event->{attachment}->isprivate : 0;
 
     foreach my $cc (split(/[, ]+/, $cc_list)) {
       my $ccuser = Bugzilla::User->new({name => $cc, cache => 1});
