@@ -217,6 +217,15 @@ sub startup {
 # collector is exactly that shape -- render(data => '', status => 204) -- so
 # without this it would look like a document and be handed a policy governing a
 # page that does not exist.
+#
+# Redirects are the mirror image and are also left without a policy, though they
+# reach that answer by the content type rather than the status: neither stack
+# sets one on a 3xx (Mojolicious redirect_to calls rendered(), and CGI.pm's
+# redirect() emits no Content-Type), so they fall through to "not a document".
+# That is intended. A 3xx body is empty, so there is nothing for a policy to
+# govern, and the browser applies the policy of the response it lands on. Do not
+# "fix" this by treating an absent content type as a document: that hands a
+# policy to every bodiless response, and t/csp-scope.t pins the current answer.
 sub _response_is_document {
   my ($res) = @_;
   return 0 if $res->is_empty;
