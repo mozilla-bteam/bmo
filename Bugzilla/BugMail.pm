@@ -808,14 +808,18 @@ sub _get_flag_mail_events {
       #
       # flags.setter_id gets overwritten to whoever granted/denied/cleared the
       # flag, so the requester has to be found by looking back at this
-      # flag's most recent '?' activity row.
-      my ($requester_id) = $dbh->selectrow_array(
-        "SELECT setter_id FROM flag_activity
-          WHERE flag_id = ? AND status = '?' AND flag_when <= ?
+      # flag's activity. Only treat it as an answer if the immediately
+      # preceding row was still '?' -- old notify() gated on that too, so
+      # e.g. an already-answered flag later cleared by an attachment being
+      # obsoleted (also logged as status 'X') doesn't re-notify the
+      # original requester.
+      my ($prev_status, $requester_id) = $dbh->selectrow_array(
+        "SELECT status, setter_id FROM flag_activity
+          WHERE flag_id = ? AND flag_when < ?
        ORDER BY flag_when DESC LIMIT 1", undef, $row->{flag_id},
         $row->{flag_when}
       );
-      next unless $requester_id;
+      next unless $requester_id && $prev_status && $prev_status eq '?';
 
       push @events,
         {
