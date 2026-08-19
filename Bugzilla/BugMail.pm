@@ -599,6 +599,25 @@ sub enqueue {
   foreach my $reference (@{$vars->{referenced_bugs}}) {
     $reference->{bug} = _flatten_object($reference->{bug});
   }
+
+  # Bug 1883428: flag_events carries live FlagType/Attachment/User objects
+  # (the setter is a shared %user_cache entry the recipient loop has
+  # already populated with lazily-built fields) -- flatten them the same
+  # way, dropping the attachment object (dequeue() re-fetches it by id so
+  # it can also re-check visibility at send time).
+  $vars->{flag_events} = [
+    map {
+      {
+        action        => $_->{action},
+        attachment_id => $_->{attachment_id},
+        requestee_id  => $_->{requestee_id},
+        requester_id  => $_->{requester_id},
+        status        => $_->{status},
+        type          => _flatten_object($_->{type}),
+        setter        => _flatten_object($_->{setter}),
+      }
+    } @{$vars->{flag_events}}
+  ];
   Bugzilla->job_queue->insert('bug_mail', {vars => $vars});
 }
 
@@ -637,6 +656,28 @@ sub dequeue {
       . ' — timetracker access revoked between enqueue and dequeue');
     return;
   }
+
+  # Inflate flag_events, then re-check attachment visibility at send time
+  # (TOCTOU, bug 1883428) -- the enqueue-time private-attachment gate may
+  # be stale if the attachment was made private, or the recipient lost
+  # insider access, between enqueue and dequeue.
+  $vars->{flag_events} = [
+    map {
+      +{
+        %$_,
+        type       => Bugzilla::FlagType->new_from_hash($_->{type}),
+        setter     => Bugzilla::User->new_from_hash($_->{setter}),
+        attachment => $_->{attachment_id}
+          ? Bugzilla::Attachment->new({id => $_->{attachment_id}, cache => 1})
+          : undef,
+      }
+    } @{$vars->{flag_events}}
+  ];
+  $vars->{flag_events} = [
+    grep {
+      !$_->{attachment} || !$_->{attachment}->isprivate || $vars->{to_user}->is_insider
+    } @{$vars->{flag_events}}
+  ];
 
   $vars->{changer} = Bugzilla::User->new_from_hash($vars->{changer});
   $vars->{new_comments}
