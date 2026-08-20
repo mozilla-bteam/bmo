@@ -161,7 +161,7 @@ sub critical_assigned_bugs {
   my $dbh  = Bugzilla->dbh;
 
   # Preselected values for inserting into SQL
-  my $cache      = Bugzilla->process_cache->{attention};
+  my $cache      = Bugzilla->request_cache->{attention};
   my $keyword_id = $cache->{sec_critical_id};
   my $class_ids  = join ',', @{$cache->{classification_ids}};
   my $bug_states = join ',', map { $dbh->quote($_) } BUG_STATE_OPEN;
@@ -205,7 +205,7 @@ sub critical_needinfo_bugs {
   return [] if !exists $flags->{tracking};
 
   # Preselected values for inserting into SQL
-  my $cache           = Bugzilla->process_cache->{attention};
+  my $cache           = Bugzilla->request_cache->{attention};
   my $needinfo_id     = $cache->{needinfo_flag_id};
   my $keyword_id      = $cache->{sec_critical_id};
   my $class_ids       = join ',', @{$cache->{classification_ids}};
@@ -282,7 +282,7 @@ sub important_assigned_bugs {
   return [] if !exists $flags->{status};
 
   # Preselected values for inserting into SQL
-  my $cache           = Bugzilla->process_cache->{attention};
+  my $cache           = Bugzilla->request_cache->{attention};
   my $class_ids       = join ',', @{$cache->{classification_ids}};
   my $bug_states      = join ',', map { $dbh->quote($_) } BUG_STATE_OPEN;
   my $nightly_flag_id = $flags->{status}->{nightly}->flag_id;
@@ -324,7 +324,7 @@ sub important_needinfo_bugs {
   my $dbh  = Bugzilla->dbh;
 
   # Cached values for inserting into SQL
-  my $cache       = Bugzilla->process_cache->{attention};
+  my $cache       = Bugzilla->request_cache->{attention};
   my $needinfo_id = $cache->{needinfo_flag_id};
   my $class_ids   = join ',', @{$cache->{classification_ids}};
   my $keyword_id  = $cache->{sec_high_id};
@@ -358,7 +358,7 @@ sub other_needinfo_bugs {
   my $dbh  = Bugzilla->dbh;
 
   # Cached values for inserting into SQL
-  my $cache       = Bugzilla->process_cache->{attention};
+  my $cache       = Bugzilla->request_cache->{attention};
   my $needinfo_id = $cache->{needinfo_flag_id};
   my $class_ids   = join ',', @{$cache->{classification_ids}};
 
@@ -374,7 +374,7 @@ sub other_needinfo_bugs {
               AND bugs.bug_severity NOT IN ('S1','S2')
               AND (keywords.keywordid IS NULL OR keywords.keywordid NOT IN (?, ?))
               AND (bug_group_map.group_id IS NULL OR bug_group_map.group_id NOT IN ("
-    . join ',', @{$cache->{sec_group_ids}} . '))
+    . (join ',', @{$cache->{sec_group_ids}}) . '))
         ORDER BY bugs.delta_ts, bugs.bug_id';
 
   my $bugs = get_bug_list($query, $user->id, $user->id, $cache->{sec_high_id},
@@ -405,31 +405,31 @@ sub report {
 
   my $dbh = Bugzilla->dbh;
 
-  # Here we load some values into cache that will be used later
-  # by the various queries. Process cache lasts til server restart.
-  my $process_cache = Bugzilla->process_cache->{attention} = {};
+  # Here we load some values into cache that will be used later by the
+  # various queries. Request cache lasts for this request only, so a
+  # keyword, flag type or security group added mid-session is picked up
+  # on the next page load rather than at the next server restart.
+  my $lookup_cache = $request_cache->{attention};
 
   # classifications
-  $process_cache->{classification_ids} ||= $dbh->selectcol_arrayref('
+  $lookup_cache->{classification_ids} = $dbh->selectcol_arrayref('
     SELECT id
       FROM classifications
      WHERE name IN (' . join(', ', map { $dbh->quote($_) } CLASSIFICATIONS) . ')');
 
   # needinfo flag
-  $process_cache->{needinfo_flag_id} ||= $dbh->selectrow_array("
+  $lookup_cache->{needinfo_flag_id} = $dbh->selectrow_array("
     SELECT id FROM flagtypes WHERE name = 'needinfo'");
 
   # keyword ids
-  $process_cache->{sec_critical_id} ||= $dbh->selectrow_array("
+  $lookup_cache->{sec_critical_id} = $dbh->selectrow_array("
     SELECT id FROM keyworddefs WHERE name = 'sec-critical'");
-  $process_cache->{sec_high_id} ||= $dbh->selectrow_array("
+  $lookup_cache->{sec_high_id} = $dbh->selectrow_array("
     SELECT id FROM keyworddefs WHERE name = 'sec-high'");
-  $process_cache->{regression_id} ||= $dbh->selectrow_array("
-    SELECT id FROM keyworddefs WHERE name = 'regression'");
 
   # Get a list of group ids that end in -security
-  $process_cache->{sec_group_ids}
-    ||= $dbh->selectcol_arrayref('SELECT id FROM '
+  $lookup_cache->{sec_group_ids}
+    = $dbh->selectcol_arrayref('SELECT id FROM '
       . $dbh->quote_identifier('groups')
       . ' WHERE name LIKE \'%-security\'');
 
@@ -443,8 +443,8 @@ sub report {
   # count number of unique bugs
   my %bug_ids;
   foreach my $name (qw(
-    s1_bugs sec_crit_bugs critical_needinfo_bugs s2_bugs
-    sec_high_bugs important_needinfo_bugs other_needinfo_bugs
+    critical_needinfo_bugs critical_assigned_bugs important_needinfo_bugs
+    important_assigned_bugs other_needinfo_bugs
   ))
   {
     foreach my $bug (@{$vars->{$name}}) {
