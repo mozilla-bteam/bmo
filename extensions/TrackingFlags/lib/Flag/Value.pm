@@ -24,6 +24,10 @@ use Scalar::Util qw(blessed weaken);
 
 use constant DB_TABLE => 'tracking_flags_values';
 
+# Values change rarely, so unfiltered selects are cached in memcached and the
+# cache is cleared automatically when a value is created, updated or deleted.
+use constant IS_CONFIG => 1;
+
 use constant DB_COLUMNS => qw(
   id
   tracking_flag_id
