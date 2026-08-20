@@ -105,6 +105,16 @@ use constant VALIDATOR_DEPENDENCIES =>
 use constant UPDATE_VALIDATORS =>
   {isobsolete => \&Bugzilla::Object::check_boolean,};
 
+# Types proven inert enough to hand a browser inline. Everything else is
+# treated as executable by is_executable_content_type below, including the
+# whole XML family: an <?xml-stylesheet?> processing instruction can run XSLT
+# that produces scripted HTML.
+#
+# See also CSP_DOCUMENT_TYPES / CSP_DOCUMENT_TYPE_RE in Bugzilla::Constants,
+# which decide which responses are handed a Content-Security-Policy. That list
+# and this one answer roughly the same question but fail in opposite
+# directions, so their memberships differ on purpose -- the reasoning is
+# written out at CSP_DOCUMENT_TYPES.
   my %_SAFE_INLINE_TYPES = map { $_ => 1 } qw(
   image/png
   image/jpeg

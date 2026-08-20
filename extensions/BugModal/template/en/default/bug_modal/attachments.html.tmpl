@@ -8,8 +8,11 @@
 
 [%#
   # bug: (bug object) the main bug object
-  # active_attachments: array of active attachment objects
-  # obsolete_attachments: array of obsolete attachment objects
+  # active_attachments: count of active attachment objects
+  # obsolete_attachments: count of obsolete attachment objects
+  # external_attachments: count of non-obsolete external attachments
+  # external_attachments_total: count of all external attachments (incl. obsolete)
+  # attachment_hide_types: hash of content types hidden behind "Show External"
   #%]
 
 [% IF active_attachments || obsolete_attachments %]
@@ -105,7 +108,7 @@
         <button type="button" role="none" id="attachments-add-btn" class="secondary">Attach New File</button>
       </a>
     [% END %]
-    [% IF external_attachments %]
+    [% IF external_attachments_total %]
       <button type="button" id="attachments-external-btn" class="secondary">Show External</button>
     [% END %]
     [% IF obsolete_attachments %]

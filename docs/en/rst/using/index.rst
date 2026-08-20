@@ -15,5 +15,5 @@ User Guide
    reports-and-charts
    tips
    preferences
+   two-factor-authentication
    extensions
-

@@ -18,11 +18,14 @@ use lib qw(. lib local/lib/perl5);
 
 use Bugzilla;
 use Bugzilla::Constants;
+use Bugzilla::Error;
 use Bugzilla::Search;
 use Bugzilla::User;
 use Bugzilla::Mailer;
 use Bugzilla::Util;
 use Bugzilla::Group;
+
+use Email::MIME;
 
 # create some handles that we'll need
 my $template = Bugzilla->template;
@@ -364,10 +367,6 @@ while (my $event = get_next_event) {
 #  - recipient      user object for the recipient
 #  - author         user object of the person who created the whine event
 #
-# In addition, mail adds two more fields to $args:
-#  - alternatives   array of hashes defining mime multipart types and contents
-#  - boundary       a MIME boundary generated using the process id and time
-#
 sub mail {
   my $args      = shift;
   my $addressee = $args->{recipient};
@@ -376,9 +375,16 @@ sub mail {
   return if $addressee->email_disabled;
 
   my $template = Bugzilla->template_inner($addressee->setting('lang'));
-  my ($msg_text, $msg_html, $msg_header);
+  my ($msg_text, $msg_html, $msg_subject);
 
-  $template->process('whine/multipart-mime.txt.tmpl', $args, \$msg_header)
+  # Defence in depth: the headers below are built with Email::MIME->create,
+  # which neutralizes control characters, so the subject cannot inject headers
+  # on its own. Sanitize anyway, both because editwhines.cgi only started
+  # rejecting these values recently (older events still hold them) and because
+  # a mangled Subject: is not a useful thing to deliver.
+  $args->{subject} = clean_text($args->{subject});
+
+  $template->process('whine/subject.txt.tmpl', $args, \$msg_subject)
     || ThrowTemplateError($template->error());
 
   $template->process('whine/mail.txt.tmpl', $args, \$msg_text)
@@ -398,8 +404,18 @@ sub mail {
       );
   }
 
-  # TT trims the trailing newline, and threadingmarker may be ignored.
-  my $email = Email::MIME->new("$msg_header\n");
+  # Build the headers directly rather than rendering them as text and parsing
+  # the result: Email::MIME->create replaces control characters in a header
+  # value, so there is no way for the subject to become a second header.
+  my $email = Email::MIME->create(
+    header_str => [
+      From              => $args->{from},
+      To                => $addressee->email,
+      Subject           => trim($msg_subject),
+      'X-Bugzilla-Type' => 'whine',
+    ],
+    parts => \@parts,
+  );
 
   if (scalar(@parts) == 1) {
     $email->content_type_set($parts[0]->content_type);

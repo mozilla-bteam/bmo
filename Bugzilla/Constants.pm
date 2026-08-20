@@ -26,6 +26,9 @@ use Memoize;
 
   DEFAULT_CSP
   SHOW_BUG_MODAL_CSP
+  CSP_ENFORCE_CGI
+  CSP_DOCUMENT_TYPES
+  CSP_DOCUMENT_TYPE_RE
 
   bz_locations
 
@@ -801,7 +804,14 @@ sub DEFAULT_CSP {
       'https://www.google.com/search'
     ],
     frame_ancestors => ['self'],
-    report_only     => 1,
+
+    # Collect violation reports server-side during the CSP-enforcement
+    # rollout so we can build an inventory of what breaks before flipping
+    # legacy pages to enforcing. Handled by
+    # Bugzilla::App::Controller::CSPReport. Remove once enforcement is
+    # complete.
+    report_uri  => '/csp_report',
+    report_only => 1,
   );
   if (Bugzilla->params->{github_client_id} && !Bugzilla->user->id) {
     push @{$policy{form_action}}, 'https://github.com/login/oauth/authorize',
@@ -858,6 +868,69 @@ sub SHOW_BUG_MODAL_CSP {
 
   return %policy;
 }
+
+# Allowlist of legacy CGI scripts that have been cleaned of CSP violations
+# (un-nonced inline scripts, inline event handlers, javascript: URIs, eval)
+# and are therefore safe to serve with CSP in *enforcing* mode, even though
+# the rest of the legacy CGI surface remains report-only during the rollout.
+#
+# Keys are the Mojolicious action names for each script (the file name with
+# non-word characters replaced by underscores, e.g. enter_bug.cgi ->
+# enter_bug_cgi), matching Bugzilla::App::Controller::CGI. Consulted by the
+# content_security_policy helper in Bugzilla::App::Plugin::Glue.
+#
+# Add scripts here as they are verified clean (via the report-only soak). The
+# list must not change enforcement behaviour for any page that was already
+# enforcing before the rollout began.
+#
+# Note that the allowlist is keyed on the script, not on the rendered page, so
+# it is too coarse for a script that serves more than one template. show_bug.cgi
+# is the example: only format=modal was enforcing before the rollout, while
+# format=multiple renders bug/show-multiple.html.tmpl (still full of inline
+# event handlers) and must stay report-only. It therefore passes
+# report_only => 0 from the modal branch of show_bug.cgi rather than appearing
+# here.
+#
+# Once every legacy page is clean, drop report_only from DEFAULT_CSP and remove
+# this allowlist along with the per-controller exemption in Glue.pm.
+sub CSP_ENFORCE_CGI {
+  return {
+    # e.g. enter_bug_cgi => 1,  (only once verified clean)
+  };
+}
+
+# Content types a browser renders as a document, and therefore the only ones a
+# Content-Security-Policy has any effect on. Everything else -- REST payloads,
+# attachment downloads, bodiless responses -- is served without a policy: no
+# client applies one and none can report a violation, so the header would be
+# read by nobody. Consulted by Bugzilla::App's after_dispatch hook, which is
+# where the header is added.
+#
+# Compared against the type alone, with any parameters (charset, boundary)
+# stripped first, so entries here must not carry any.
+#
+# See also %_SAFE_INLINE_TYPES / is_executable_content_type in
+# Bugzilla::Attachment, the other list in the tree answering roughly "what does
+# a browser render as a scriptable document". The two are deliberately
+# asymmetric rather than accidentally divergent, because they fail in opposite
+# directions: Attachment's is deny-by-default (a type it does not recognise is
+# assumed executable and forced to download, so over-listing there costs
+# safety), while this one is allow-by-enumeration (a type not listed here is
+# served without a header, so over-listing here costs only bytes). Keep them
+# consistent about what is scriptable; do not expect the memberships to match.
+use constant CSP_DOCUMENT_TYPES =>
+  ('text/html', 'text/xml', 'application/xml');
+
+# Every "+xml" type is a document too, matched by shape rather than added to
+# the list above one at a time. Browsers parse them as documents, and an
+# <?xml-stylesheet?> processing instruction can turn any of them into scripted
+# HTML through XSLT -- which is why Bugzilla::Attachment treats the whole XML
+# family as executable. One rule covers application/xhtml+xml, image/svg+xml
+# (attachment.cgi serves SVG inline), application/rdf+xml (buglist.cgi
+# ctype=rdf), application/atom+xml (ctype=atom) and any XML attachment
+# displayed inline. REST is unaffected: REST_CONTENT_TYPE_WHITELIST in
+# Bugzilla::WebService::Constants is JSON and JavaScript only.
+use constant CSP_DOCUMENT_TYPE_RE => qr{\+xml\z};
 
 
 # This makes us not re-compute all the bz_locations data every time it's

@@ -1,0 +1,19 @@
+[%# This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # This Source Code Form is "Incompatible With Secondary Licenses", as
+  # defined by the Mozilla Public License, v. 2.0.
+  #%]
+
+[%# INTERFACE:
+  # subject: subject line of message, as defined in the whine event
+  #
+  # This renders the Subject: header value only. whine.pl passes the result to
+  # Email::MIME->create, which builds the header set; nothing here is parsed as
+  # a header, so this template cannot be used to inject one.
+  #%]
+
+[% PROCESS global/variables.none.tmpl %]
+
+[[% terms.Bugzilla %]] [% subject %]

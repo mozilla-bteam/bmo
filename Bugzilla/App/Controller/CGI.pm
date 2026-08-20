@@ -13,18 +13,18 @@ use Try::Tiny;
 use Sys::Hostname;
 use Sub::Quote 2.005000;
 use Sub::Name;
-use Socket qw(AF_INET inet_aton);
+use Socket     qw(AF_INET inet_aton);
 use Mojo::File qw(path);
-use English qw(-no_match_vars);
+use English    qw(-no_match_vars);
 use Bugzilla::App::Stdout;
 use Bugzilla::Constants qw(
   bz_locations
   USAGE_MODE_BROWSER
-  USAGE_MODE_REST
+  USAGE_MODE_MOJO
+  USAGE_MODE_MOJO_REST
 );
 use Bugzilla::Logging;
-use Bugzilla::Util qw(trim xml_quote);
-use Bugzilla::WebService::Constants qw(API_AUTH_HEADERS WS_ERROR_CODE);
+use Bugzilla::WebService::Util qw(set_rest_cors_headers);
 
 my %SEEN;
 use constant REQUEST_TOO_LARGE_ERROR => 'request_too_large';
@@ -51,11 +51,13 @@ sub setup_routes {
   $r->any('/login')->to('CGI#index_cgi' => {'GoAheadAndLogIn' => '1'});
   $r->any('/logout')->to('CGI#index_cgi' => {'logout' => '1'});
 
-  $r->any('/:new_bug' => [new_bug => qr{new[-_]bug}] => sub {
-    my $c = shift;
-    $c->res->code(301);
-    $c->redirect_to(Bugzilla->localconfig->basepath . 'enter_bug.cgi');
-  });
+  $r->any(
+    '/:new_bug' => [new_bug => qr{new[-_]bug}] => sub {
+      my $c = shift;
+      $c->res->code(301);
+      $c->redirect_to(Bugzilla->localconfig->basepath . 'enter_bug.cgi');
+    }
+  );
 }
 
 sub load_one {
@@ -65,11 +67,11 @@ sub load_one {
   $content = "package $package; $content";
   my %options = (package => $package, file => $file, line => 1, no_defer => 1,);
   die "Tried to load $file more than once" if $SEEN{$file}++;
-  my $inner = quote_sub $inner_name, $content, {}, \%options;
+  my $inner   = quote_sub $inner_name, $content, {}, \%options;
   my $wrapper = sub {
     my ($c) = @_;
 
-    if (_is_request_body_limit_exceeded($c->req)) {
+    if ($c->req->is_limit_exceeded) {
       my $reason = $c->req->error->{message};
       WARN("Rejected oversized request for $file: $reason");
       return _render_request_too_large($c, $file);
@@ -84,7 +86,7 @@ sub load_one {
     open STDIN, '<', $stdin->path
       or die "STDIN @{[$stdin->path]}: $!"
       if -s $stdin->path;
-    tie *STDOUT, 'Bugzilla::App::Stdout', controller => $c;   ## no critic (tie)
+    tie *STDOUT, 'Bugzilla::App::Stdout', controller => $c;    ## no critic (tie)
 
     # the finally block calls cleanup.
     $c->stash->{cleanup_guard}->dismiss;
@@ -109,95 +111,18 @@ sub load_one {
   return 1;
 }
 
-sub _is_request_body_limit_exceeded {
-  my ($request) = @_;
-  my $error = $request->error;
-  return $request->is_limit_exceeded
-    && ref $error eq 'HASH'
-    && ($error->{message} // '') =~ /\AMaximum (?:message|buffer) size exceeded\z/;
-}
-
 sub _render_request_too_large {
   my ($c, $file) = @_;
-  my $error_code = WS_ERROR_CODE->{REQUEST_TOO_LARGE_ERROR()};
 
   if (path($file)->basename eq 'rest.cgi') {
-    _set_rest_cors_headers($c);
-    return $c->render(
-      json => {
-        error         => 1,
-        code          => $error_code,
-        message       => _request_too_large_message(),
-        documentation => 'https://bmo.readthedocs.io/en/latest/api/',
-      },
-      status => 413
-    );
+    set_rest_cors_headers($c->res->headers);
+    Bugzilla->usage_mode(USAGE_MODE_MOJO_REST);
+    return $c->user_error(REQUEST_TOO_LARGE_ERROR);
   }
 
-  if ($file eq 'jsonrpc.cgi') {
-    return $c->render(
-      json => {
-        result => undef,
-        error  => {
-          code    => $error_code,
-          message => _request_too_large_message(),
-        },
-        id => undef,
-      },
-      status => 413
-    );
-  }
-
-  if ($file eq 'xmlrpc.cgi') {
-    my $message = xml_quote(_request_too_large_message());
-    my $xml
-      = qq{<?xml version="1.0" encoding="UTF-8"?>\n}
-      . qq{<methodResponse><fault><value><struct>}
-      . qq{<member><name>faultString</name><value><string>$message</string></value></member>}
-      . qq{<member><name>faultCode</name><value><int>$error_code</int></value></member>}
-      . qq{</struct></value></fault></methodResponse>\n};
-    $c->res->headers->content_type('text/xml; charset=UTF-8');
-    return $c->render(data => $xml, status => 413);
-  }
-
-  return $c->render(
-    handler  => 'bugzilla',
-    template => 'global/user-error',
-    format   => 'html',
-    error    => REQUEST_TOO_LARGE_ERROR,
-    status   => 413
-  );
-}
-
-sub _set_rest_cors_headers {
-  my ($c) = @_;
-  my @allowed_headers
-    = qw(accept content-type origin user-agent x-requested-with);
-  foreach my $header (keys %{API_AUTH_HEADERS()}) {
-    $header =~ tr/A-Z_/a-z\-/;
-    push @allowed_headers, $header;
-  }
-
-  $c->res->headers->header('Access-Control-Allow-Origin' => '*');
-  $c->res->headers->header(
-    'Access-Control-Allow-Headers' => join(', ', @allowed_headers));
-}
-
-sub _request_too_large_message {
-  my $request_cache = Bugzilla->request_cache;
-  # Render localized plain text without leaking REST modes into CGI dispatch.
-  local $request_cache->{usage_mode} = $request_cache->{usage_mode};
-  local $request_cache->{error_mode} = $request_cache->{error_mode};
-  Bugzilla->usage_mode(USAGE_MODE_REST);
-
-  my $message;
-  my $template = Bugzilla->template;
-  $template->process(
-    'global/user-error.html.tmpl',
-    {error => REQUEST_TOO_LARGE_ERROR},
-    \$message
-  ) || die $template->error();
-  return trim($message);
+  Bugzilla->usage_mode(USAGE_MODE_MOJO);
+  return $c->user_error(REQUEST_TOO_LARGE_ERROR, {},
+    {status => 413, skip_exception_page => 1});
 }
 
 sub _ENV {
@@ -223,10 +148,10 @@ sub _ENV {
   }
   elsif (my $authenticate = $headers->authorization) {
     $remote_user = $authenticate =~ /Basic\s+(.*)/ ? b64_decode $1 : '';
-    $remote_user = $remote_user =~ /([^:]+)/       ? $1            : '';
+    $remote_user = $remote_user  =~ /([^:]+)/      ? $1            : '';
   }
   my $path_info = $c->stash->{'mojo.captures'}{'PATH_INFO'};
-  my %captures = %{$c->stash->{'mojo.captures'} // {}};
+  my %captures  = %{$c->stash->{'mojo.captures'} // {}};
   foreach my $key (keys %captures) {
     if ( $key eq 'controller'
       || $key eq 'action'
@@ -241,23 +166,23 @@ sub _ENV {
 
   return (
     %ENV,
-    CONTENT_LENGTH => $content_length        || 0,
-    CONTENT_TYPE   => $headers->content_type || '',
+    CONTENT_LENGTH    => $content_length        || 0,
+    CONTENT_TYPE      => $headers->content_type || '',
     GATEWAY_INTERFACE => 'CGI/1.1',
     HTTPS             => $req->is_secure ? 'on' : 'off',
     %env_headers,
-    QUERY_STRING   => $cgi_query->to_string,
-    PATH_INFO      => $path_info ? "/$path_info" : '',
-    REQUEST_URI    => $tx->req->url->path,
-    REMOTE_ADDR    => $tx->original_remote_address,
-    REMOTE_HOST    => $tx->original_remote_address,
-    REMOTE_PORT    => $tx->remote_port,
-    REMOTE_USER    => $remote_user || '',
-    REQUEST_METHOD => $req->method,
-    SCRIPT_NAME    => "/$script_name",
-    SERVER_NAME    => hostname,
-    SERVER_PORT    => $tx->local_port,
-    SERVER_PROTOCOL => $req->is_secure ? 'HTTPS' : 'HTTP', # TODO: Version is missing
+    QUERY_STRING    => $cgi_query->to_string,
+    PATH_INFO       => $path_info ? "/$path_info" : '',
+    REQUEST_URI     => $tx->req->url->path,
+    REMOTE_ADDR     => $tx->original_remote_address,
+    REMOTE_HOST     => $tx->original_remote_address,
+    REMOTE_PORT     => $tx->remote_port,
+    REMOTE_USER     => $remote_user || '',
+    REQUEST_METHOD  => $req->method,
+    SCRIPT_NAME     => "/$script_name",
+    SERVER_NAME     => hostname,
+    SERVER_PORT     => $tx->local_port,
+    SERVER_PROTOCOL => $req->is_secure ? 'HTTPS' : 'HTTP',    # TODO: Version is missing
     SERVER_SOFTWARE => __PACKAGE__,
   );
 }

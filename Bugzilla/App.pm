@@ -24,8 +24,9 @@ use Bugzilla::Logging;
 use Bugzilla::App::Static;
 use Mojo::Loader qw( find_modules );
 use Module::Runtime qw( require_module );
-use Bugzilla::Util ();
+use Bugzilla::Util qw(trim);
 use Cwd qw(realpath);
+use List::Util qw(any);
 use MojoX::Log::Log4perl;
 use Bugzilla::WebService::Server::REST;
 use Try::Tiny;
@@ -187,7 +188,13 @@ sub startup {
     $res->headers->header(
       'Cross-Origin-Opener-Policy' => 'same-origin-allow-popups');
 
-    unless ($res->headers->content_security_policy) {
+    # CSP only governs how a browser renders a document, so only documents get
+    # the header (see CSP_DOCUMENT_TYPES). REST responses are consumed by
+    # clients that neither apply a policy nor send violation reports, so a
+    # policy there is read by nobody: it just adds ~1KB to every response and
+    # costs a Bugzilla->user lookup plus a nonce to build (see the
+    # content_security_policy helper in Bugzilla::App::Plugin::Glue).
+    if (_response_is_document($res) && !$res->headers->content_security_policy) {
       if (my $csp = $c->content_security_policy) {
         $res->headers->header($csp->header_name, $csp->value);
       }
@@ -198,6 +205,41 @@ sub startup {
   $self->setup_routes;
 
   Bugzilla::Hook::process('app_startup', {app => $self});
+}
+
+# Legacy CGI responses reach here with their headers already parsed into the
+# Mojo response (Bugzilla::CGI::header), and rendered responses have a content
+# type set by the renderer, so this is decidable at after_dispatch time for
+# both stacks.
+#
+# The status check is not redundant: a response that carries no body still gets
+# a content type from the renderer, and it defaults to text/html. The CSP
+# collector is exactly that shape -- render(data => '', status => 204) -- so
+# without this it would look like a document and be handed a policy governing a
+# page that does not exist.
+#
+# Redirects are the mirror image and are also left without a policy, though they
+# reach that answer by the content type rather than the status: neither stack
+# sets one on a 3xx (Mojolicious redirect_to calls rendered(), and CGI.pm's
+# redirect() emits no Content-Type), so they fall through to "not a document".
+# That is intended. A 3xx body is empty, so there is nothing for a policy to
+# govern, and the browser applies the policy of the response it lands on. Do not
+# "fix" this by treating an absent content type as a document: that hands a
+# policy to every bodiless response, and t/csp-scope.t pins the current answer.
+sub _response_is_document {
+  my ($res) = @_;
+  return 0 if $res->is_empty;
+
+  # Compare the type on its own: a content type reaches us with parameters
+  # attached ("text/html; charset=UTF-8") and in whatever case the CGI script
+  # or renderer happened to use.
+  my ($type) = split /;/, $res->headers->content_type // '';
+  $type = lc trim($type // '');
+  return 1 if any { $_ eq $type } CSP_DOCUMENT_TYPES;
+
+  # The XML family is matched by shape rather than enumerated, so RDF and Atom
+  # feeds, XHTML, inline SVG and XML attachments are all one rule.
+  return $type =~ CSP_DOCUMENT_TYPE_RE ? 1 : 0;
 }
 
 sub setup_routes {

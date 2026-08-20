@@ -273,8 +273,7 @@ sub preload_all_the_things {
   return unless @flag_ids;
 
   # Preload values
-  my $value_objects = Bugzilla::Extension::TrackingFlags::Flag::Value->match(
-    {tracking_flag_id => \@flag_ids});
+  my $value_objects = _values_for_flag_ids(\@flag_ids);
 
   # Now populate the tracking flags with this set of value objects.
   foreach my $obj (@$value_objects) {
@@ -317,6 +316,32 @@ sub preload_all_the_things {
   }
 
   @$flags = values %flag_hash;
+}
+
+# Return value objects for the given tracking flag ids.
+#
+# The whole tracking_flags_values table is small and changes rarely, so it is
+# read once per request (Flag::Value is IS_CONFIG, so the unfiltered select is
+# served from memcached as well) and sliced in perl.  Querying per call meant a
+# query returning roughly half the table for every Flag->match, which happens
+# once per bug whenever custom fields are collected - see the
+# active_custom_fields call in Bugzilla::Bug::to_hash.
+sub _values_for_flag_ids {
+  my ($flag_ids) = @_;
+  my $rows = Bugzilla->request_cache->{tracking_flags_value_rows} ||= do {
+    my %by_flag_id;
+    foreach my $value (Bugzilla::Extension::TrackingFlags::Flag::Value->get_all) {
+      push @{$by_flag_id{$value->tracking_flag_id}}, {%$value};
+    }
+    \%by_flag_id;
+  };
+
+  # Callers store a back-reference to their own flag object on each value, so
+  # fresh objects are returned rather than the cached rows themselves.
+  return [
+    map { Bugzilla::Extension::TrackingFlags::Flag::Value->new_from_hash({%$_}) }
+    map { @{$rows->{$_} || []} } @$flag_ids
+  ];
 }
 
 ###############################

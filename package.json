@@ -1,0 +1,22 @@
+{
+  "name": "bmo-frontend",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Third-party front-end libraries for BMO — scripts, stylesheets and their assets — managed via npm so security updates flow through Dependabot instead of hand-vendored blobs.",
+  "license": "MPL-2.0",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build-frontend.mjs"
+  },
+  "//": "The generated files are not committed; the Docker assets stage builds them from this lockfile. Dependabot proposes upgrades and CI tests them with no regeneration step needed; treat majors (jquery 4.x, mermaid 11.x, devbridge 2.x) as manual, tested reviews. A bump now moves a library's stylesheet along with its script, so review upgrades for visual changes too. bpopup is not published to npm and remains vendored under js/jquery/plugins/bPopup/.",
+  "dependencies": {
+    "blueimp-md5": "2.19.0",
+    "devbridge-autocomplete": "1.5.0",
+    "jquery": "3.7.1",
+    "jquery-contextmenu": "2.10.2",
+    "jquery-datetimepicker": "2.5.21",
+    "jquery-ui-dist": "1.13.3",
+    "mermaid": "10.9.8",
+    "prismjs": "1.30.0"
+  }
+}
