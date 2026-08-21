@@ -17,6 +17,8 @@
 # and the flag-type cc_list DB lookups still need a real Bugzilla instance
 # and are covered by the manual test plan in that bug instead.
 
+package main;
+
 use 5.10.1;
 use strict;
 use warnings;
@@ -45,6 +47,7 @@ sub is_insider { return $_[0]->{is_insider}; }
 
 package main;
 
+## no critic (Variables::ProtectPrivateVars)
 my $visible = \&Bugzilla::BugMail::_flag_event_visible_to;
 
 ok(
