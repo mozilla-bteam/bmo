@@ -212,24 +212,30 @@ sub Send {
 
   foreach my $event (@flag_events) {
     # notify() used to skip addressees who couldn't see a private
-    # attachment; match that here so a non-insider doesn't get added as a
-    # recipient purely to be told about a flag on an attachment they can't
-    # see (and can't be shown to them in the mail body either).
-    my $attachment_private = $event->{attachment} && $event->{attachment}->isprivate;
-
+    # attachment; _flag_event_visible_to() matches that so a non-insider
+    # doesn't get added as a recipient purely to be told about a flag on an
+    # attachment they can't see (and can't be shown to them in the mail
+    # body either).
     if ($event->{action} eq 'requested') {
       my $requestee_id = $event->{requestee_id};
       my $requestee
         = $user_cache{$requestee_id} ||= Bugzilla::User->new({id => $requestee_id, cache => 1});
+      $event->{requestee} = $requestee;
       $recipients{$requestee_id}->{+REL_FLAG_REQUESTEE} = BIT_DIRECT
-        if !$attachment_private || ($requestee && $requestee->is_insider);
+        if _flag_event_visible_to($event, $requestee);
     }
     elsif ($event->{action} eq 'answered') {
       my $requester_id = $event->{requester_id};
       my $requester
         = $user_cache{$requester_id} ||= Bugzilla::User->new({id => $requester_id, cache => 1});
+      $event->{requester} = $requester;
+
+      # Don't add the requester as a recipient for clearing their own
+      # request (e.g. cancelling a needinfo they asked for themselves) --
+      # old notify() gated on setter != requester for the same reason.
       $recipients{$requester_id}->{+REL_FLAG_REQUESTER} = BIT_DIRECT
-        if !$attachment_private || ($requester && $requester->is_insider);
+        if $event->{setter}->id != $requester_id
+        && _flag_event_visible_to($event, $requester);
     }
   }
 
@@ -267,6 +273,7 @@ sub Send {
 
     # Mark these people as having the role of the person they are watching
     foreach my $watch (@$userwatchers) {
+      my $role_inherited = 0;
       while (my ($role, $bits) = each %{$recipients{$watch->[1]}}) {
 
         # Flag roles are addressed to a specific person (someone asked
@@ -279,9 +286,16 @@ sub Send {
           if $role == REL_FLAG_REQUESTEE
           || $role == REL_FLAG_REQUESTER
           || $role == REL_FLAG_TYPE_CC;
-        $recipients{$watch->[0]}->{$role} |= BIT_WATCHING if $bits & BIT_DIRECT;
+        next unless $bits & BIT_DIRECT;
+        $recipients{$watch->[0]}->{$role} |= BIT_WATCHING;
+        $role_inherited = 1;
       }
-      push(@{$watching{$watch->[0]}}, $watch->[1]);
+
+      # Skip %watching too when nothing was inherited (e.g. the watched
+      # user's only role was a flag role) -- otherwise this watcher gets a
+      # spurious "X-Bugzilla-Watch-Reason: None <login>" header for a
+      # relationship that contributed nothing to the mail.
+      push(@{$watching{$watch->[0]}}, $watch->[1]) if $role_inherited;
     }
   }
 
@@ -401,16 +415,20 @@ sub Send {
 
         # Flag events relevant to this recipient: they were asked, or they
         # asked and someone else answered (no need to tell people about
-        # their own actions). A recipient who isn't an insider doesn't get
-        # told about a flag on a private attachment even if they qualify
-        # for the mail some other way (e.g. they're on the CC list).
+        # their own actions), or they're on the flag type's cc_list for
+        # this event. A recipient who isn't an insider doesn't get told
+        # about a flag on a private attachment even if they qualify for
+        # the mail some other way (e.g. they're on the CC list).
+        my $user_cc_events = $flag_type_cc->{$user_id} || [];
         my @user_flag_events = grep {
-          (!$_->{attachment} || !$_->{attachment}->isprivate || $user->is_insider)
+          my $event = $_;
+          _flag_event_visible_to($event, $user)
             && (
-            ($_->{action} eq 'requested' && $_->{requestee_id} == $user_id)
-            || ($_->{action} eq 'answered'
-              && $_->{requester_id} == $user_id
-              && $_->{setter}->id != $user_id)
+            ($event->{action} eq 'requested' && $event->{requestee_id} == $user_id)
+            || ($event->{action} eq 'answered'
+              && $event->{requester_id} == $user_id
+              && $event->{setter}->id != $user_id)
+            || (grep { $_ == $event } @$user_cc_events)
             )
         } @flag_events;
 
@@ -512,7 +530,7 @@ sub sendMail {
     @send_comments = grep { !$_->is_private } @send_comments;
   }
 
-  if (!scalar(@display_diffs) && !scalar(@send_comments)) {
+  if (!scalar(@display_diffs) && !scalar(@send_comments) && !scalar(@$flag_events)) {
 
     # Whoops, no differences!
     return 0;
@@ -626,6 +644,8 @@ sub enqueue {
         status        => $_->{status},
         type          => _flatten_object($_->{type}),
         setter        => _flatten_object($_->{setter}),
+        requestee     => _flatten_object($_->{requestee}),
+        requester     => _flatten_object($_->{requester}),
       }
     } @{$vars->{flag_events}}
   ];
@@ -678,17 +698,16 @@ sub dequeue {
         %$_,
         type       => Bugzilla::FlagType->new_from_hash($_->{type}),
         setter     => Bugzilla::User->new_from_hash($_->{setter}),
+        requestee  => $_->{requestee} ? Bugzilla::User->new_from_hash($_->{requestee}) : undef,
+        requester  => $_->{requester} ? Bugzilla::User->new_from_hash($_->{requester}) : undef,
         attachment => $_->{attachment_id}
           ? Bugzilla::Attachment->new({id => $_->{attachment_id}, cache => 1})
           : undef,
       }
     } @{$vars->{flag_events}}
   ];
-  $vars->{flag_events} = [
-    grep {
-      !$_->{attachment} || !$_->{attachment}->isprivate || $vars->{to_user}->is_insider
-    } @{$vars->{flag_events}}
-  ];
+  $vars->{flag_events}
+    = [grep { _flag_event_visible_to($_, $vars->{to_user}) } @{$vars->{flag_events}}];
 
   $vars->{changer} = Bugzilla::User->new_from_hash($vars->{changer});
   $vars->{new_comments}
@@ -831,6 +850,16 @@ sub _generate_bugmail {
   return $email;
 }
 
+# True if $user is allowed to see $event's attachment, i.e. it isn't
+# private or $user is an insider. Flag events with no attachment are always
+# visible. Used everywhere a flag event's exposure to a specific user is
+# decided: adding recipients, filtering an already-built recipient's
+# flag_events, and the dequeue-time TOCTOU re-check (bug 1883428).
+sub _flag_event_visible_to {
+  my ($event, $user) = @_;
+  return !$event->{attachment} || !$event->{attachment}->isprivate || ($user && $user->is_insider);
+}
+
 # Find flags that were requested of, or answered by, someone during this
 # window, so sendMail() can add a note at the top of the mail for that
 # person even if they hold no other role on the bug (bug 1883428).
@@ -846,11 +875,11 @@ sub _get_flag_mail_events {
   }
 
   my $rows = $dbh->selectall_arrayref(
-    "SELECT flag_id, flag_when, type_id, status, setter_id, requestee_id,
+    "SELECT id, flag_id, flag_when, type_id, status, setter_id, requestee_id,
             attachment_id
        FROM flag_activity
       WHERE bug_id = ?$when_restriction
-   ORDER BY flag_when", {Slice => {}}, @args
+   ORDER BY flag_when, id", {Slice => {}}, @args
   );
 
   my @events;
@@ -883,12 +912,13 @@ sub _get_flag_mail_events {
       # preceding row was still '?' -- old notify() gated on that too, so
       # e.g. an already-answered flag later cleared by an attachment being
       # obsoleted (also logged as status 'X') doesn't re-notify the
-      # original requester.
+      # original requester. Break ties on id, not just flag_when: a '?'
+      # and its answer can land in the same second.
       my ($prev_status, $requester_id) = $dbh->selectrow_array(
         "SELECT status, setter_id FROM flag_activity
-          WHERE flag_id = ? AND flag_when < ?
-       ORDER BY flag_when DESC LIMIT 1", undef, $row->{flag_id},
-        $row->{flag_when}
+          WHERE flag_id = ? AND (flag_when < ? OR (flag_when = ? AND id < ?))
+       ORDER BY flag_when DESC, id DESC LIMIT 1", undef, $row->{flag_id},
+        $row->{flag_when}, $row->{flag_when}, $row->{id}
       );
       next unless $requester_id && $prev_status && $prev_status eq '?';
 
@@ -937,7 +967,7 @@ sub _get_flag_type_cc {
       next if $attachment_is_private && (!$ccuser || !$ccuser->is_insider);
 
       if ($ccuser) {
-        $account_recipients{$ccuser->id} = 1;
+        push @{$account_recipients{$ccuser->id}}, $event;
         $user_cache->{$ccuser->id} ||= $ccuser;
       }
       else {
