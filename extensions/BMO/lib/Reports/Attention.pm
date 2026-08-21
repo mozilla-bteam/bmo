@@ -396,26 +396,26 @@ sub report {
     = $input->{who} ? Bugzilla::User->check({name => $input->{who}}) : $user;
   $vars->{who} = $who->login;
 
-  # Create a global seen list of bugs (if not yet exists) to make sure
-  # we do not show a bug more than once across all lists. Request cache
-  # lasts for only this request.
-  my $request_cache = Bugzilla->request_cache;
-  $request_cache->{attention} = {};
-  $request_cache->{attention}->{global_seen} = {};
-
   my $dbh = Bugzilla->dbh;
 
-  # Here we load some values into cache that will be used later by the
-  # various queries. Request cache lasts for this request only, so a
-  # keyword, flag type or security group added mid-session is picked up
-  # on the next page load rather than at the next server restart.
-  my $lookup_cache = $request_cache->{attention};
+  # Set up the cache used by the various queries below. It holds a global
+  # seen list of bugs, so we do not show a bug more than once across all
+  # lists, along with values interpolated into the queries. Request cache
+  # lasts for this request only, so a keyword, flag type or security group
+  # added mid-session is picked up on the next page load rather than at
+  # the next server restart.
+  my $lookup_cache = Bugzilla->request_cache->{attention}
+    = {global_seen => {}};
 
-  # classifications
-  $lookup_cache->{classification_ids} = $dbh->selectcol_arrayref('
+  # classifications. As with the security groups below, fall back to a
+  # non-existent id if none are found so the IN () clauses built from this
+  # list stay valid SQL and simply match nothing.
+  my $classification_ids = $dbh->selectcol_arrayref('
     SELECT id
       FROM classifications
      WHERE name IN (' . join(', ', map { $dbh->quote($_) } CLASSIFICATIONS) . ')');
+  $lookup_cache->{classification_ids}
+    = @{$classification_ids} ? $classification_ids : [0];
 
   # needinfo flag
   $lookup_cache->{needinfo_flag_id} = $dbh->selectrow_array("
@@ -427,11 +427,14 @@ sub report {
   $lookup_cache->{sec_high_id} = $dbh->selectrow_array("
     SELECT id FROM keyworddefs WHERE name = 'sec-high'");
 
-  # Get a list of group ids that end in -security
-  $lookup_cache->{sec_group_ids}
+  # Get a list of group ids that end in -security. Fall back to a
+  # non-existent id if there are none, so the IN () clauses built from
+  # this list stay valid SQL and simply match nothing.
+  my $sec_group_ids
     = $dbh->selectcol_arrayref('SELECT id FROM '
       . $dbh->quote_identifier('groups')
       . ' WHERE name LIKE \'%-security\'');
+  $lookup_cache->{sec_group_ids} = @{$sec_group_ids} ? $sec_group_ids : [0];
 
   # build bug lists
   $vars->{critical_needinfo_bugs}  = critical_needinfo_bugs($who);
