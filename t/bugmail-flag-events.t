@@ -13,9 +13,9 @@
 # gate shared by recipient selection, per-recipient flag_events filtering,
 # and the dequeue-time TOCTOU re-check. This is the one piece of the
 # recipient-selection logic (bug 1883428 review) that's pure Perl and
-# doesn't need a live DB to exercise; the flag_activity prev-status query
-# and the flag-type cc_list DB lookups still need a real Bugzilla instance
-# and are covered by the manual test plan in that bug instead.
+# doesn't need a live DB to exercise; the flag_activity queries and
+# recipient selection in Send() are covered against a real database in
+# t/bmo/bugmail-flag-events.t.
 
 package main;
 
