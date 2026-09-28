@@ -216,10 +216,19 @@ sub update {
 
   $dbh->bz_commit_transaction();
 
-  # Bugzilla::BugMail uses this module, so load it lazily.
-  require Bugzilla::BugMail;
-  Bugzilla::BugMail::Send($_, {changer => Bugzilla->user})
-    foreach sort { $a <=> $b } keys %retargeted_bug_ids;
+  # An inclusion/exclusion edit can touch many bugs, so queue the bugmail
+  # rather than run a full Send() per bug inside this request.
+  my @bug_ids = sort { $a <=> $b } keys %retargeted_bug_ids;
+  if (@bug_ids && Bugzilla->get_param_with_override('use_mailer_queue')) {
+    Bugzilla->job_queue->insert('bug_mail_send',
+      {bug_ids => \@bug_ids, changer_id => Bugzilla->user->id});
+  }
+  elsif (@bug_ids) {
+
+    # Bugzilla::BugMail uses this module, so load it lazily.
+    require Bugzilla::BugMail;
+    Bugzilla::BugMail::Send($_, {changer => Bugzilla->user}) foreach @bug_ids;
+  }
 
   return $changes;
 }
