@@ -431,18 +431,21 @@ sub Send {
         # their own actions), or they're on the flag type's cc_list for
         # this event. A recipient who isn't an insider doesn't get told
         # about a flag on a private attachment even if they qualify for
-        # the mail some other way (e.g. they're on the CC list).
+        # the mail some other way (e.g. they're on the CC list). A cc_list
+        # recipient who isn't the requestee/requester gets the event as a
+        # generic 'set', so it isn't worded as "from you"/"your request".
         my $user_cc_events = $flag_type_cc->{$user_id} || [];
-        my @user_flag_events = grep {
+        my @user_flag_events = map {
           my $event = $_;
-          _flag_event_visible_to($event, $user)
-            && (
-            ($event->{action} eq 'requested' && $event->{requestee_id} == $user_id)
+          my $is_own
+            = ($event->{action} eq 'requested' && $event->{requestee_id} == $user_id)
             || ($event->{action} eq 'answered'
-              && $event->{requester_id} == $user_id
-              && $event->{setter}->id != $user_id)
-            || (grep { $_ == $event } @$user_cc_events)
-            )
+            && $event->{requester_id} == $user_id
+            && $event->{setter}->id != $user_id);
+          !_flag_event_visible_to($event, $user)      ? ()
+            : $is_own                                 ? $event
+            : (grep { $_ == $event } @$user_cc_events) ? {%$event, action => 'set'}
+            :                                           ();
         } @flag_events;
 
         my $sent_mail = sendMail({
@@ -873,9 +876,9 @@ sub _flag_event_visible_to {
   return !$event->{attachment} || !$event->{attachment}->isprivate || ($user && $user->is_insider);
 }
 
-# Find flags that were requested of, or answered by, someone during this
-# window, so sendMail() can add a note at the top of the mail for that
-# person even if they hold no other role on the bug (bug 1883428).
+# Find flag changes during this window, so sendMail() can add a note at the
+# top of the mail for the requestee/requester (even if they hold no other
+# role on the bug) and the flag type's cc_list (bug 1883428).
 sub _get_flag_mail_events {
   my ($bug, $start, $end, $user_cache) = @_;
   my $dbh = Bugzilla->dbh;
@@ -900,18 +903,20 @@ sub _get_flag_mail_events {
     $user_cache->{$row->{setter_id}}
       ||= Bugzilla::User->new({id => $row->{setter_id}, cache => 1});
 
+    my $event = {
+      action        => 'set',
+      type          => Bugzilla::FlagType->new_from_list([$row->{type_id}])->[0],
+      attachment_id => $row->{attachment_id},
+      attachment    => $row->{attachment_id}
+      ? Bugzilla::Attachment->new({id => $row->{attachment_id}, cache => 1})
+      : undef,
+      status => $row->{status},
+      setter => $user_cache->{$row->{setter_id}},
+    };
+
     if ($row->{status} eq '?' && $row->{requestee_id}) {
-      push @events,
-        {
-        action        => 'requested',
-        type          => Bugzilla::FlagType->new_from_list([$row->{type_id}])->[0],
-        attachment_id => $row->{attachment_id},
-        attachment    => $row->{attachment_id}
-        ? Bugzilla::Attachment->new({id => $row->{attachment_id}, cache => 1})
-        : undef,
-        requestee_id => $row->{requestee_id},
-        setter       => $user_cache->{$row->{setter_id}},
-        };
+      $event->{action}       = 'requested';
+      $event->{requestee_id} = $row->{requestee_id};
     }
     elsif ($row->{status} eq '+' || $row->{status} eq '-' || $row->{status} eq 'X') {
 
@@ -933,21 +938,17 @@ sub _get_flag_mail_events {
        ORDER BY flag_when DESC, id DESC LIMIT 1", undef, $row->{flag_id},
         $row->{flag_when}, $row->{flag_when}, $row->{id}
       );
-      next unless $requester_id && $prev_status && $prev_status eq '?';
-
-      push @events,
-        {
-        action        => 'answered',
-        type          => Bugzilla::FlagType->new_from_list([$row->{type_id}])->[0],
-        attachment_id => $row->{attachment_id},
-        attachment    => $row->{attachment_id}
-        ? Bugzilla::Attachment->new({id => $row->{attachment_id}, cache => 1})
-        : undef,
-        requester_id => $requester_id,
-        status       => $row->{status},
-        setter       => $user_cache->{$row->{setter_id}},
-        };
+      if ($requester_id && $prev_status && $prev_status eq '?') {
+        $event->{action}       = 'answered';
+        $event->{requester_id} = $requester_id;
+      }
     }
+
+    # Anything else (a '?' with no requestee, a direct '+'/'-', a clear
+    # not preceded by '?') stays a generic 'set': there's no requestee or
+    # requester to tell, but notify() still mailed the flag type's cc_list
+    # for it (e.g. approval-* requests to release lists).
+    push @events, $event;
   }
   return @events;
 }
