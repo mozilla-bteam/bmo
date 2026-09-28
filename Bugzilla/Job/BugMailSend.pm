@@ -14,7 +14,7 @@ use warnings;
 use Bugzilla::Bug;
 use Bugzilla::BugMail;
 use Bugzilla::User;
-BEGIN { eval "use parent qw(Bugzilla::Job::Mailer)"; }
+use parent qw(Bugzilla::Job::Mailer);
 
 # Runs BugMail::Send for a list of bugs, for callers that touch too many
 # bugs to do it inside the web request (e.g. a flag type inclusion/exclusion
