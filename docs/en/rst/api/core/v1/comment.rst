@@ -210,13 +210,15 @@ name          type     description
                        did not set the ``comment`` parameter.
 is_private    boolean  If set to true, the comment is private, otherwise it is
                        assumed to be public.
-is_markdown   boolean  If true, the comment will be rendered as markdown.
+is_markdown   boolean  If true, marks the comment for Markdown rendering.
+                       Rendering also requires the system ``use_markdown``
+                       setting to be enabled.
                        Defaults to the system ``use_markdown`` setting.
 comment_tags  array    Tags to add to the new comment. Tags are added only if
                        the user has permission to tag comments.
 work_time     double   Adds this many hours to the "Hours Worked" on the bug.
-                       If you are not in the time tracking group, this value will
-                       be ignored.
+                       Changing this value requires time-tracking permission;
+                       unauthorized changes cause an error.
 ============  =======  ==========================================================
 
 **Response**
@@ -249,6 +251,8 @@ id    int   ID of the newly-created comment.
 * 114 (Comment Too Long)
   You tried to add a comment longer than the maximum allowed length
   (65,535 characters).
+* 115 (Illegal Change)
+  You tried to change ``work_time`` without the necessary permission.
 
 .. _rest_get_comment_reactions:
 
@@ -345,7 +349,7 @@ This method can throw all of the errors that :ref:`rest_comments` throws, plus:
 * 137 (Invalid Comment Reaction)
   The comment reaction provided is not supported.
 * 138 (Comment Reactions Closed)
-  The bug has been closed for too long to accept new comment reactions.
+  The bug has been closed for too long to allow comment reaction changes.
 * 139 (Comment Reactions Restricted)
   You are not allowed to react to comments on this bug.
 
