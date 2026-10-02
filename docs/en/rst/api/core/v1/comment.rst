@@ -253,6 +253,12 @@ id    int   ID of the newly-created comment.
   (65,535 characters).
 * 115 (Illegal Change)
   You tried to change ``work_time`` without the necessary permission.
+* 126 (Invalid Comment Tag)
+  A tag in ``comment_tags`` was not valid (e.g. contains invalid characters).
+* 127 (Comment Tag Too Long)
+  A tag in ``comment_tags`` is longer than the maximum length.
+* 128 (Comment Tag Too Short)
+  A tag in ``comment_tags`` is shorter than the minimum length.
 
 .. _rest_get_comment_reactions:
 
