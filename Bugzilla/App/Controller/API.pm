@@ -20,7 +20,6 @@ use Bugzilla::Logging;
 use Bugzilla::WebService::Util qw(set_rest_cors_headers);
 
 use constant SUPPORTED_VERSIONS => qw(V1);
-use constant REQUEST_TOO_LARGE_ERROR => 'request_too_large';
 
 sub setup_routes {
   my ($class, $r) = @_;
@@ -73,14 +72,7 @@ sub setup_routes {
 sub _prepare_rest_request {
   my ($c) = @_;
   _insert_rest_headers($c);
-
-  if ($c->req->is_limit_exceeded) {
-    my $reason = $c->req->error->{message};
-    WARN("Rejected oversized request for native REST API: $reason");
-    Bugzilla->usage_mode(USAGE_MODE_MOJO_REST);
-    return $c->user_error(REQUEST_TOO_LARGE_ERROR);
-  }
-
+  $c->stash->{request_limit_format} = 'rest';
   Bugzilla->usage_mode(USAGE_MODE_REST);
   return 1;
 }

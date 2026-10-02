@@ -52,6 +52,12 @@ The error contents look similar to:
      "code": 123
    }
 
+When BMO's request parser exceeds a message-size or body-buffer limit, the
+REST API returns ``413 Request Entity Too Large`` with error code ``58`` and
+the message ``The request is too large.`` rather than processing the truncated
+body. These limits depend on the server configuration. Reduce the payload size
+or split it into smaller requests where the API method supports batching.
+
 .. _rest-query-string-limit:
 
 BMO's Varnish front end rejects request targets longer than 8 KiB, including
