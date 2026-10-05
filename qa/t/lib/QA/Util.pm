@@ -299,6 +299,16 @@ sub go_to_bug {
   $sel->click_ok('action-menu-btn', 'Expand action menu');
   $sel->click_ok('action-expand-all', 'Expand all modal panels');
 
+  # Expanding uses a jQuery slide animation that sets overflow:hidden on the
+  # module content until it finishes. WebDriver treats the clipped fields as
+  # not displayed (get_text returns ''), so wait for the animation to end.
+  for (1 .. 50) {
+    last
+      unless $sel->driver->execute_script(
+      'return window.jQuery ? jQuery(":animated").length : 0');
+    select(undef, undef, undef, 0.1);
+  }
+
   # Remove the blue New Changes link because the sticky banner causes a click interception issue in
   # Selenium that cannot be reproduced in real browser environments
   $sel->driver->execute_script('document.querySelector(\'.new-changes-link\')?.remove();');
