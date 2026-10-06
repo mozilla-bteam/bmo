@@ -316,11 +316,11 @@ sub expand_all_modules {
   # module content until it finishes. WebDriver treats the clipped fields as
   # not displayed (get_text returns ''), so wait for the animation to end.
   my $animating;
-  for (1 .. 50) {
+  for (0 .. 50) {
     $animating = $sel->driver->execute_script(
       'return window.jQuery ? jQuery(":animated").length : 0');
     last unless $animating;
-    select(undef, undef, undef, 0.1);
+    select(undef, undef, undef, 0.1) if $_ < 50;
   }
   if ($animating) {
     ok(0, 'Module expand animation finished within 5s');
