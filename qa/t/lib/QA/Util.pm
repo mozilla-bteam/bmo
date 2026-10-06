@@ -48,6 +48,7 @@ use base qw(Exporter);
   edit_bug_and_return
   get_config
   go_to_bug
+  expand_all_modules
   go_to_home
   go_to_admin
   edit_product
@@ -296,7 +297,19 @@ sub go_to_bug {
   $sel->title_like(qr/^$bug_id /, $bug_title);
   sleep(1); # FIXME: Sometimes we try to click edit bug before it is ready so wait a second
   $sel->click_ok('mode-btn-readonly', 'Click Edit Bug') if !$no_edit;
-  $sel->click_ok('action-menu-btn', 'Expand action menu');
+  expand_all_modules($sel);
+
+  # Remove the blue New Changes link because the sticky banner causes a click interception issue in
+  # Selenium that cannot be reproduced in real browser environments
+  $sel->driver->execute_script('document.querySelector(\'.new-changes-link\')?.remove();');
+}
+
+# Expand all bug modal panels via the action menu and wait for the slide
+# animation to finish.
+sub expand_all_modules {
+  my ($sel) = @_;
+
+  $sel->click_ok('action-menu-btn',   'Expand action menu');
   $sel->click_ok('action-expand-all', 'Expand all modal panels');
 
   # Expanding uses a jQuery slide animation that sets overflow:hidden on the
@@ -313,10 +326,6 @@ sub go_to_bug {
     ok(0, 'Module expand animation finished within 5s');
     diag("$animating element(s) still animating; later get_text calls may return ''");
   }
-
-  # Remove the blue New Changes link because the sticky banner causes a click interception issue in
-  # Selenium that cannot be reproduced in real browser environments
-  $sel->driver->execute_script('document.querySelector(\'.new-changes-link\')?.remove();');
 }
 
 # Go to admin.cgi.
