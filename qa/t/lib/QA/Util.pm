@@ -302,11 +302,16 @@ sub go_to_bug {
   # Expanding uses a jQuery slide animation that sets overflow:hidden on the
   # module content until it finishes. WebDriver treats the clipped fields as
   # not displayed (get_text returns ''), so wait for the animation to end.
+  my $animating;
   for (1 .. 50) {
-    last
-      unless $sel->driver->execute_script(
+    $animating = $sel->driver->execute_script(
       'return window.jQuery ? jQuery(":animated").length : 0');
+    last unless $animating;
     select(undef, undef, undef, 0.1);
+  }
+  if ($animating) {
+    ok(0, 'Module expand animation finished within 5s');
+    diag("$animating element(s) still animating; later get_text calls may return ''");
   }
 
   # Remove the blue New Changes link because the sticky banner causes a click interception issue in
