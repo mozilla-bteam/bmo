@@ -38,13 +38,13 @@ sub _around_action {
   return $next->() unless $is_endpoint;
   return $next->() if $c->isa('Bugzilla::App::Controller::CGI');
 
-  my $reason = request_limit_reason($c->req);
+  my $format = $c->stash->{request_limit_format} // 'html';
+  my $reason = request_limit_reason($c->req, $format eq 'rest');
   return $next->() unless defined $reason;
 
   my $route = $c->match->endpoint->to_string;
   WARN("Rejected oversized request for $route: $reason");
 
-  my $format = $c->stash->{request_limit_format} // 'html';
   if ($format eq 'rest') {
     Bugzilla->usage_mode(USAGE_MODE_MOJO_REST);
     return $c->user_error(REQUEST_TOO_LARGE_ERROR);
@@ -68,14 +68,15 @@ sub _around_action {
 }
 
 sub request_limit_reason {
-  my ($request) = @_;
+  my ($request, $is_rest) = @_;
   return undef unless $request->is_limit_exceeded;
 
   my $error = $request->error;
   return 'Unrecognized parser limit' unless ref $error eq 'HASH';
 
   my $reason = $error->{message} // '';
-  return undef if $KNOWN_NON_BODY_LIMIT_REASONS{$reason};
+  return undef if $KNOWN_NON_BODY_LIMIT_REASONS{$reason} && !$is_rest;
+  return $reason if $KNOWN_NON_BODY_LIMIT_REASONS{$reason};
   return $BODY_LIMIT_REASONS{$reason} ? $reason : 'Unrecognized parser limit';
 }
 

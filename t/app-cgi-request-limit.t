@@ -46,6 +46,21 @@ use Test::Mojo;
   }
 }
 
+{
+  package TestRequestLimit;
+
+  our $LIMIT_NEXT_HEADER = 0;
+
+  sub lower_next_header_limit {
+    my ($tx) = @_;
+    return unless $LIMIT_NEXT_HEADER;
+    $LIMIT_NEXT_HEADER = 0;
+    my $request = $tx->req;
+    my $headers = $request->headers;
+    $headers->max_line_size(256);
+  }
+}
+
 my $boundary = 'bugzilla-request-limit';
 my $body = join(
   "\r\n",
@@ -190,6 +205,23 @@ $t->post_ok(
   ->json_is('/code' => 58)
   ->json_is('/message' => 'The request is too large.');
 
+$TestRequestLimit::LIMIT_NEXT_HEADER = 1;
+my $app = $t->app;
+$app->hook(after_build_tx => \&TestRequestLimit::lower_next_header_limit);
+$t->post_ok(
+  '/rest/component/Test' => {
+    'Content-Length'       => 2,
+    'Content-Type'         => 'application/json',
+    'X-Over-Limit-Header'  => 'x' x 256,
+  } => '{}'
+);
+$t->status_is(413);
+$t->header_like('Content-Type' => qr{^application/json\b});
+$t->header_is('Access-Control-Allow-Origin' => '*');
+$t->json_is('/error' => 1);
+$t->json_is('/code' => 58);
+$t->json_is('/message' => 'The request is too large.');
+
 for my $reason (
   'Maximum message size exceeded',
   'Maximum buffer size exceeded'
@@ -210,6 +242,14 @@ for my $reason ('Maximum header size exceeded', 'Maximum start-line size exceede
     ),
     undef,
     "$reason preserves fallback behavior"
+  );
+  is(
+    Bugzilla::App::Plugin::RequestLimit::request_limit_reason(
+      TestRequest->new($reason),
+      1
+    ),
+    $reason,
+    "$reason remains rejected for REST"
   );
 }
 
