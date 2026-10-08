@@ -245,6 +245,17 @@ sub register {
         return $c->bugzilla->login_redirect_if_required($type);
       }
 
+      # There is no login page to redirect an API request to, so refuse it
+      # outright when login is required (e.g. requirelogin is on), as the
+      # legacy dispatcher's Bugzilla->login() does. Normalize the usage mode
+      # first, for the same reason as above.
+      if ($type == LOGIN_REQUIRED
+        && ($usage_mode == USAGE_MODE_REST || $usage_mode == USAGE_MODE_MOJO_REST))
+      {
+        Bugzilla->usage_mode(USAGE_MODE_MOJO_REST);
+        ThrowUserError('login_required');
+      }
+
       # Return default user (non-authenticated)
       return Bugzilla->user;
     }

@@ -56,7 +56,7 @@ sub options {
 sub get_products_by_type {
   my ($self) = @_;
 
-  my $user = $self->_login // return $self->user_error('login_required');
+  my $user = $self->bugzilla->login;
   my $method = 'get_' . $self->stash('product_type') . '_products';
 
   Bugzilla->switch_to_shadow_db();
@@ -69,7 +69,7 @@ our %FLAG_CACHE;
 sub get {
   my ($self) = @_;
 
-  my $user = $self->_login // return $self->user_error('login_required');
+  my $user = $self->bugzilla->login;
 
   my @list_params = qw(ids names type include_fields exclude_fields);
   my ($params, $error) = merge_request_params($self, \@list_params);
@@ -319,15 +319,6 @@ sub _milestone_to_hash {
     is_active => $milestone->is_active ? true : false,
     },
     undef, 'milestones';
-}
-
-# Anonymous access is allowed unless requirelogin is on. The Mojo login helper
-# never enforces requirelogin for REST requests (it returns the anonymous
-# user), whereas the legacy dispatcher's Bugzilla->login() did.
-sub _login {
-  my ($self) = @_;
-  my $user = $self->bugzilla->login;
-  return ($user->id || !Bugzilla->params->{requirelogin}) ? $user : undef;
 }
 
 # Legacy type('email') only filtered when the webservice_email_filter
