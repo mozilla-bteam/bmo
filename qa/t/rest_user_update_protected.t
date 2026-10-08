@@ -136,4 +136,16 @@ $t->put_ok($url
   ->status_is(200)
   ->json_has('/users', 'An admin can still update an admin account');
 
+#
+# 6. The deprecated ?api_key= query parameter authenticates the request
+#    without being passed on as a user field. This also restores the name
+#    changed in 2.
+#
+$t->put_ok($url
+    . "rest/user/$target_login?api_key=$admin_api_key" => json =>
+    {full_name => $target_realname})
+  ->status_is(200)
+  ->json_is('/users/0/changes/full_name/added',
+  $target_realname, 'An API key in the query string is not a user field');
+
 done_testing();
