@@ -48,6 +48,10 @@ sub setup_routes {
   $routes->get('/user/suggest')->to('V1::UserObject#suggest');
   $routes->options('/user/suggest')->to('V1::UserObject#options', allow => 'GET');
 
+  # Likewise, and its OPTIONS route must not be answered by the /user/#id_or_name one.
+  $routes->post('/user/offer_account_by_email')->to('V1::UserObject#offer_account_by_email');
+  $routes->options('/user/offer_account_by_email')->to('V1::UserObject#options', allow => 'POST');
+
   $routes->get('/user')->to('V1::UserObject#get');
   $routes->post('/user')->to('V1::UserObject#create');
   $routes->get('/user/#id_or_name')->to('V1::UserObject#get');
@@ -88,6 +92,23 @@ sub type {
     if $type eq 'dateTime';
 
   return $value;
+}
+
+# No login here, as in the legacy method (LOGIN_EXEMPT): this is how someone
+# without an account asks for one.
+sub offer_account_by_email {
+  my ($self) = @_;
+
+  my ($params, $error) = merge_request_params($self);
+  return $self->user_error($error) if $error;
+
+  my $email = trim($params->{email})
+    || return $self->code_error('param_required', {param => 'email'});
+
+  Bugzilla->user->check_account_creation_enabled;
+  Bugzilla->user->check_and_send_account_creation_confirmation($email);
+
+  return $self->render(json => undef);
 }
 
 sub create {
