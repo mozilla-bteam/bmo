@@ -42,4 +42,84 @@ is(
 );
 is([$extract->("~~~\n\@unclosed\n\@more")], [], 'unclosed fence runs to end');
 
+# _process_mentions safeguards, using minimal stand-ins for users and bugs.
+{
+
+  package FakeUser;
+  sub new          { my ($class, %args) = @_; bless {%args}, $class }
+  sub id           { $_[0]{id} }
+  sub nick         { $_[0]{nick} }
+  sub login        { "$_[0]{nick}\@example.com" }
+  sub in_group     { $_[0]{editbugs} }
+  sub is_insider   { $_[0]{insider} }
+  sub can_see_bug  { $_[0]{sees_bug} // 1 }
+  sub needinfo_blocked { 0 }
+
+  package FakeBug;
+  sub new {
+    my ($class, $text) = @_;
+    bless {
+      added_comments => [{thetext => $text}],
+      cc             => [],
+      needinfo       => [],
+      type           => bless({flags => []}, 'FakeType'),
+    }, $class;
+  }
+  sub id                     {1}
+  sub product_id             {1}
+  sub flag_types             { [$_[0]{type}] }
+  sub check_can_change_field { {allowed => 1} }
+  sub add_cc    { push @{$_[0]{cc}}, $_[1]->nick }
+  sub set_flags { push @{$_[0]{needinfo}}, map { $_->{requestee} } @{$_[2]} }
+
+  package FakeType;
+  sub name {'needinfo'}
+  sub id   {1}
+}
+
+my %users = map { $_->nick => $_ } (
+  FakeUser->new(id => 2, nick => 'alice'),
+  FakeUser->new(id => 3, nick => 'bob'),
+  FakeUser->new(id => 4, nick => 'hidden', sees_bug => 0),
+  map { FakeUser->new(id => 10 + $_, nick => "u$_") } 1 .. 12,
+);
+my $commenter = FakeUser->new(id => 1, nick => 'me', editbugs => 1);
+my @looked_up;
+
+my $mock_bugzilla = mock 'Bugzilla' => (override => [user => sub {$commenter}]);
+my $mock_ext = mock 'Bugzilla::Extension::Needinfo' => (
+  override => [
+    _users_for_mentions => sub {
+      @looked_up = @_;
+      return grep {defined} map { $users{$_} } @_;
+    },
+  ],
+);
+
+my $process = \&Bugzilla::Extension::Needinfo::_process_mentions;
+
+my $bug = FakeBug->new('@alice and @bob please look, cc @me');
+$process->($bug);
+is($bug->{cc}, ['alice', 'bob'], 'mentioned users CCd, self skipped');
+is($bug->{needinfo}, ['alice@example.com', 'bob@example.com'],
+  'mentioned users needinfod');
+
+$bug = FakeBug->new('@hidden @alice');
+$process->($bug);
+is($bug->{cc}, ['alice'], 'user who cannot see the bug is not CCd');
+is($bug->{needinfo}, ['alice@example.com'], '... nor needinfod');
+
+$bug = FakeBug->new(join ' ', map {"\@u$_"} 1 .. 12);
+$process->($bug);
+is(\@looked_up, [map {"u$_"} 1 .. 10], 'only the first 10 nicknames are looked up');
+is($bug->{cc},  [map {"u$_"} 1 .. 10], '... and only they are CCd');
+
+$commenter->{editbugs} = 0;
+@looked_up = ();
+$bug = FakeBug->new('@alice');
+$process->($bug);
+is(\@looked_up,       [], 'no lookup for commenters without editbugs');
+is($bug->{cc},        [], 'no CC for commenters without editbugs');
+is($bug->{needinfo},  [], 'no needinfo for commenters without editbugs');
+
 done_testing;

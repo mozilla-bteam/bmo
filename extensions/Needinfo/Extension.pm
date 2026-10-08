@@ -20,6 +20,8 @@ use Bugzilla::User::Setting;
 
 our $VERSION = '0.01';
 
+use constant MAX_MENTIONS => 10;
+
 BEGIN {
   *Bugzilla::User::needinfo_blocked = \&_user_needinfo_blocked;
 }
@@ -297,20 +299,37 @@ sub _users_for_mentions {
 # GitHub-style mentions: each @nickname in a new comment is CC'd and gets a
 # needinfo request. Mentions never block the comment from being saved; anyone
 # who can't be needinfo'd (blocked, already asked, no permission) is only CC'd.
+#
+# Safeguards against misuse:
+# - only editbugs users can trigger mentions; for everyone else they are text
+# - only the first MAX_MENTIONS distinct nicknames per update are processed
+# - users who can't already see the bug are skipped, so a mention (or a typo,
+#   or a squatted nickname) can never grant access to a restricted bug
 sub _process_mentions {
   my ($bug) = @_;
-  my $user = Bugzilla->user;
-
   # Lowercased nick => true if mentioned in at least one public comment.
   my %public;
-  foreach my $comment (@{$bug->{added_comments} || []}) {
-    $public{lc $_} ||= !$comment->{isprivate}
-      foreach _extract_mentions($comment->{thetext});
-  }
 
-  my @mentioned
-    = grep { $_->id != $user->id && ($public{lc $_->nick} || $_->is_insider) }
-    _users_for_mentions(keys %public);
+  # The first MAX_MENTIONS distinct lowercased nicks, in order of appearance.
+  my @nicks;
+
+  foreach my $comment (@{$bug->{added_comments} || []}) {
+    foreach my $nick (map {lc} _extract_mentions($comment->{thetext})) {
+      push @nicks, $nick if !exists $public{$nick} && @nicks < MAX_MENTIONS;
+      $public{$nick} ||= !$comment->{isprivate};
+    }
+  }
+  return unless @nicks;
+
+  # Checked after parsing so updates without mentions skip the group lookup.
+  my $user = Bugzilla->user;
+  return unless $user->in_group('editbugs', $bug->product_id);
+
+  my @mentioned = grep {
+         $_->id != $user->id
+      && ($public{lc $_->nick} || $_->is_insider)
+      && $_->can_see_bug($bug->id)
+  } _users_for_mentions(@nicks);
   return unless @mentioned;
 
   my ($type) = grep { $_->name eq 'needinfo' } @{$bug->flag_types};
