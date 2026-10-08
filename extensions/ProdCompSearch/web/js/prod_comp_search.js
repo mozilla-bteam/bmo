@@ -30,7 +30,7 @@ $(function() {
         // suggestions, so defer the hide until after they have been shown
         var input = this;
         setTimeout(function() {
-            if (document.activeElement != input)
+            if (document.activeElement !== input)
                 that.devbridgeAutocomplete('hide');
         }, 0);
         if (that.data('error')) {
