@@ -498,7 +498,13 @@ sub whoami {
   my ($self) = @_;
 
   my $user = $self->_user_from_phab_token;
-  if (!$user) {
+  if ($user) {
+
+    # bugzilla.login is not involved here, so refuse a disabled account the
+    # way it does.
+    $self->bugzilla->assert_account_usable($user);
+  }
+  else {
     $user = $self->bugzilla->login;
     $user->id
       || return $self->user_error($self->_api_key_error // 'login_required');
