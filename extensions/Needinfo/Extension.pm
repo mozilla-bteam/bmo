@@ -97,10 +97,19 @@ sub bug_end_of_create {
   $self->bug_start_of_update($args);
 }
 
-# Clear the needinfo? flag if comment is being given by
-# requestee or someone used the override flag.
 sub bug_start_of_update {
   my ($self, $args) = @_;
+  _process_needinfo_params($args);
+
+  # Runs after the explicit needinfo handling so that the duplicate check
+  # sees any flags that were just requested through the form.
+  _process_mentions($args->{bug}) if $args->{old_bug};
+}
+
+# Clear the needinfo? flag if comment is being given by
+# requestee or someone used the override flag.
+sub _process_needinfo_params {
+  my ($args) = @_;
   my $bug     = $args->{bug};
   my $old_bug = $args->{old_bug};
 
@@ -246,6 +255,82 @@ sub bug_start_of_update {
   if (@flags || @new_flags) {
     $bug->set_flags(\@flags, \@new_flags);
   }
+}
+
+# Returns the unique nicknames @mentioned in a comment, in order of first
+# appearance. Mentions inside quoted lines (> ...) and code are ignored, as
+# are email addresses (the @ must not follow a word character).
+sub _extract_mentions {
+  my ($text) = @_;
+  return () unless defined $text;
+
+  $text =~ s/^[ \t]*(```|~~~).*?(?:^[ \t]*\1[^\n]*$|\z)//msg;
+  $text =~ s/`[^`\n]*`//g;
+  $text =~ s/^[ \t]*>.*$//mg;
+
+  my (@nicks, %seen);
+  while ($text =~ /(?<![\w@.\/-])@([\p{IsAlnum}._-]+)/g) {
+    (my $nick = $1) =~ s/\.+$//;
+    next if $nick eq '' || $seen{lc $nick}++;
+    push @nicks, $nick;
+  }
+  return @nicks;
+}
+
+# Maps nicknames to enabled user accounts. A nickname shared by more than one
+# account is ambiguous and dropped rather than guessed at.
+sub _users_for_mentions {
+  my (@nicks) = @_;
+  return () unless @nicks;
+
+  my $dbh  = Bugzilla->dbh;
+  my $rows = $dbh->selectall_arrayref(
+    'SELECT userid, nickname FROM profiles WHERE is_enabled = 1 AND '
+      . $dbh->sql_in('nickname', [map { $dbh->quote($_) } @nicks]));
+
+  my %ids_by_nick;
+  push @{$ids_by_nick{lc $_->[1]}}, $_->[0] foreach @$rows;
+  my @ids = map { $_->[0] } grep { @$_ == 1 } values %ids_by_nick;
+  return @{Bugzilla::User->new_from_list(\@ids)};
+}
+
+# GitHub-style mentions: each @nickname in a new comment is CC'd and gets a
+# needinfo request. Mentions never block the comment from being saved; anyone
+# who can't be needinfo'd (blocked, already asked, no permission) is only CC'd.
+sub _process_mentions {
+  my ($bug) = @_;
+  my $user = Bugzilla->user;
+
+  # Lowercased nick => true if mentioned in at least one public comment.
+  my %public;
+  foreach my $comment (@{$bug->{added_comments} || []}) {
+    $public{lc $_} ||= !$comment->{isprivate}
+      foreach _extract_mentions($comment->{thetext});
+  }
+
+  my @mentioned
+    = grep { $_->id != $user->id && ($public{lc $_->nick} || $_->is_insider) }
+    _users_for_mentions(keys %public);
+  return unless @mentioned;
+
+  my ($type) = grep { $_->name eq 'needinfo' } @{$bug->flag_types};
+  my $can_flag
+    = $type && $bug->check_can_change_field('flagtypes.name', 0, 1)->{allowed};
+
+  my @new_flags;
+  foreach my $mentioned (@mentioned) {
+    $bug->add_cc($mentioned);
+
+    next if !$can_flag || $mentioned->needinfo_blocked;
+    next if grep {
+      $_->status eq '?' && ($_->requestee_id // 0) == $mentioned->id
+    } @{$type->{flags}};
+
+    push @new_flags,
+      {type_id => $type->id, status => '?', requestee => $mentioned->login};
+  }
+
+  $bug->set_flags([], \@new_flags) if @new_flags;
 }
 
 sub _check_requestee {
