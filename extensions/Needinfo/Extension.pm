@@ -12,13 +12,17 @@ use warnings;
 
 use base qw(Bugzilla::Extension);
 
+use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Flag;
 use Bugzilla::FlagType;
+use Bugzilla::Logging;
 use Bugzilla::User;
 use Bugzilla::User::Setting;
 
 our $VERSION = '0.01';
+
+use constant MAX_MENTIONS => 10;
 
 BEGIN {
   *Bugzilla::User::needinfo_blocked = \&_user_needinfo_blocked;
@@ -60,7 +64,7 @@ sub install_update_db {
     is_active        => 1,
     is_requestable   => 1,
     is_requesteeble  => 1,
-    is_multiplicable => 0,
+    is_multiplicable => 1,
     request_group    => '',
     grant_group      => '',
     inclusions       => ['0:0'],
@@ -97,10 +101,19 @@ sub bug_end_of_create {
   $self->bug_start_of_update($args);
 }
 
-# Clear the needinfo? flag if comment is being given by
-# requestee or someone used the override flag.
 sub bug_start_of_update {
   my ($self, $args) = @_;
+  _process_needinfo_params($args);
+
+  # Runs after the explicit needinfo handling so that the duplicate check
+  # sees any flags that were just requested through the form.
+  _process_mentions($args->{bug}) if $args->{old_bug};
+}
+
+# Clear the needinfo? flag if comment is being given by
+# requestee or someone used the override flag.
+sub _process_needinfo_params {
+  my ($args) = @_;
   my $bug     = $args->{bug};
   my $old_bug = $args->{old_bug};
 
@@ -246,6 +259,117 @@ sub bug_start_of_update {
   if (@flags || @new_flags) {
     $bug->set_flags(\@flags, \@new_flags);
   }
+}
+
+# Returns the unique nicknames @mentioned in a comment, in order of first
+# appearance. Mentions inside quoted lines (> ...) and code are ignored, as
+# are email addresses (the @ must not follow a word character).
+sub _extract_mentions {
+  my ($text) = @_;
+  return () unless defined $text;
+
+  $text =~ s/^[ \t]*(`{3,}|~{3,}).*?(?:^[ \t]*\1[^\n]*$|\z)//msg;
+  # A code span closes on a backtick run of the same length, within a paragraph.
+  $text = join "\n\n",
+    map { s/(?<!`)(`+)(?!`).+?(?<!`)\1(?!`)//sgr } split /\n[ \t]*\n/, $text;
+  $text =~ s/^[ \t]*>.*$//mg;
+
+  my (@nicks, %seen);
+  # Same character set as extract_nicks in Bugzilla/Util.pm.
+  while ($text =~ /(?<![\w@.\/-])@([\p{IsAlnum}|._-]+)/g) {
+    (my $nick = $1) =~ s/[.|]+$//;
+    next if $nick eq '' || $seen{lc $nick}++;
+    push @nicks, $nick;
+  }
+  return @nicks;
+}
+
+# Maps nicknames to enabled user accounts. A nickname shared by more than one
+# account is ambiguous and dropped rather than guessed at.
+sub _users_for_mentions {
+  my (@nicks) = @_;
+  return () unless @nicks;
+
+  my $dbh  = Bugzilla->dbh;
+  my $rows = $dbh->selectall_arrayref(
+    'SELECT userid, nickname FROM profiles WHERE is_enabled = 1 AND '
+      . $dbh->sql_in('nickname', [map { $dbh->quote($_) } @nicks]));
+
+  my %ids_by_nick;
+  push @{$ids_by_nick{lc $_->[1]}}, $_->[0] foreach @$rows;
+  my @ids = map { $_->[0] } grep { @$_ == 1 } values %ids_by_nick;
+  return @{Bugzilla::User->new_from_list(\@ids)};
+}
+
+# GitHub-style mentions: each @nickname in a new comment is CC'd and gets a
+# needinfo request. Mentions never block the comment from being saved; anyone
+# who can't be needinfo'd (blocked, already asked, no permission, or the
+# needinfo type isn't multiplicable and a flag exists) is only CC'd.
+#
+# Safeguards against misuse:
+# - only editbugs users can trigger mentions; for everyone else they are text
+# - only the first MAX_MENTIONS distinct nicknames per update are processed
+# - users who can't already see the bug are skipped, so a mention (or a typo,
+#   or a squatted nickname) can never grant access to a restricted bug
+sub _process_mentions {
+  my ($bug) = @_;
+  # Lowercased nick => true if mentioned in at least one public comment.
+  my %public;
+
+  # The first MAX_MENTIONS distinct lowercased nicks, in order of appearance.
+  my @nicks;
+
+  foreach my $comment (@{$bug->{added_comments} || []}) {
+    foreach my $nick (map {lc} _extract_mentions($comment->{thetext})) {
+      push @nicks, $nick if !exists $public{$nick} && @nicks < MAX_MENTIONS;
+      $public{$nick} ||= !$comment->{isprivate};
+    }
+  }
+  return unless @nicks;
+
+  # Checked after parsing so updates without mentions skip the group lookup.
+  my $user = Bugzilla->user;
+  return unless $user->in_group('editbugs', $bug->product_id);
+
+  my @mentioned = grep {
+         $_->id != $user->id
+      && ($public{lc $_->nick} || $_->is_insider)
+      && $_->can_see_bug($bug->id)
+  } _users_for_mentions(@nicks);
+  return unless @mentioned;
+
+  my ($type) = grep { $_->name eq 'needinfo' } @{$bug->flag_types};
+  undef $type
+    unless $type && $bug->check_can_change_field('flagtypes.name', 0, 1)->{allowed};
+
+  # A failure for one user (e.g. add_cc's strict_isolation check) skips that
+  # user rather than rolling back the whole update. Throw*Error only dies
+  # (instead of printing an error page and exiting) in ERROR_MODE_DIE, so the
+  # eval can catch it.
+  local Bugzilla->request_cache->{error_mode} = ERROR_MODE_DIE;
+  local $@;
+  foreach my $mentioned (@mentioned) {
+    eval { _cc_and_needinfo($bug, $mentioned, $type); 1 }
+      or WARN('Skipped mention of ' . $mentioned->login . " on bug "
+        . $bug->id . ": $@");
+  }
+}
+
+sub _cc_and_needinfo {
+  my ($bug, $mentioned, $type) = @_;
+  $bug->add_cc($mentioned);
+
+  return if !$type || $mentioned->needinfo_blocked;
+
+  # A non-multiplicable type allows only one needinfo flag per bug.
+  return if !$type->is_multiplicable && @{$type->{flags}};
+  return if grep {
+    $_->status eq '?' && ($_->requestee_id // 0) == $mentioned->id
+  } @{$type->{flags}};
+
+  # One call per user so $type->{flags} reflects each flag as it is added.
+  $bug->set_flags([],
+    [{type_id => $type->id, status => '?', requestee => $mentioned->login}]);
 }
 
 sub _check_requestee {
