@@ -148,4 +148,13 @@ $t->put_ok($url
   ->json_is('/users/0/changes/full_name/added',
   $target_realname, 'An API key in the query string is not a user field');
 
+#
+# 7. A null include_fields in the JSON body is ignored, not a server error.
+#
+$t->put_ok($url
+    . "rest/user/$target_login" => {'X-Bugzilla-API-Key' => $admin_api_key} =>
+    json => {full_name => $target_realname, include_fields => undef})
+  ->status_is(200)
+  ->json_has('/users', 'A null include_fields is ignored');
+
 done_testing();

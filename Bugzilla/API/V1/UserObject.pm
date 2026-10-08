@@ -552,7 +552,7 @@ sub _request_params {
 
   for my $field (qw(include_fields exclude_fields)) {
     $params->{$field} = [map { split(/[\s,]+/) } @{$params->{$field}}]
-      if exists $params->{$field};
+      if defined $params->{$field};
   }
 
   return ($params, undef);
