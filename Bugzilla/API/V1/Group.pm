@@ -104,7 +104,8 @@ sub update {
   my %values = %$params;
   delete @values{
     qw(ids names include_fields exclude_fields
-      Bugzilla_api_key Bugzilla_api_token Bugzilla_login Bugzilla_password)
+      Bugzilla_api_key Bugzilla_api_token Bugzilla_login Bugzilla_password
+      api_key login password token)
   };
 
   my $dbh = Bugzilla->dbh;

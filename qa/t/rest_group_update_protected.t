@@ -135,4 +135,16 @@ $t->put_ok($url
   ->status_is(200)
   ->json_has('/groups', 'An admin can still update the admin group');
 
+#
+# 6. The deprecated ?api_key= query parameter authenticates the request
+#    without being passed on as a group field.
+#
+$t->put_ok($url
+    . "rest/group/$group_name?api_key=$admin_api_key" => json =>
+    {description => 'REST protected group test'})->status_is(200)->json_is(
+  '/groups/0/changes/description/added',
+  'REST protected group test',
+  'An API key in the query string is not a group field'
+    );
+
 done_testing();
