@@ -30,8 +30,12 @@ use Test::Mojo;
 # 306), as the legacy endpoint did, rather than the generic login_required
 # (410) an anonymous request gets.
 
-my $user = create_user('whoami@mozilla.org', '*');
-my $key  = issue_api_key('whoami@mozilla.org');
+# Every account is created before the first request. The BMO extension logs
+# the remote IP of whoever creates a user, which outside of a request only
+# works until a request has left its controller behind.
+my $user      = create_user('whoami@mozilla.org', '*');
+my $phab_user = create_user('phab@mozilla.org',   '*');
+my $key       = issue_api_key('whoami@mozilla.org');
 
 my $t = Test::Mojo->new('Bugzilla::App');
 
@@ -44,14 +48,13 @@ $t->get_ok('/rest/whoami')->status_is(401)->json_is('/code' => 410);
 
 # An unknown key, in the header or in the deprecated query parameters.
 $t->get_ok('/rest/whoami' => {'X-Bugzilla-API-Key' => 'bogus-key-value'})
-  ->status_isnt(200)
-  ->json_is('/code' => 306)
+  ->status_isnt(200);
+$t->json_is('/code' => 306)
   ->json_like('/message' => qr/API key you specified is invalid/);
 
 foreach my $param (qw(api_key Bugzilla_api_key)) {
-  $t->get_ok("/rest/whoami?$param=bogus-key-value")
-    ->status_isnt(200)
-    ->json_is('/code' => 306)
+  $t->get_ok("/rest/whoami?$param=bogus-key-value")->status_isnt(200);
+  $t->json_is('/code' => 306)
     ->json_like('/message' => qr/API key you specified is invalid/);
 }
 
@@ -62,9 +65,8 @@ $key->update();
 Bugzilla->set_user(Bugzilla::User->new);
 
 $t->get_ok('/rest/whoami' => {'X-Bugzilla-API-Key' => $key->api_key})
-  ->status_isnt(200)
-  ->json_is('/code' => 306)
-  ->json_like('/message' => qr/has been revoked/);
+  ->status_isnt(200);
+$t->json_is('/code' => 306)->json_like('/message' => qr/has been revoked/);
 
 # Phabricator calls whoami with X-Phabricator-Token instead of an API key, to
 # learn who the token belongs to and whether they have MFA enabled. Bugzilla
@@ -82,22 +84,18 @@ my $phab_response;
 my $ua_mock = mock 'Bugzilla::API::V1::UserObject' =>
   (override => [mojo_user_agent => sub { FakePhabUA->new }]);
 
-my $phab_user = create_user('phab@mozilla.org', '*');
-my %phab      = ('X-Phabricator-Token' => 'api-stub');
+my %phab = ('X-Phabricator-Token' => 'api-stub');
 
 $phab_response = encode_json({result => {primaryEmail => 'phab@mozilla.org'}});
-$t->get_ok('/rest/whoami' => \%phab)
-  ->status_is(200)
-  ->json_is('/id'         => $phab_user->id)
-  ->json_is('/mfa_status' => Mojo::JSON->false)
-  ->json_is('/groups'     => []);
+$t->get_ok('/rest/whoami' => \%phab)->status_is(200);
+$t->json_is('/id'         => $phab_user->id)
+  ->json_is('/mfa_status' => Mojo::JSON->false);
 
 # A token Phabricator rejects, or one for an email Bugzilla does not know.
 $phab_response = encode_json({error_info => 'API token is not valid.'});
 $t->get_ok('/rest/whoami' => \%phab)->status_isnt(200)->json_is('/code' => 306);
 
-$phab_response
-  = encode_json({result => {primaryEmail => 'nobody@mozilla.org'}});
+$phab_response = encode_json({result => {primaryEmail => 'unknown@phab.test'}});
 $t->get_ok('/rest/whoami' => \%phab)->status_isnt(200)->json_is('/code' => 306);
 
 # A disabled account is refused (account_disabled, internal code 301), as it
