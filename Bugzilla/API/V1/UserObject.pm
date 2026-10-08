@@ -18,6 +18,7 @@ use Bugzilla::Group;
 use Bugzilla::Hook;
 use Bugzilla::Logging;
 use Bugzilla::User;
+use Bugzilla::User::APIKey;
 use Bugzilla::Util
   qw(datetime_from detaint_natural email_filter mojo_user_agent trim);
 use Bugzilla::WebService::Util
@@ -499,7 +500,8 @@ sub whoami {
   my $user = $self->_user_from_phab_token;
   if (!$user) {
     $user = $self->bugzilla->login;
-    $user->id || return $self->user_error('login_required');
+    $user->id
+      || return $self->user_error($self->_api_key_error // 'login_required');
   }
 
   my ($params, $error) = $self->_request_params;
@@ -548,6 +550,28 @@ sub _request_params {
   }
 
   return ($params, undef);
+}
+
+# bugzilla.login treats an API key it refuses as no API key at all. Clients
+# use whoami to validate a key, so say why it was refused, as the legacy login
+# did (Bugzilla::Auth::Login::APIKey).
+sub _api_key_error {
+  my ($self) = @_;
+
+  my $query = $self->req->query_params;
+  my $api_key_text
+    = $self->req->headers->header('X-Bugzilla-API-Key')
+    || $query->param('Bugzilla_api_key')
+    || $query->param('api_key');
+  return undef if !$api_key_text;
+
+  my $api_key = Bugzilla::User::APIKey->new({name => $api_key_text});
+  return 'api_key_not_valid' if !$api_key;
+  return 'api_key_not_valid'
+    if $api_key->sticky
+    && $api_key->last_used_ip
+    && $api_key->last_used_ip ne $self->tx->remote_address;
+  return $api_key->revoked ? 'api_key_revoked' : 'api_key_not_valid';
 }
 
 sub _user_from_phab_token {
