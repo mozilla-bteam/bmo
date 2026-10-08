@@ -19,6 +19,7 @@ our @EXPORT = qw(
   GITHUB_API_BASE
   GITHUB_API_TIMEOUT
   GITHUB_CACHE_SECONDS
+  GITHUB_REVALIDATE_SECONDS
   GITHUB_ERROR_CACHE_SECONDS
   GITHUB_MAX_PULL_REQUESTS
   GITHUB_REVIEWS_PER_PAGE
@@ -40,10 +41,18 @@ use constant GITHUB_PR_REGEX =>
 use constant GITHUB_API_BASE    => 'https://api.github.com';
 use constant GITHUB_API_TIMEOUT => 10;
 
-# How long (in seconds) to cache a PR's summary in memcached. GitHub's
-# unauthenticated rate limit is low (60 req/hr per IP) and authenticated is
-# 5000/hr, so caching avoids re-fetching the same PR on every bug view.
-use constant GITHUB_CACHE_SECONDS => 300;
+# How long (in seconds) a cached PR summary is served without contacting GitHub
+# (the freshness window). Once this elapses we revalidate with conditional
+# requests rather than doing a full re-fetch; GitHub does not count 304 Not
+# Modified responses against the rate limit, so revalidation is effectively
+# free and a longer freshness window is safe.
+use constant GITHUB_CACHE_SECONDS => 900;
+
+# Hard memcached TTL for a cached PR summary. This is deliberately much longer
+# than the freshness window so the stored ETags survive past GITHUB_CACHE_SECONDS
+# and remain available for conditional (If-None-Match) revalidation. Without
+# this the ETag would expire exactly when we want to use it.
+use constant GITHUB_REVALIDATE_SECONDS => 86_400;
 
 # Cache inaccessible/failed lookups for a shorter period so that persistent
 # failures (rate limiting, outages, private repos) don't re-hit GitHub on every

@@ -27,8 +27,36 @@ use ok 'Bugzilla::Extension::PhabBugz::Constants', 'PHAB_AUTOMATION_USER';
 use ok 'Bugzilla::Config',                         'SetParam';
 can_ok(
   'Bugzilla::Extension::PhabBugz::Feed',
-  qw( group_query feed_query user_query )
+  qw( group_query feed_query user_query reviewer_is_blocking )
 );
+
+# `reviewer_is_blocking` must only treat `#release-managers` as
+# already-requested when it is present as a blocking reviewer. A reviewer
+# added manually through the Phabricator UI defaults to non-blocking.
+{
+  my $relman_phid = 'PHID-PROJ-releasemanagers';
+
+  ok(
+    Bugzilla::Extension::PhabBugz::Feed::reviewer_is_blocking(
+      [{reviewerPHID => $relman_phid, isBlocking => 1}], $relman_phid
+    ),
+    '`reviewer_is_blocking` is true for a blocking reviewer.'
+  );
+
+  ok(
+    !Bugzilla::Extension::PhabBugz::Feed::reviewer_is_blocking(
+      [{reviewerPHID => $relman_phid, isBlocking => 0}], $relman_phid
+    ),
+    '`reviewer_is_blocking` is false for a non-blocking reviewer.'
+  );
+
+  ok(
+    !Bugzilla::Extension::PhabBugz::Feed::reviewer_is_blocking(
+      [{reviewerPHID => 'PHID-USER-someone', isBlocking => 1}], $relman_phid
+    ),
+    '`reviewer_is_blocking` is false when the reviewer is absent.'
+  );
+}
 
 Bugzilla->error_mode(ERROR_MODE_TEST);
 

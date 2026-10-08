@@ -102,10 +102,19 @@ my %mock_prs = (
   },
 );
 
+# The cache entry is now a versioned wrapper (github_pr.v2.<url>): the summary
+# we serve lives under pr_data, alongside revalidation metadata (etags and a
+# fresh_until epoch). A fresh_until in the future makes this a "fresh hit", so
+# the endpoint serves pr_data verbatim without any outbound request to GitHub.
 foreach my $pr_url (keys %mock_prs) {
   Bugzilla->memcached->set_data({
-    key        => "github_pr.$pr_url",
-    value      => $mock_prs{$pr_url},
+    key   => "github_pr.v2.$pr_url",
+    value => {
+      pr_data      => $mock_prs{$pr_url},
+      pr_etag      => undef,
+      reviews_etag => undef,
+      fresh_until  => time() + 300,
+    },
     expires_in => 300,
   });
 }

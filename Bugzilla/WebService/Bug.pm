@@ -56,11 +56,11 @@ sub DATE_FIELDS {
     update   => []
   };
 
-  # Add date related custom fields
+  # Add datetime custom fields. Date-only fields are left out so they are
+  # passed through as YYYY-MM-DD, since converting them would append a time
+  # component that _check_date_field rejects.
   foreach my $field (Bugzilla->active_custom_fields({skip_extensions => 1})) {
-    next
-      unless ($field->type == FIELD_TYPE_DATETIME
-      || $field->type == FIELD_TYPE_DATE);
+    next unless $field->type == FIELD_TYPE_DATETIME;
     push(@{$fields->{create}}, $field->name);
     push(@{$fields->{update}}, $field->name);
   }
@@ -341,6 +341,7 @@ sub comments {
   }
 
   my %bugs;
+  my @bug_comments;
   foreach my $bug_id (@$bug_ids) {
     my $bug;
 
@@ -356,9 +357,21 @@ sub comments {
     my $comments
       = $bug->comments({order => 'oldest_to_newest', after => $params->{new_since}
       });
+    push(@bug_comments, [$bug, $comments]);
+  }
+
+  # Preload every requested bug's comments in one query, otherwise a bulk
+  # request would run one aggregation query per bug.
+  $self->_preload_comment_edit_info([map { @{$_->[1]} } @bug_comments]);
+
+  my $want_collapsed = _wants_collapsed_comments($params);
+
+  foreach my $bug_comment (@bug_comments) {
+    my ($bug, $comments) = @$bug_comment;
     my @result;
     foreach my $comment (@$comments) {
       next if $comment->is_private && !$user->is_insider;
+      next if $comment->collapsed && !$want_collapsed;
       push(@result, $self->_translate_comment($comment, $params));
     }
     $bugs{$bug->id}{'comments'} = \@result;
@@ -380,6 +393,8 @@ sub comments {
     # Now make sure that we can see all the associated bugs.
     my %got_bug_ids = map { $_->bug_id => 1 } @$comment_data;
     Bugzilla::Bug->check($_) foreach (keys %got_bug_ids);
+
+    $self->_preload_comment_edit_info($comment_data);
 
     foreach my $comment (@$comment_data) {
       if ($comment->is_private && !$user->is_insider) {
@@ -411,6 +426,70 @@ sub render_comment {
   return {html => $html};
 }
 
+# Helper for every method that returns comments. Fetches the revision metadata
+# (number of edits and the timestamp of the most recent edit) for a set of
+# comments using a single query, and stashes it on each comment object for
+# _translate_comment.
+#
+# The data is only exposed to users who are allowed to edit other people's
+# comments; everyone else gets no edit_count/last_change_time keys at all.
+# Revisions hidden by an edit-comments admin are only counted for admins.
+#
+# Comments that were already preloaded are skipped, so callers that batch every
+# comment of a request up front turn the later per-bug calls into no-ops.
+sub _preload_comment_edit_info {
+  my ($self, $comments) = @_;
+  my $user = Bugzilla->user;
+
+  # can_edit_comments is injected by the EditComments extension; without it
+  # there is no longdescs_activity table to query.
+  return unless $user->can('can_edit_comments') && $user->can_edit_comments;
+
+  my @todo = grep { !exists $_->{edit_info} } @$comments;
+  return unless @todo;
+
+  my $dbh = Bugzilla->dbh;
+  my @ids = map { $_->id } @todo;
+
+  # Admins can see hidden revisions, so they are counted for them only.
+  my $hidden_clause = $user->is_edit_comments_admin ? '' : 'AND is_hidden = 0';
+
+  my $rows = $dbh->selectall_hashref(
+    'SELECT comment_id, COUNT(*) AS edit_count,
+            MAX(change_when) AS last_change_time
+       FROM longdescs_activity
+      WHERE ' . $dbh->sql_in('comment_id', \@ids) . " $hidden_clause
+   GROUP BY comment_id", 'comment_id'
+  );
+
+  foreach my $comment (@todo) {
+    $comment->{edit_info} = $rows->{$comment->id}
+      || {edit_count => 0, last_change_time => undef};
+  }
+}
+
+# Batch-preloads the comment edit info for every bug about to be passed through
+# _bug_to_hash(), so that a multi-bug request runs one aggregation query rather
+# than one per bug.
+sub _preload_bugs_comment_edit_info {
+  my ($self, $bugs, $params) = @_;
+
+  return unless filter_wants $params, 'comments', ['extra'];
+  $self->_preload_comment_edit_info([map { @{$_->comments} } @$bugs]);
+}
+
+# Comments that Bugzilla::Comment::collapsed flags (tagged with one of the
+# 'collapsed_comment_tags' tags, or authored by treeherder) are hidden behind a
+# click in the web UI, so they are left out of the API response too unless the
+# caller asks for them with
+# include_fields=_collapsed_comments. Like the other underscore-prefixed
+# include_fields values, it does not imply _default, so callers that want the
+# usual fields as well need include_fields=_default,_collapsed_comments.
+sub _wants_collapsed_comments {
+  my ($params) = @_;
+  return grep { $_ eq '_collapsed_comments' } @{$params->{include_fields} || []};
+}
+
 # Helper for Bug.comments
 sub _translate_comment {
   my ($self, $comment, $filters, $types, $prefix) = @_;
@@ -430,6 +509,13 @@ sub _translate_comment {
     count         => $self->type('int',      $comment->count),
   };
 
+  # Only set by _preload_comment_edit_info when the user may edit others' comments
+  if (my $edit_info = $comment->{edit_info}) {
+    $comment_hash->{edit_count} = $self->type('int', $edit_info->{edit_count});
+    $comment_hash->{last_change_time}
+      = $self->type('dateTime', $edit_info->{last_change_time});
+  }
+
   if (Bugzilla->params->{use_comment_reactions}) {
     $comment_hash->{reactions} = {};
 
@@ -441,6 +527,7 @@ sub _translate_comment {
   # Don't load comment tags unless enabled
   if (Bugzilla->params->{'comment_taggers_group'}) {
     $comment_hash->{tags} = [map { $self->type('string', $_) } @{$comment->tags}];
+    $comment_hash->{collapsed} = $self->type('boolean', $comment->collapsed);
   }
 
   return filter($filters, $comment_hash, $types, $prefix);
@@ -481,8 +568,10 @@ sub get {
       $bug = Bugzilla::Bug->check($bug_id);
     }
     push(@bugs, $bug);
-    push(@hashes, $self->_bug_to_hash($bug, $params));
   }
+
+  $self->_preload_bugs_comment_edit_info(\@bugs, $params);
+  @hashes = map { $self->_bug_to_hash($_, $params) } @bugs;
 
   # Set the ETag before inserting the update tokens
   # since the tokens will always be unique even if
@@ -712,6 +801,7 @@ sub search {
   my %bug_objects
     = map { $_->id => $_ } @{Bugzilla::Bug->new_from_list(\@bug_ids)};
   my @bugs = map { $bug_objects{$_} } @bug_ids;
+  $self->_preload_bugs_comment_edit_info(\@bugs, $params);
   @bugs = map { $self->_bug_to_hash($_, $params) } @bugs;
 
   return {bugs => \@bugs};
@@ -765,6 +855,7 @@ sub possible_duplicates {
     @$possible_dupes = grep { $_->id != $params->{id} } @$possible_dupes;
   }
 
+  $self->_preload_bugs_comment_edit_info($possible_dupes, $params);
   my @hashes = map { $self->_bug_to_hash($_, $params) } @$possible_dupes;
   $self->_add_update_tokens($params, $possible_dupes, \@hashes);
   return {bugs => \@hashes};
@@ -1077,6 +1168,9 @@ sub update_attachment {
   my @attachments = ();
   my %bugs        = ();
   foreach my $id (@$ids) {
+    detaint_natural($id)
+      || ThrowCodeError('param_must_be_numeric',
+      {function => 'Bug.update_attachment', param => 'ids'});
     my $attachment = Bugzilla::Attachment->new($id)
       || ThrowUserError("invalid_attach_id", {attach_id => $id});
     my $bug = $attachment->bug;
@@ -1238,17 +1332,9 @@ sub add_comment {
   $bug->set_all({comment_tags => $params->{comment_tags}})
     if defined $params->{comment_tags};
 
-  # Capture the call to bug->update (which creates the new comment) in
-  # a transaction so we're sure to get the correct comment_id.
-
-  my $dbh = Bugzilla->dbh;
-  $dbh->bz_start_transaction();
-
   $bug->update();
 
-  my $new_comment_id = $dbh->bz_last_key('longdescs', 'comment_id');
-
-  $dbh->bz_commit_transaction();
+  my $new_comment_id = $bug->{added_comments}[0]->id;
 
   # Send mail.
   Bugzilla::BugMail::Send($bug->bug_id, {changer => Bugzilla->user});
@@ -1414,6 +1500,9 @@ sub get_comment_reactions {
   my $user = Bugzilla->user;
   my $comment_id = $params->{comment_id} // ThrowCodeError('param_required',
     {function => 'Bug.get_comment_reactions', param => 'comment_id'});
+  detaint_natural($comment_id)
+    || ThrowCodeError('param_must_be_numeric',
+    {function => 'Bug.get_comment_reactions', param => 'comment_id'});
   my $comment = Bugzilla::Comment->new($comment_id) || return [];
 
   $comment->bug->check_is_visible();
@@ -1432,6 +1521,9 @@ sub update_comment_reactions {
   my ($self, $params) = @_;
   my $user = Bugzilla->login(LOGIN_REQUIRED);
   my $comment_id = $params->{comment_id} // ThrowCodeError('param_required',
+    {function => 'Bug.update_comment_reactions', param => 'comment_id'});
+  detaint_natural($comment_id)
+    || ThrowCodeError('param_must_be_numeric',
     {function => 'Bug.update_comment_reactions', param => 'comment_id'});
   my $comment = Bugzilla::Comment->new($comment_id) || return [];
 
@@ -1480,6 +1572,9 @@ sub update_comment_tags {
   );
 
   my $comment_id = $params->{comment_id} // ThrowCodeError('param_required',
+    {function => 'Bug.update_comment_tags', param => 'comment_id'});
+  detaint_natural($comment_id)
+    || ThrowCodeError('param_must_be_numeric',
     {function => 'Bug.update_comment_tags', param => 'comment_id'});
 
   my $comment = Bugzilla::Comment->new($comment_id) || return [];
@@ -1600,8 +1695,11 @@ sub _bug_to_hash {
     my @result;
     my $comments
       = $bug->comments({order => 'oldest_to_newest', after => $params->{new_since}});
+    $self->_preload_comment_edit_info($comments);
+    my $want_collapsed = _wants_collapsed_comments($params);
     foreach my $comment (@$comments) {
       next if $comment->is_private && !$user->is_insider;
+      next if $comment->collapsed && !$want_collapsed;
       push(@result,
            $self->_translate_comment($comment, $params, ['extra'], 'comments'));
     }
@@ -1807,8 +1905,15 @@ sub _format_cf_value {
   if ($field->type == FIELD_TYPE_BUG_ID) {
     return $self->type('int', $value);
   }
-  elsif ($field->type == FIELD_TYPE_DATETIME || $field->type == FIELD_TYPE_DATE) {
+  elsif ($field->type == FIELD_TYPE_DATETIME) {
     return defined($value) ? $self->type('dateTime', $value) : undef;
+  }
+  elsif ($field->type == FIELD_TYPE_DATE) {
+
+    # Date-only fields are returned as YYYY-MM-DD, the same format they are
+    # accepted in, like deadline. Converting them to dateTime would append
+    # a time and time zone that the value does not have.
+    return defined($value) ? $self->type('string', $value) : undef;
   }
   elsif ($field->type == FIELD_TYPE_MULTI_SELECT) {
     return [map { $self->type('string', $_) } @{$value}];
@@ -2152,8 +2257,7 @@ This is an array of hashes, representing the legal values for
 select-type (drop-down and multiple-selection) fields. This is also
 populated for the C<component>, C<version>, C<target_milestone>, and C<keywords>
 fields, but not for the C<product> field (you must use
-L<Product.get_accessible_products|Bugzilla::WebService::Product/get_accessible_products>
-for that.
+C<GET /rest/product_accessible> for that).
 
 For fields that aren't select-type fields, this will simply be an empty
 array.
@@ -2697,6 +2801,20 @@ than this time. This only affects comments returned from the C<ids>
 argument. You will always be returned all comments you request in the
 C<comment_ids> argument, even if they are older than this date.
 
+=item C<_collapsed_comments>
+
+Comments that are collapsed in the web UI -- those tagged with one of the tags
+listed in the C<collapsed_comment_tags> parameter (C<spam>, C<abusive>, etc), and
+those authored by treeherder -- are left out of the comments returned for C<ids>
+entirely. Passing
+C<_collapsed_comments> in C<include_fields> includes them in the response.
+
+As with the other underscore-prefixed C<include_fields> values, it does not
+imply C<_default>, so use C<include_fields=_default,_collapsed_comments> to get
+the usual comment fields as well.
+
+Comments requested by C<comment_ids> are always returned, collapsed or not.
+
 =item C<skip_private> B<EXPERIMENTAL>
 
 C<boolean> Normally, if you request any inaccessible or invalid bug ids, this
@@ -2782,6 +2900,31 @@ may be deprecated and removed in a future release.
 C<boolean> True if this comment is private (only visible to a certain
 group called the "insidergroup"), False otherwise.
 
+=item edit_count
+
+C<int> The number of times this comment has been edited. C<0> if the comment
+has never been edited.
+
+This key is only present for users who are allowed to edit other people's
+comments. Revisions that have been hidden by an edit-comments admin are only
+counted for members of the edit-comments admins group.
+
+=item last_change_time
+
+C<dateTime> The time (in Bugzilla's timezone) of the most recent edit to this
+comment, or null if the comment has never been edited.
+
+This key is only present for users who are allowed to edit other people's
+comments, and follows the same rules as C<edit_count> for hidden revisions.
+
+=item collapsed
+
+C<boolean> True if this comment is collapsed in the web UI, either because one
+of its tags is listed in the C<collapsed_comment_tags> parameter or because it
+was authored by treeherder. False otherwise.
+
+This key is only present when comment tagging is enabled.
+
 =back
 
 =item B<Errors>
@@ -2823,6 +2966,8 @@ C<creator>.
 =item REST API call added in Bugzilla B<5.0>.
 
 =item C<raw_text> was added in Bugzilla B<6.0>.
+
+=item C<edit_count> and C<last_change_time> were added in Bugzilla B<6.0>.
 
 =back
 
@@ -2951,6 +3096,10 @@ section above for the object format.
 
 This is an B<extra> field returned only by specifying C<comments> or C<_extra>
 in C<include_fields>.
+
+Comments that are collapsed in the web UI are left out unless
+C<_collapsed_comments> is also passed in C<include_fields>, as described under
+L</comments>.
 
 =item C<component>
 

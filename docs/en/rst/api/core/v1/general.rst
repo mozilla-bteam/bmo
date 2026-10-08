@@ -52,6 +52,12 @@ The error contents look similar to:
      "code": 123
    }
 
+When BMO's request parser exceeds a message-size or body-buffer limit, the
+REST API returns ``413 Request Entity Too Large`` with error code ``58`` and
+the message ``The request is too large.`` rather than processing the truncated
+body. These limits depend on the server configuration. Reduce the payload size
+or split it into smaller requests where the API method supports batching.
+
 .. _rest-query-string-limit:
 
 BMO's Varnish front end rejects request targets longer than 8 KiB, including
@@ -109,6 +115,29 @@ any request, and you will be authenticated as that user if the key is correct an
 
 You can set up an API key by using the :ref:`API Keys tab <api-keys>` in the
 Preferences pages.
+
+Send only one authentication method with each request. BMO does not combine
+credentials or choose the strongest method when more than one is supplied.
+
+Most resources have been migrated off the legacy authentication path onto BMO's
+native REST framework, which accepts a cookie, an ``X-Bugzilla-API-Key``
+header, or an OAuth2 bearer token (plus the deprecated ``Bugzilla_api_key``
+and ``api_key`` query parameters described in the warning below, kept only as
+a stopgap for undiscovered callers). Legacy ``Bugzilla_login`` and
+``Bugzilla_password`` credentials are **not** accepted on these resources, even
+though the old WebService dispatcher underneath BMO still supports them for
+resources not yet migrated (currently ``Bug``, ``Group``, ``Product``, and
+``User``). On those not-yet-migrated resources, if a request supplies both
+``Bugzilla_login``/``Bugzilla_password`` and an API key, BMO does not combine
+them or choose the strongest method: the legacy credentials take precedence,
+and BMO does not fall back to the API key if password authentication fails.
+
+If the account has the :guilabel:`Require API key authentication for API
+requests` preference enabled, a request to one of those not-yet-migrated
+resources containing both valid username/password credentials and a valid API
+key fails with an ``API key authentication is required`` error because BMO
+selected the username/password credentials first. Remove the username/password
+credentials and send only the API key; do not disable the preference.
 
 **WARNING**: It should be noted that additional authentication methods exist, but they are **not recommended** for use and are likely to be deprecated in future versions of BMO, due to security concerns.  These additional methods include the following:
 

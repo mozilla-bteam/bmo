@@ -484,6 +484,20 @@ sub format_uplift_request_as_markdown {
   return $comment;
 }
 
+sub reviewer_is_blocking {
+  # Return true if `$reviewer_phid` is present on the revision as a blocking
+  # reviewer. A reviewer added manually through the Phabricator UI defaults to
+  # non-blocking, which we do not count as an already-requested review.
+  my ($reviewers_raw, $reviewer_phid) = @_;
+
+  foreach my $reviewer (@{$reviewers_raw}) {
+    next if $reviewer->{reviewerPHID} ne $reviewer_phid;
+    return $reviewer->{isBlocking} ? 1 : 0;
+  }
+
+  return 0;
+}
+
 sub process_uplift_request_form_change {
   # Process an uplift request form change for the passed revision object.
   my ($revision, $bug) = @_;
@@ -528,15 +542,13 @@ sub process_uplift_request_form_change {
       {phids => [$stack_revision_phid]}
     );
 
-    # Add `#release-managers!` review if not already added.
-    my $release_manager_added = 0;
-    foreach my $reviewer (@{$stack_revision->reviewers_raw}) {
-      if ($reviewer->{reviewerPHID} eq $release_managers_phid) {
-        $release_manager_added = 1;
-        last;
-      }
-    }
-    if (!$release_manager_added) {
+    # Add `#release-managers!` review unless it is already present as a
+    # blocking reviewer. A reviewer added manually through the Phabricator UI
+    # defaults to non-blocking, so we still (re-)add `#release-managers` as
+    # blocking to keep the uplift gated on that review.
+    my $already_blocking = reviewer_is_blocking($stack_revision->reviewers_raw,
+      $release_managers_phid);
+    if (!$already_blocking) {
       $stack_revision->add_reviewer("blocking($release_managers_phid)");
       $stack_revision->update();
       INFO("Requested #release-managers review of $stack_revision_phid.");

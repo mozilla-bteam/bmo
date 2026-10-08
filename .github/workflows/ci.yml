@@ -7,7 +7,7 @@ jobs:
   test_sanity:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build Docker test images
         run: docker compose -f docker-compose.test.yml build bmo.test
       - name: Run sanity tests
@@ -16,7 +16,7 @@ jobs:
   test_webservices:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build Docker test images
         run: docker compose -f docker-compose.test.yml build
       - name: Run webservice tests
@@ -25,7 +25,7 @@ jobs:
   test_bmo:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build Docker test images
         run: docker compose -f docker-compose.test.yml build
       - name: Run bmo specific tests
@@ -34,7 +34,7 @@ jobs:
   test_selenium_1:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build Docker test images
         run: docker compose -f docker-compose.test.yml build
       - name: Run Selenium tests (1)
@@ -43,7 +43,7 @@ jobs:
   test_selenium_2:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build Docker test images
         run: docker compose -f docker-compose.test.yml build
       - name: Run Selenium tests (2)
@@ -52,7 +52,7 @@ jobs:
   test_selenium_3:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build Docker test images
         run: docker compose -f docker-compose.test.yml build
       - name: Run Selenium tests (3)
@@ -61,7 +61,7 @@ jobs:
   test_selenium_4:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build Docker test images
         run: docker compose -f docker-compose.test.yml build
       - name: Run Selenium tests (4)

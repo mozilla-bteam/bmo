@@ -111,9 +111,8 @@ is(
   );
 }
 
-# One of each end to end, so the header name really reaches the response rather
-# than just the helper's return value: index.cgi for the report-only CGI surface
-# and the report collector for a native Mojo route.
+# End to end, so the header name really reaches the response rather than just
+# the helper's return value.
 #
 # show_bug.cgi?format=modal is deliberately not requested here. Rendering it
 # would need a full bug fixture, and any error while rendering a CGI page takes
@@ -122,7 +121,13 @@ is(
 # enforcing mode is pinned above at the helper level instead.
 $t->get_ok('/home')->header_exists(REPORT_ONLY)->header_exists_not(ENFORCE);
 
+# Only document responses carry a policy at all, which is what stops the native
+# routes' enforcing mode from reaching API responses. Pinned in t/csp-scope.t;
+# noted here because it means the enforcing header cannot be observed end to end
+# on the collector (a bodiless 204) the way the report-only one can on /home.
 $t->post_ok('/csp_report', {'Content-Type' => 'application/csp-report'}, '{}')
-  ->status_is(204)->header_exists(ENFORCE)->header_exists_not(REPORT_ONLY);
+  ->status_is(204)
+  ->header_exists_not(ENFORCE)
+  ->header_exists_not(REPORT_ONLY);
 
 done_testing;

@@ -256,6 +256,9 @@ attachments               array     Each array item is an Attachment object. See
                                     :ref:`rest_attachments` for details of the object.
 comments                  array     Each array item is a Comment object. See
                                     :ref:`rest_comments` for details of the object.
+                                    Comments that are collapsed in the web UI are
+                                    left out unless ``_collapsed_comments`` is also
+                                    passed in ``include_fields``.
 counts                    object    An object containing the numbers of the items in the
                                     following fields: ``attachments``, ``cc``,
                                     ``comments``, ``keywords``, ``blocks``,
@@ -316,6 +319,7 @@ field name in ``include_fields``.
 * Bug ID Fields: (int)
 * Multiple-Selection Fields: (array of strings)
 * Date/Time Fields: (datetime)
+* Date Fields: (string) In the format ``YYYY-MM-DD``.
 
 **Errors**
 
@@ -1010,7 +1014,8 @@ work_time              double   The number of hours worked on this bug as part
 
 You can also set the value of any custom field by passing its name as
 a parameter, and the value to set the field to. For multiple-selection
-fields, the value should be an array of strings.
+fields, the value should be an array of strings. For date fields, the value
+should be a string in the format ``YYYY-MM-DD``.
 
 Flag change object:
 

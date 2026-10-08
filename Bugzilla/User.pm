@@ -685,6 +685,27 @@ sub modification_ts          { $_[0]->{modification_ts}; }
 sub password_change_required { $_[0]->{password_change_required}; }
 sub password_change_reason   { $_[0]->{password_change_reason}; }
 
+# Ensure the current user is allowed to administer this account. Users who are
+# not admins cannot edit admins, and cannot edit members of the insider group
+# unless they have insider or service desk access.
+sub check_can_be_edited {
+  my $self = shift;
+  my $user = Bugzilla->user;
+  return if $user->in_group('admin');
+
+  if ($self->in_group('admin')) {
+    ThrowUserError('auth_failure', {action => 'modify', object => 'user'});
+  }
+
+  my $insider_group = Bugzilla->params->{insidergroup};
+  return unless $insider_group;
+
+  return if $user->in_group($insider_group) || $user->in_group('servicedesk');
+  if ($self->in_group($insider_group)) {
+    ThrowUserError('auth_failure', {action => 'modify', object => 'user'});
+  }
+}
+
 sub reminder_count {
   my $self = shift;
 
@@ -1548,12 +1569,14 @@ sub visible_bugs {
       # same result for bug_group_map.bug_id (so DISTINCT filters
       # out duplicate rows).
       "SELECT DISTINCT bugs.bug_id, reporter, assigned_to, qa_contact,
-                    reporter_accessible, cclist_accessible, cc.who,
-                    bug_group_map.bug_id
+                    components.triage_owner_id, reporter_accessible,
+                    cclist_accessible, cc.who, bug_group_map.bug_id
                FROM bugs
                     LEFT JOIN cc
                               ON cc.bug_id = bugs.bug_id
                                  AND cc.who = $user_id
+                    LEFT JOIN components
+                              ON bugs.component_id = components.id
                     LEFT JOIN bug_group_map
                               ON bugs.bug_id = bug_group_map.bug_id
                                  AND bug_group_map.group_id NOT IN ("
@@ -1567,13 +1590,20 @@ sub visible_bugs {
 
     $sth->execute(@check_ids);
     my $use_qa_contact = Bugzilla->params->{'useqacontact'};
+
+    # Triage owners can see all bugs in their component, but only if they are
+    # also a member of the mozilla-employee-confidential group.
+    my $use_triage_owner = $self->is_employee_confidential;
     while (my $row = $sth->fetchrow_arrayref) {
-      my ($bug_id, $reporter, $owner, $qacontact, $reporter_access, $cclist_access,
-        $isoncclist, $missinggroup)
-        = @$row;
+      my (
+        $bug_id,        $reporter,     $owner,
+        $qacontact,     $triage_owner, $reporter_access,
+        $cclist_access, $isoncclist,   $missinggroup
+      ) = @$row;
       $visible_cache->{$bug_id}
         ||= ((($reporter == $user_id) && $reporter_access)
-          || ($use_qa_contact && $qacontact && ($qacontact == $user_id))
+          || ($use_qa_contact   && $qacontact    && ($qacontact == $user_id))
+          || ($use_triage_owner && $triage_owner && ($triage_owner == $user_id))
           || ($owner == $user_id)
           || ($isoncclist && $cclist_access)
           || !$missinggroup) ? 1 : 0;
@@ -2580,6 +2610,16 @@ sub is_insider {
   return $self->{'is_insider'};
 }
 
+sub is_employee_confidential {
+  my $self = shift;
+
+  if (!defined $self->{'is_employee_confidential'}) {
+    $self->{'is_employee_confidential'}
+      = $self->in_group('mozilla-employee-confidential') ? 1 : 0;
+  }
+  return $self->{'is_employee_confidential'};
+}
+
 sub is_global_watcher {
   my $self = shift;
 
@@ -3489,6 +3529,10 @@ for flag mail.
 
 Returns true if the user can access private comments and attachments,
 i.e. if the 'insidergroup' parameter is set and the user belongs to this group.
+
+=item C<is_employee_confidential>
+
+Returns true if the user belongs to the 'mozilla-employee-confidential' group.
 
 =item C<is_global_watcher>
 
