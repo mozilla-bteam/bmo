@@ -144,6 +144,12 @@ $t->get_ok($url
     . "rest/group/$group_id" => {'X-Bugzilla-API-Key' => $unprivileged_api_key})
   ->status_is(200)->json_is('/groups' => []);
 
+# The group they can bless is still returned, so the filter is not simply
+# dropping everything.
+$t->get_ok($url
+  . "rest/group/$bless_group_id" => {'X-Bugzilla-API-Key' => $unprivileged_api_key})
+  ->status_is(200)->json_is('/groups/0/name', 'bless-only-group');
+
 # Clean up: leave this user belonging to nothing, as later tests expect.
 Bugzilla->dbh->do(
   'DELETE FROM user_group_map
