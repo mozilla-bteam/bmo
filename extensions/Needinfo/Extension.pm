@@ -268,7 +268,7 @@ sub _extract_mentions {
   my ($text) = @_;
   return () unless defined $text;
 
-  $text =~ s/^[ \t]*(```|~~~).*?(?:^[ \t]*\1[^\n]*$|\z)//msg;
+  $text =~ s/^[ \t]*(`{3,}|~{3,}).*?(?:^[ \t]*\1[^\n]*$|\z)//msg;
   # A code span closes on a backtick run of the same length, within a paragraph.
   $text = join "\n\n",
     map { s/(?<!`)(`+)(?!`).+?(?<!`)\1(?!`)//sgr } split /\n[ \t]*\n/, $text;
