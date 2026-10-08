@@ -12,9 +12,11 @@ use warnings;
 
 use base qw(Bugzilla::Extension);
 
+use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Flag;
 use Bugzilla::FlagType;
+use Bugzilla::Logging;
 use Bugzilla::User;
 use Bugzilla::User::Setting;
 
@@ -62,7 +64,7 @@ sub install_update_db {
     is_active        => 1,
     is_requestable   => 1,
     is_requesteeble  => 1,
-    is_multiplicable => 0,
+    is_multiplicable => 1,
     request_group    => '',
     grant_group      => '',
     inclusions       => ['0:0'],
@@ -267,12 +269,15 @@ sub _extract_mentions {
   return () unless defined $text;
 
   $text =~ s/^[ \t]*(```|~~~).*?(?:^[ \t]*\1[^\n]*$|\z)//msg;
-  $text =~ s/`[^`\n]*`//g;
+  # A code span closes on a backtick run of the same length, within a paragraph.
+  $text = join "\n\n",
+    map { s/(?<!`)(`+)(?!`).+?(?<!`)\1(?!`)//sgr } split /\n[ \t]*\n/, $text;
   $text =~ s/^[ \t]*>.*$//mg;
 
   my (@nicks, %seen);
-  while ($text =~ /(?<![\w@.\/-])@([\p{IsAlnum}._-]+)/g) {
-    (my $nick = $1) =~ s/\.+$//;
+  # Same character set as extract_nicks in Bugzilla/Util.pm.
+  while ($text =~ /(?<![\w@.\/-])@([\p{IsAlnum}|._-]+)/g) {
+    (my $nick = $1) =~ s/[.|]+$//;
     next if $nick eq '' || $seen{lc $nick}++;
     push @nicks, $nick;
   }
@@ -298,7 +303,8 @@ sub _users_for_mentions {
 
 # GitHub-style mentions: each @nickname in a new comment is CC'd and gets a
 # needinfo request. Mentions never block the comment from being saved; anyone
-# who can't be needinfo'd (blocked, already asked, no permission) is only CC'd.
+# who can't be needinfo'd (blocked, already asked, no permission, or the
+# needinfo type isn't multiplicable and a flag exists) is only CC'd.
 #
 # Safeguards against misuse:
 # - only editbugs users can trigger mentions; for everyone else they are text
@@ -333,23 +339,37 @@ sub _process_mentions {
   return unless @mentioned;
 
   my ($type) = grep { $_->name eq 'needinfo' } @{$bug->flag_types};
-  my $can_flag
-    = $type && $bug->check_can_change_field('flagtypes.name', 0, 1)->{allowed};
+  undef $type
+    unless $type && $bug->check_can_change_field('flagtypes.name', 0, 1)->{allowed};
 
-  my @new_flags;
+  # A failure for one user (e.g. add_cc's strict_isolation check) skips that
+  # user rather than rolling back the whole update. Throw*Error only dies
+  # (instead of printing an error page and exiting) in ERROR_MODE_DIE, so the
+  # eval can catch it.
+  local Bugzilla->request_cache->{error_mode} = ERROR_MODE_DIE;
+  local $@;
   foreach my $mentioned (@mentioned) {
-    $bug->add_cc($mentioned);
-
-    next if !$can_flag || $mentioned->needinfo_blocked;
-    next if grep {
-      $_->status eq '?' && ($_->requestee_id // 0) == $mentioned->id
-    } @{$type->{flags}};
-
-    push @new_flags,
-      {type_id => $type->id, status => '?', requestee => $mentioned->login};
+    eval { _cc_and_needinfo($bug, $mentioned, $type); 1 }
+      or WARN('Skipped mention of ' . $mentioned->login . " on bug "
+        . $bug->id . ": $@");
   }
+}
 
-  $bug->set_flags([], \@new_flags) if @new_flags;
+sub _cc_and_needinfo {
+  my ($bug, $mentioned, $type) = @_;
+  $bug->add_cc($mentioned);
+
+  return if !$type || $mentioned->needinfo_blocked;
+
+  # A non-multiplicable type allows only one needinfo flag per bug.
+  return if !$type->is_multiplicable && @{$type->{flags}};
+  return if grep {
+    $_->status eq '?' && ($_->requestee_id // 0) == $mentioned->id
+  } @{$type->{flags}};
+
+  # One call per user so $type->{flags} reflects each flag as it is added.
+  $bug->set_flags([],
+    [{type_id => $type->id, status => '?', requestee => $mentioned->login}]);
 }
 
 sub _check_requestee {

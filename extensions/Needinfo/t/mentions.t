@@ -36,6 +36,11 @@ is([$extract->('mail foo@example.com or a/@b or x.@y')], [],
   'emails and embedded @ ignored');
 is([$extract->("> \@quoted said\n\@alice")], ['alice'], 'quoted lines ignored');
 is([$extract->('run `@decorator` @alice')], ['alice'], 'inline code ignored');
+is([$extract->('``@alice`` and `` a`@b ``')], [], 'double backtick code ignored');
+is([$extract->("it's a ` stray\n\n\@alice `x`")],
+  ['alice'], 'unclosed backtick does not span paragraphs');
+is([$extract->('@foo|bar and |@alice|')], ['foo|bar', 'alice'],
+  'pipe allowed in nick, trailing pipe stripped');
 is(
   [$extract->("```perl\n\@inside\n```\n\@after")],
   ['after'], 'fenced code block ignored'
@@ -57,30 +62,49 @@ is([$extract->("~~~\n\@unclosed\n\@more")], [], 'unclosed fence runs to end');
 
   package FakeBug;
   sub new {
-    my ($class, $text) = @_;
+    my ($class, $text, %type) = @_;
     bless {
       added_comments => [{thetext => $text}],
       cc             => [],
       needinfo       => [],
-      type           => bless({flags => []}, 'FakeType'),
+      type => bless({flags => [], multiplicable => 1, %type}, 'FakeType'),
     }, $class;
   }
   sub id                     {1}
   sub product_id             {1}
   sub flag_types             { [$_[0]{type}] }
   sub check_can_change_field { {allowed => 1} }
-  sub add_cc    { push @{$_[0]{cc}}, $_[1]->nick }
-  sub set_flags { push @{$_[0]{needinfo}}, map { $_->{requestee} } @{$_[2]} }
+  sub add_cc {
+    my ($self, $user) = @_;
+    die "add_cc failed\n" if $user->{cc_fails};
+    push @{$self->{cc}}, $user->nick;
+  }
+
+  # Like Bugzilla::Flag->set_flag, new flags are added to the type's list.
+  sub set_flags {
+    my ($self, undef, $new_flags) = @_;
+    foreach my $flag (@$new_flags) {
+      push @{$self->{needinfo}}, $flag->{requestee};
+      push @{$self->{type}{flags}},
+        bless({status => '?', requestee_id => 0}, 'FakeFlag');
+    }
+  }
 
   package FakeType;
-  sub name {'needinfo'}
-  sub id   {1}
+  sub name             {'needinfo'}
+  sub id               {1}
+  sub is_multiplicable { $_[0]{multiplicable} }
+
+  package FakeFlag;
+  sub status       { $_[0]{status} }
+  sub requestee_id { $_[0]{requestee_id} }
 }
 
 my %users = map { $_->nick => $_ } (
   FakeUser->new(id => 2, nick => 'alice'),
   FakeUser->new(id => 3, nick => 'bob'),
   FakeUser->new(id => 4, nick => 'hidden', sees_bug => 0),
+  FakeUser->new(id => 6, nick => 'boom', cc_fails => 1),
   map { FakeUser->new(id => 10 + $_, nick => "u$_") } 1 .. 12,
 );
 my $commenter = FakeUser->new(id => 1, nick => 'me', editbugs => 1);
@@ -113,6 +137,28 @@ $bug = FakeBug->new(join ' ', map {"\@u$_"} 1 .. 12);
 $process->($bug);
 is(\@looked_up, [map {"u$_"} 1 .. 10], 'only the first 10 nicknames are looked up');
 is($bug->{cc},  [map {"u$_"} 1 .. 10], '... and only they are CCd');
+
+$bug = FakeBug->new('@alice @bob', multiplicable => 0);
+$process->($bug);
+is($bug->{cc}, ['alice', 'bob'], 'non-multiplicable type: everyone CCd');
+is($bug->{needinfo}, ['alice@example.com'], '... but only one needinfo');
+
+$bug = FakeBug->new('@alice', multiplicable => 0);
+push @{$bug->{type}{flags}}, bless({status => '?', requestee_id => 9}, 'FakeFlag');
+$process->($bug);
+is($bug->{cc},       ['alice'], 'non-multiplicable with existing flag: CCd');
+is($bug->{needinfo}, [],        '... and no needinfo, instead of an error');
+
+$bug = FakeBug->new('@alice');
+push @{$bug->{type}{flags}}, bless({status => '?', requestee_id => 2}, 'FakeFlag');
+$process->($bug);
+is($bug->{needinfo}, [], 'no duplicate needinfo for a pending request');
+
+$bug = FakeBug->new('@boom @alice');
+ok(lives { $process->($bug) },
+  'a failing CC (e.g. strict_isolation) does not throw');
+is($bug->{cc},       ['alice'],             '... that user is skipped');
+is($bug->{needinfo}, ['alice@example.com'], '... others still processed');
 
 $commenter->{editbugs} = 0;
 @looked_up = ();
