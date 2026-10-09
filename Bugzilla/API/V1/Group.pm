@@ -56,6 +56,10 @@ sub create {
   my ($params, $error) = merge_request_params($self);
   return $self->user_error($error) if $error;
 
+  my $type_error = _coerce_is_active($params);
+  return $self->user_error('invalid_params', {type_error => $type_error})
+    if $type_error;
+
   my $group = Bugzilla::Group->create({
     name        => $params->{name},
     description => $params->{description},
@@ -79,6 +83,10 @@ sub update {
 
   my ($params, $error) = merge_request_params($self, ['ids', 'names']);
   return $self->user_error($error) if $error;
+
+  my $type_error = _coerce_is_active($params);
+  return $self->user_error('invalid_params', {type_error => $type_error})
+    if $type_error;
 
   if (defined(my $id_or_name = $self->stash('id'))) {
     $params
@@ -204,6 +212,22 @@ sub get {
   my @result = map { $self->_group_to_hash($params, $_) } @$groups;
 
   return $self->render(json => {groups => \@result});
+}
+
+# A JSON body sends is_active as a real boolean, but the query string and a
+# form body send the literal string "true" or "false", which Perl treats as
+# true either way. Same check as Product and Component. Returns the error, if
+# any.
+sub _coerce_is_active {
+  my ($params) = @_;
+
+  return undef if !defined $params->{is_active} || ref $params->{is_active};
+  my $value = lc $params->{is_active};
+  return 'is_active must be true or false'
+    if $value !~ /^(?:true|false|1|0)$/;
+  $params->{is_active} = ($value eq 'true' || $value eq '1') ? 1 : 0;
+
+  return undef;
 }
 
 sub _group_to_hash {
