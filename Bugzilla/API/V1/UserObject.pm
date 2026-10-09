@@ -472,7 +472,7 @@ sub update {
   my $values = translate($params, MAPPED_FIELDS);
   delete @$values{qw(ids names include_fields exclude_fields
     Bugzilla_api_key Bugzilla_api_token Bugzilla_login Bugzilla_password
-    api_key token)};
+    Bugzilla_token api_key token)};
 
   my $dbh = Bugzilla->dbh;
   $dbh->bz_start_transaction();

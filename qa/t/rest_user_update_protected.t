@@ -157,4 +157,14 @@ $t->put_ok($url
   ->status_is(200)
   ->json_has('/users', 'A null include_fields is ignored');
 
+#
+# 8. Nor is a Bugzilla_token left in the query string.
+#
+$t->put_ok($url
+    . "rest/user/$target_login?Bugzilla_token=ignored" =>
+    {'X-Bugzilla-API-Key' => $admin_api_key} => json =>
+    {full_name => $target_realname})
+  ->status_is(200)
+  ->json_has('/users', 'A Bugzilla_token in the query string is not a user field');
+
 done_testing();
