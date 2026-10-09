@@ -10,8 +10,9 @@ package Bugzilla::API::V1::UserObject;
 use 5.10.1;
 use Mojo::Base qw( Mojolicious::Controller );
 
-use Mojo::JSON qw(true false);
+use Mojo::JSON qw(true);
 
+use Bugzilla::API::V1::Util;
 use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Group;
@@ -19,8 +20,7 @@ use Bugzilla::Hook;
 use Bugzilla::Logging;
 use Bugzilla::User;
 use Bugzilla::User::APIKey;
-use Bugzilla::Util
-  qw(datetime_from detaint_natural email_filter mojo_user_agent trim);
+use Bugzilla::Util qw(detaint_natural mojo_user_agent trim);
 use Bugzilla::WebService::Util
   qw(filter filter_wants merge_request_params params_to_objects translate);
 
@@ -74,24 +74,10 @@ sub options {
 
 # The webservice_user_get hook hands this controller to extensions as
 # "webservice", and Review, UserProfile and TagNewUsers call ->type on it, as
-# they did on the legacy JSON-RPC/REST server. Same output as the legacy one.
+# they did on the legacy JSON-RPC/REST server.
 sub type {
   my ($self, $type, $value) = @_;
-
-  # This is the only type that does something special with undef.
-  return $value ? true : false if $type eq 'boolean';
-
-  return undef       if !defined $value;
-  return int($value) if $type eq 'int';
-  return "$value"    if $type eq 'string';
-  return email_filter($value)
-    if $type eq 'email' && Bugzilla->params->{webservice_email_filter};
-
-  # Always UTC, with the timezone specifier.
-  return $value ? datetime_from($value, 'UTC')->iso8601() . 'Z' : ''
-    if $type eq 'dateTime';
-
-  return $value;
+  return Bugzilla::API::V1::Util->type($type, $value);
 }
 
 # No login here, as in the legacy method (LOGIN_EXEMPT): this is how someone
