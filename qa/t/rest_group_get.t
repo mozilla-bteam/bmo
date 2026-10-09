@@ -65,6 +65,17 @@ my @returned_ids
 is_deeply(\@returned_ids, [sort { $a <=> $b } ($group_id, $second_group_id)],
   'a repeated ids parameter returns both groups');
 
+# A stray id in the query string is not the id from the path: it must not
+# replace the ids asked for.
+$t->get_ok($url
+    . "rest/group?ids=$group_id&ids=$second_group_id&id=1" =>
+    {'X-Bugzilla-API-Key' => $admin_api_key})->status_is(200);
+
+@returned_ids
+  = sort { $a <=> $b } map { $_->{id} } @{$t->tx->res->json->{groups}};
+is_deeply(\@returned_ids, [sort { $a <=> $b } ($group_id, $second_group_id)],
+  'an id query parameter does not replace ids');
+
 # Create a new user and add it to the new group
 my $new_user = {
   email     => 'group_test_user@mozilla.bugs',

@@ -80,7 +80,7 @@ sub update {
   my ($params, $error) = merge_request_params($self, ['ids', 'names']);
   return $self->user_error($error) if $error;
 
-  if (defined(my $id_or_name = $self->param('id'))) {
+  if (defined(my $id_or_name = $self->stash('id'))) {
     $params
       = $id_or_name =~ /^\d+$/
       ? {%$params, ids   => [$id_or_name], names => undef}
@@ -146,7 +146,7 @@ sub get {
   my ($params, $error) = merge_request_params($self, ['ids', 'names']);
   return $self->user_error($error) if $error;
 
-  if (defined(my $id_or_name = $self->param('id'))) {
+  if (defined(my $id_or_name = $self->stash('id'))) {
     $params
       = $id_or_name =~ /^\d+$/
       ? {%$params, ids   => [$id_or_name]}
